@@ -20,10 +20,10 @@ export default async function DashboardPage() {
   const overduePayments = paymentsRes.data?.filter(p => p.status === 'overdue').length ?? 0
 
   const kpis = [
-    { label: 'Enrolled students', value: totalStudents, accent: 'gold' },
-    { label: 'Present today', value: presentToday, accent: 'green' },
-    { label: 'Payments overdue', value: overduePayments, accent: 'red' },
-    { label: 'Classes this week', value: 8, accent: 'blue' },
+    { label: 'Enrolled students', value: totalStudents, accent: 'gold' as const },
+    { label: 'Present today', value: presentToday, accent: 'green' as const },
+    { label: 'Payments overdue', value: overduePayments, accent: 'red' as const },
+    { label: 'Classes this week', value: 8, accent: 'blue' as const },
   ]
 
   return (

@@ -121,7 +121,7 @@ export default function StudentProfile({ student, skills, notes, attendance, med
             const subPct = calcProgress(subMastered, subSkills.length)
             return (
               <Card key={subject}>
-                <CardHeader title={subject}
+                <CardHeader title={subject ?? 'Unknown'}
                   action={<Badge variant={subPct >= 80 ? 'green' : subPct >= 40 ? 'blue' : 'gray'}>{subPct}% complete</Badge>} />
                 <CardBody>
                   <ProgressBar value={subPct} showLabel={false} className="mb-4" />

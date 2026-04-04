@@ -11,7 +11,7 @@ import type { AttendanceStatus } from '@/types'
 interface Student { id: string; full_name: string; grade: number; avatar_url: string | null }
 interface ClassItem { id: string; name: string }
 interface AttRecord { student_id: string; class_id: string; status: AttendanceStatus; note?: string }
-interface HistoryItem { date: string; status: AttendanceStatus; class?: { name: string } }
+interface HistoryItem { date: string; status: AttendanceStatus; class?: { name: string } | { name: string }[] }
 
 interface Props {
   students: Student[]
@@ -69,7 +69,7 @@ export default function AttendanceManager({ students, classes, todayRecords, his
 
   const historyColumns = [
     { key: 'date', header: 'Date', width: '130px', render: (r: HistoryItem) => formatDate(r.date) },
-    { key: 'class', header: 'Class', render: (r: HistoryItem) => r.class?.name ?? '—' },
+    { key: 'class', header: 'Class', render: (r: HistoryItem) => (Array.isArray(r.class) ? r.class[0]?.name : r.class?.name) ?? '—' },
     { key: 'status', header: 'Status', width: '110px', render: (r: HistoryItem) => <Badge variant={ATTEND_VARIANT[r.status]}>{r.status}</Badge> },
   ]
 

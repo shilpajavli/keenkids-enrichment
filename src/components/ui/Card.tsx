@@ -4,11 +4,12 @@ interface CardProps {
   children: React.ReactNode
   className?: string
   padding?: boolean
+  id?: string
 }
 
-export function Card({ children, className, padding = false }: CardProps) {
+export function Card({ children, className, padding = false, id }: CardProps) {
   return (
-    <div className={cn('bg-white rounded-xl overflow-hidden', className)}
+    <div id={id} className={cn('bg-white rounded-xl overflow-hidden', className)}
       style={{ border: '1px solid rgba(184,151,58,0.32)' }}>
       {padding ? <div className="p-5">{children}</div> : children}
     </div>
