@@ -139,10 +139,25 @@ export default function StudentProfile({ student, skills, notes, attendance, med
             const subSkills = skills.filter(s => s.skill?.subject === subject)
             const subMastered = subSkills.filter(s => s.status === 'mastered').length
             const subPct = calcProgress(subMastered, subSkills.length)
+            const DATE_MAP: Record<string, string> = {
+              'Bio-Engineering':            'Mon · Apr 13',
+              'Cargo & Balance':            'Tue · Apr 14',
+              'Solar Optics':               'Wed · Apr 15',
+              'Aerodynamics & Wind Power':  'Thu · Apr 16',
+              'Global Engineering Summit':  'Fri · Apr 17',
+            }
+            const date = subject ? DATE_MAP[subject] : null
             return (
               <Card key={subject}>
-                <CardHeader title={subject ?? 'Unknown'}
-                  action={<Badge variant={subPct >= 80 ? 'green' : subPct >= 40 ? 'blue' : 'gray'}>{subPct}% complete</Badge>} />
+                <CardHeader
+                  title={subject ?? 'Unknown'}
+                  action={
+                    <div className="flex items-center gap-2">
+                      {date && <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: '#EFE6CC', color: '#8A6E25' }}>{date}</span>}
+                      <Badge variant={subPct >= 80 ? 'green' : subPct >= 40 ? 'blue' : 'gray'}>{subPct}% complete</Badge>
+                    </div>
+                  }
+                />
                 <CardBody>
                   <ProgressBar value={subPct} showLabel={false} className="mb-4" />
                   <div className="space-y-2">
@@ -151,7 +166,7 @@ export default function StudentProfile({ student, skills, notes, attendance, med
                       return (
                         <div key={ss.id} className="flex items-center justify-between py-1.5"
                           style={{ borderBottom: '1px solid rgba(184,151,58,0.12)' }}>
-                          <span className="text-[12.5px]">{ss.skill?.name}</span>
+                          <span className="text-[12.5px]" style={{ color: '#1A1814' }}>{ss.skill?.name}</span>
                           <Badge variant={info.variant}>{info.label}</Badge>
                         </div>
                       )
