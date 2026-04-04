@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Edit2, Save } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { ArrowLeft, Edit2, Save, Trash2 } from 'lucide-react'
 import { Card, CardHeader, CardBody } from '@/components/ui/Card'
 import StudentAvatar from '@/components/ui/StudentAvatar'
 import Badge from '@/components/ui/Badge'
@@ -40,6 +41,15 @@ export default function StudentProfile({ student, skills, notes, attendance, med
   const [tab, setTab] = useState<Tab>('progress')
   const [noteText, setNoteText] = useState('')
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const router = useRouter()
+
+  async function handleDelete() {
+    if (!confirm(`Remove ${student.full_name} from enrollment? This cannot be undone.`)) return
+    setDeleting(true)
+    await fetch(`/api/students?id=${student.id}`, { method: 'DELETE' })
+    router.push('/dashboard/students')
+  }
 
   const mastered = skills.filter(s => s.status === 'mastered').length
   const overall = calcProgress(mastered, skills.length)
@@ -86,9 +96,19 @@ export default function StudentProfile({ student, skills, notes, attendance, med
               </span>
             </div>
           </div>
-          <div className="ml-auto text-right">
-            <div className="font-serif text-3xl font-light" style={{ color: '#B8973A' }}>{overall}%</div>
-            <div className="text-[11px]" style={{ color: '#8A8580' }}>overall progress</div>
+          <div className="ml-auto flex items-center gap-4">
+            <div className="text-right">
+              <div className="font-serif text-3xl font-light" style={{ color: '#B8973A' }}>{overall}%</div>
+              <div className="text-[11px]" style={{ color: '#8A8580' }}>overall progress</div>
+            </div>
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="btn text-[12px] flex items-center gap-1.5"
+              style={{ color: '#791F1F', borderColor: 'rgba(121,31,31,0.3)' }}>
+              <Trash2 size={13} />
+              {deleting ? 'Removing…' : 'Remove student'}
+            </button>
           </div>
         </div>
       </div>
