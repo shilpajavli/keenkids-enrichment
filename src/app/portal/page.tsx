@@ -46,7 +46,7 @@ export default async function ParentPortalPage() {
   const [skillsRes, attendanceRes, mediaRes, paymentsRes] = await Promise.all([
     supabase.from('student_skills').select('*, skill:skills(*)').eq('student_id', student.id),
     supabase.from('attendance').select('*, class:classes(name)').eq('student_id', student.id).order('date', { ascending: false }).limit(10),
-    supabase.from('media').select('*').eq('student_id', student.id).order('created_at', { ascending: false }).limit(6),
+    supabase.from('media').select('*').or(`student_id.eq.${student.id},student_id.is.null`).order('created_at', { ascending: false }).limit(12),
     supabase.from('payments').select('*').eq('parent_id', session.user.id).order('due_date', { ascending: false }),
   ])
 
@@ -137,7 +137,7 @@ export default async function ParentPortalPage() {
       {/* Photos */}
       {media.length > 0 && (
         <Card>
-          <CardHeader title="Photos & videos" />
+          <CardHeader title="Photos & videos from class" />
           <CardBody>
             <div className="grid grid-cols-3 gap-2">
               {media.map(item => (
