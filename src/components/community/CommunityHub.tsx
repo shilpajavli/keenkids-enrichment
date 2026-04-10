@@ -20,6 +20,8 @@ export default function CommunityHub({ announcements: initial }: { announcements
   const [posting, setPosting] = useState(false)
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
+  const [emailSubject, setEmailSubject] = useState('')
+  const [emailSent, setEmailSent] = useState('')
 
   async function postAnnouncement() {
     if (!title.trim() || !body.trim()) return
@@ -43,11 +45,22 @@ export default function CommunityHub({ announcements: initial }: { announcements
   }
 
   async function sendMessage() {
-    if (!message.trim()) return
+    if (!message.trim() || !emailSubject.trim()) return
     setSending(true)
-    await new Promise(r => setTimeout(r, 1200))
+    const res = await fetch('/api/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subject: emailSubject, message }),
+    })
+    const json = await res.json()
     setSending(false)
-    setMessage('')
+    if (json.success) {
+      setEmailSent(`✓ Sent to ${json.sent} families`)
+      setMessage('')
+      setEmailSubject('')
+    } else {
+      setEmailSent(`Error: ${json.error}`)
+    }
   }
 
   return (
@@ -142,8 +155,14 @@ export default function CommunityHub({ announcements: initial }: { announcements
           </Card>
 
           <Card>
-            <CardHeader title="Message all families" />
+            <CardHeader title="Email all families" />
             <CardBody className="space-y-3">
+              <input
+                className="input text-[13px]"
+                placeholder="Subject line"
+                value={emailSubject}
+                onChange={e => setEmailSubject(e.target.value)}
+              />
               <textarea
                 className="input text-[13px]"
                 rows={4}
@@ -152,9 +171,10 @@ export default function CommunityHub({ announcements: initial }: { announcements
                 onChange={e => setMessage(e.target.value)}
                 style={{ resize: 'none' }}
               />
-              <button className="btn btn-gold text-[12px] w-full justify-center" onClick={sendMessage} disabled={sending}>
+              <button className="btn btn-gold text-[12px] w-full justify-center" onClick={sendMessage} disabled={sending || !emailSubject || !message}>
                 {sending ? 'Sending…' : 'Send to all families'}
               </button>
+              {emailSent && <p className="text-[12px]" style={{ color: emailSent.startsWith('✓') ? '#27500A' : '#791F1F' }}>{emailSent}</p>}
             </CardBody>
           </Card>
         </div>
