@@ -43,17 +43,19 @@ export default async function ParentPortalPage() {
     )
   }
 
-  const [skillsRes, attendanceRes, mediaRes, paymentsRes] = await Promise.all([
+  const [skillsRes, attendanceRes, mediaRes, paymentsRes, announcementsRes] = await Promise.all([
     supabase.from('student_skills').select('*, skill:skills(*)').eq('student_id', student.id),
     supabase.from('attendance').select('*, class:classes(name)').eq('student_id', student.id).order('date', { ascending: false }).limit(10),
     supabase.from('media').select('*').or(`student_id.eq.${student.id},student_id.is.null`).order('created_at', { ascending: false }).limit(12),
     supabase.from('payments').select('*').eq('parent_id', session.user.id).order('due_date', { ascending: false }),
+    supabase.from('announcements').select('*').order('pinned', { ascending: false }).order('created_at', { ascending: false }),
   ])
 
   const skills = skillsRes.data ?? []
   const attendance = attendanceRes.data ?? []
   const media = mediaRes.data ?? []
   const payments = paymentsRes.data ?? []
+  const announcements = announcementsRes.data ?? []
 
   const mastered = skills.filter(s => s.status === 'mastered').length
   const overall = calcProgress(mastered, skills.length)
@@ -69,6 +71,31 @@ export default async function ParentPortalPage() {
           <span className="text-ink-tertiary text-sm">Spring Break · Apr 13–17</span>
         </div>
       </div>
+
+      {/* Announcements */}
+      {announcements.length > 0 && (
+        <Card>
+          <CardHeader title="Announcements" />
+          <CardBody className="p-0">
+            {announcements.map((ann, i) => (
+              <div key={ann.id} className="px-5 py-4"
+                style={{ borderBottom: i < announcements.length - 1 ? '1px solid rgba(184,151,58,0.14)' : 'none' }}>
+                <div className="flex items-center gap-2 mb-1">
+                  {ann.pinned && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded"
+                      style={{ background: '#EFE6CC', color: '#8A6E25' }}>Pinned</span>
+                  )}
+                  <div className="font-serif text-[15px] font-light">{ann.title}</div>
+                </div>
+                <div className="text-[12.5px] leading-relaxed" style={{ color: '#4A4640' }}>{ann.body}</div>
+                <div className="text-[11px] mt-2" style={{ color: '#8A8580' }}>
+                  {new Date(ann.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </div>
+              </div>
+            ))}
+          </CardBody>
+        </Card>
+      )}
 
       {/* Overall progress */}
       <Card>
