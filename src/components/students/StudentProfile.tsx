@@ -42,7 +42,17 @@ export default function StudentProfile({ student, skills, notes, attendance, med
   const [noteText, setNoteText] = useState('')
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [skillsState, setSkillsState] = useState(skills)
   const router = useRouter()
+
+  async function updateSkill(id: string, status: 'not_started' | 'in_progress' | 'mastered') {
+    setSkillsState(prev => prev.map(s => s.id === id ? { ...s, status } : s))
+    await fetch('/api/skills', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, status }),
+    })
+  }
 
   async function handleDelete() {
     if (!confirm(`Remove ${student.full_name} from enrollment? This cannot be undone.`)) return
@@ -51,8 +61,8 @@ export default function StudentProfile({ student, skills, notes, attendance, med
     router.push('/dashboard/students')
   }
 
-  const mastered = skills.filter(s => s.status === 'mastered').length
-  const overall = calcProgress(mastered, skills.length)
+  const mastered = skillsState.filter(s => s.status === 'mastered').length
+  const overall = calcProgress(mastered, skillsState.length)
 
   async function saveNote() {
     if (!noteText.trim()) return
@@ -135,8 +145,8 @@ export default function StudentProfile({ student, skills, notes, attendance, med
       {/* Progress tab */}
       {tab === 'progress' && (
         <div className="grid grid-cols-2 gap-5">
-          {subjects(skills).map(subject => {
-            const subSkills = skills.filter(s => s.skill?.subject === subject)
+          {subjects(skillsState).map(subject => {
+            const subSkills = skillsState.filter(s => s.skill?.subject === subject)
             const subMastered = subSkills.filter(s => s.status === 'mastered').length
             const subPct = calcProgress(subMastered, subSkills.length)
             const DATE_MAP: Record<string, string> = {
@@ -167,7 +177,19 @@ export default function StudentProfile({ student, skills, notes, attendance, med
                         <div key={ss.id} className="flex items-center justify-between py-1.5"
                           style={{ borderBottom: '1px solid rgba(184,151,58,0.12)' }}>
                           <span className="text-[12.5px]" style={{ color: '#1A1814' }}>{ss.skill?.name}</span>
-                          <Badge variant={info.variant}>{info.label}</Badge>
+                          <select
+                            value={ss.status}
+                            onChange={e => updateSkill(ss.id, e.target.value as any)}
+                            className="text-[11px] rounded-full px-2 py-0.5 border-0 cursor-pointer"
+                            style={{
+                              background: ss.status === 'mastered' ? '#EAF3DE' : ss.status === 'in_progress' ? '#EEF2FF' : '#F0EFED',
+                              color: ss.status === 'mastered' ? '#27500A' : ss.status === 'in_progress' ? '#3730A3' : '#4A4640',
+                              fontFamily: 'inherit',
+                            }}>
+                            <option value="not_started">Not started</option>
+                            <option value="in_progress">In progress</option>
+                            <option value="mastered">Mastered</option>
+                          </select>
                         </div>
                       )
                     })}
