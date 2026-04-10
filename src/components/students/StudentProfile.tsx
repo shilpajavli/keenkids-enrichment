@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Edit2, Save, Trash2 } from 'lucide-react'
+import { ArrowLeft, Edit2, Save, Trash2, Link2 } from 'lucide-react'
 import { Card, CardHeader, CardBody } from '@/components/ui/Card'
 import StudentAvatar from '@/components/ui/StudentAvatar'
 import Badge from '@/components/ui/Badge'
@@ -43,6 +43,11 @@ export default function StudentProfile({ student, skills, notes, attendance, med
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [skillsState, setSkillsState] = useState(skills)
+  const [showLinkParent, setShowLinkParent] = useState(false)
+  const [parentEmail, setParentEmail] = useState('')
+  const [parentName, setParentName] = useState('')
+  const [linking, setLinking] = useState(false)
+  const [linkMsg, setLinkMsg] = useState('')
   const router = useRouter()
 
   async function updateSkill(id: string, status: 'not_started' | 'in_progress' | 'mastered') {
@@ -52,6 +57,26 @@ export default function StudentProfile({ student, skills, notes, attendance, med
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, status }),
     })
+  }
+
+  async function linkParent() {
+    if (!parentEmail) return
+    setLinking(true)
+    const res = await fetch('/api/students/link-parent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ student_id: student.id, parent_email: parentEmail, parent_name: parentName }),
+    })
+    const json = await res.json()
+    setLinking(false)
+    if (json.success) {
+      setLinkMsg(`✓ Invite sent to ${parentEmail}`)
+      setParentEmail('')
+      setParentName('')
+      setShowLinkParent(false)
+    } else {
+      setLinkMsg(`Error: ${json.error}`)
+    }
   }
 
   async function handleDelete() {
@@ -112,6 +137,13 @@ export default function StudentProfile({ student, skills, notes, attendance, med
               <div className="text-[11px]" style={{ color: '#8A8580' }}>overall progress</div>
             </div>
             <button
+              onClick={() => setShowLinkParent(p => !p)}
+              className="btn text-[12px] flex items-center gap-1.5"
+              style={{ color: '#8A6E25' }}>
+              <Link2 size={13} />
+              Link parent
+            </button>
+            <button
               onClick={handleDelete}
               disabled={deleting}
               className="btn text-[12px] flex items-center gap-1.5"
@@ -122,6 +154,39 @@ export default function StudentProfile({ student, skills, notes, attendance, med
           </div>
         </div>
       </div>
+
+      {/* Link parent panel */}
+      {showLinkParent && (
+        <Card>
+          <CardBody>
+            <p className="text-[12.5px] mb-3" style={{ color: '#4A4640' }}>
+              Enter the parent's email — they'll receive a magic link to log in and see {student.first_name}'s progress.
+            </p>
+            <div className="flex gap-2">
+              <input
+                className="input text-[12.5px] flex-1"
+                placeholder="Parent name"
+                value={parentName}
+                onChange={e => setParentName(e.target.value)}
+              />
+              <input
+                className="input text-[12.5px] flex-1"
+                placeholder="Parent email"
+                type="email"
+                value={parentEmail}
+                onChange={e => setParentEmail(e.target.value)}
+              />
+              <button
+                className="btn btn-gold text-[12px]"
+                onClick={linkParent}
+                disabled={linking || !parentEmail}>
+                {linking ? 'Sending…' : 'Send invite'}
+              </button>
+            </div>
+            {linkMsg && <p className="text-[12px] mt-2" style={{ color: linkMsg.startsWith('✓') ? '#27500A' : '#791F1F' }}>{linkMsg}</p>}
+          </CardBody>
+        </Card>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-0 border-b" style={{ borderColor: 'rgba(184,151,58,0.22)' }}>
