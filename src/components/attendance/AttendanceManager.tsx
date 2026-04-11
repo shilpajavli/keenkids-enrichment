@@ -92,20 +92,20 @@ export default function AttendanceManager({ students, classes, todayRecords, his
                 present: '#27500A', late: '#633806', absent: '#791F1F',
               }
               return (
-                <div key={student.id} className="flex items-center gap-4 px-5 py-3.5"
+                <div key={student.id} className="flex items-center gap-3 px-4 py-4 lg:px-5 lg:py-3.5"
                   style={{ borderBottom: i < students.length - 1 ? '1px solid rgba(184,151,58,0.14)' : 'none',
                     background: status === 'present' ? 'rgba(234,243,222,0.3)' : status === 'absent' ? 'rgba(252,235,235,0.2)' : 'rgba(250,238,218,0.2)' }}>
                   <StudentAvatar name={student.full_name} avatarUrl={student.avatar_url} size="sm" />
-                  <div className="w-40">
-                    <div className="text-[13px] font-medium">{student.full_name}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[14px] font-medium truncate">{student.full_name}</div>
                     <div className="text-[11px]" style={{ color: '#8A8580' }}>Grade {student.grade}</div>
                   </div>
-                  <div className="flex gap-1.5">
+                  <div className="flex gap-2">
                     {(['present', 'late', 'absent'] as AttendanceStatus[]).map(s => (
                       <button key={s}
                         onClick={() => checkIn(student.id, s)}
                         disabled={isSaving}
-                        className="px-3 py-1 rounded-full text-[11px] capitalize transition-all"
+                        className="rounded-full capitalize transition-all"
                         style={{
                           background: status === s ? colors[s] : 'transparent',
                           color: status === s ? textColors[s] : '#8A8580',
@@ -113,13 +113,16 @@ export default function AttendanceManager({ students, classes, todayRecords, his
                           fontWeight: status === s ? 600 : 400,
                           cursor: 'pointer',
                           fontFamily: 'inherit',
+                          fontSize: '12px',
+                          padding: '8px 14px',
+                          minHeight: '40px',
                         }}>
                         {s}
                       </button>
                     ))}
                   </div>
-                  <div className="ml-auto text-[11px]" style={{ color: '#8A8580' }}>
-                    {isSaving ? 'Saving…' : status !== 'absent' ? '✓ Checked in' : ''}
+                  <div className="text-[11px] w-16 text-right hidden sm:block" style={{ color: '#8A8580' }}>
+                    {isSaving ? 'Saving…' : status !== 'absent' ? '✓' : ''}
                   </div>
                 </div>
               )

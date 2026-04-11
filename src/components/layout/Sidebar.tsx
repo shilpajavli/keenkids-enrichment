@@ -51,7 +51,7 @@ export default function Sidebar({ profile }: Props) {
   }
 
   return (
-    <aside className="w-[220px] flex-shrink-0 flex flex-col" style={{ background: '#1A1814' }}>
+    <aside className="w-[220px] flex-shrink-0 hidden lg:flex flex-col" style={{ background: '#1A1814' }}>
       {/* Brand */}
       <div className="px-6 py-7 border-b border-white/8">
         <div className="font-serif text-[22px] font-light text-white leading-tight">
