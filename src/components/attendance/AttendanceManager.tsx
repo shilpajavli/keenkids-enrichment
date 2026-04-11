@@ -39,7 +39,8 @@ export default function AttendanceManager({ students, classes, todayRecords, his
   const [saving, setSaving] = useState<Record<string, boolean>>({})
   const [search, setSearch] = useState('')
   const [gradeFilter, setGradeFilter] = useState<string>('all')
-  const grades = ['all', ...Array.from(new Set(students.map(s => String(s.grade)))).sort()]
+  const grades = ['all', ...Array.from(new Set(students.map(s => String(s.grade)))).sort((a, b) => Number(a) - Number(b))]
+  const gradeLabel = (g: string) => g === '0' ? 'TK/K' : `Grade ${g}`
 
   async function checkIn(studentId: string, status: AttendanceStatus) {
     setRecords(r => ({ ...r, [studentId]: status }))
@@ -99,7 +100,7 @@ export default function AttendanceManager({ students, classes, todayRecords, his
               onChange={e => setGradeFilter(e.target.value)}
               style={{ minHeight: '44px' }}>
               {grades.map(g => (
-                <option key={g} value={g}>{g === 'all' ? 'All grades' : `Grade ${g}`}</option>
+                <option key={g} value={g}>{g === 'all' ? 'All grades' : gradeLabel(g)}</option>
               ))}
             </select>
           </div>
@@ -123,7 +124,7 @@ export default function AttendanceManager({ students, classes, todayRecords, his
                   <StudentAvatar name={student.full_name} avatarUrl={student.avatar_url} size="sm" />
                   <div className="flex-1 min-w-0">
                     <div className="text-[14px] font-medium truncate">{student.full_name}</div>
-                    <div className="text-[11px]" style={{ color: '#8A8580' }}>Grade {student.grade}</div>
+                    <div className="text-[11px]" style={{ color: '#8A8580' }}>{student.grade === 0 ? 'TK/K' : `Grade ${student.grade}`}</div>
                   </div>
                   <div className="flex gap-2">
                     {(['present', 'late', 'absent'] as AttendanceStatus[]).map(s => (
