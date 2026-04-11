@@ -22,6 +22,22 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ data })
 }
 
+// PATCH — mark payment as paid manually
+export async function PATCH(req: NextRequest) {
+  const supabase = await createServerClient()
+  const { id, status, amount_cents } = await req.json()
+  const { error } = await supabase
+    .from('payments')
+    .update({
+      status,
+      paid_at: status === 'paid' ? new Date().toISOString() : null,
+      ...(amount_cents !== undefined ? { amount_cents } : {}),
+    })
+    .eq('id', id)
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+  return NextResponse.json({ success: true })
+}
+
 // POST — create Stripe payment link for a student
 export async function POST(req: NextRequest) {
   const supabase = await createServerClient()
