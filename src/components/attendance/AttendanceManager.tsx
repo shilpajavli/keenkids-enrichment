@@ -38,6 +38,8 @@ export default function AttendanceManager({ students, classes, todayRecords, his
   })
   const [saving, setSaving] = useState<Record<string, boolean>>({})
   const [search, setSearch] = useState('')
+  const [gradeFilter, setGradeFilter] = useState<string>('all')
+  const grades = ['all', ...Array.from(new Set(students.map(s => String(s.grade)))).sort()]
 
   async function checkIn(studentId: string, status: AttendanceStatus) {
     setRecords(r => ({ ...r, [studentId]: status }))
@@ -82,18 +84,30 @@ export default function AttendanceManager({ students, classes, todayRecords, his
       {tab === 'mark' && (
         <Card>
           <CardHeader title={`${formatDate(today, 'EEEE, MMMM d')}`} />
-          <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(184,151,58,0.14)' }}>
+          <div className="px-4 py-3 flex gap-2" style={{ borderBottom: '1px solid rgba(184,151,58,0.14)' }}>
             <input
-              className="input w-full text-[14px]"
+              className="input flex-1 text-[14px]"
               placeholder="Search student name…"
               value={search}
               onChange={e => setSearch(e.target.value)}
               autoComplete="off"
               style={{ minHeight: '44px' }}
             />
+            <select
+              className="input w-auto text-[13px]"
+              value={gradeFilter}
+              onChange={e => setGradeFilter(e.target.value)}
+              style={{ minHeight: '44px' }}>
+              {grades.map(g => (
+                <option key={g} value={g}>{g === 'all' ? 'All grades' : `Grade ${g}`}</option>
+              ))}
+            </select>
           </div>
           <div>
-            {students.filter(s => s.full_name.toLowerCase().includes(search.toLowerCase())).map((student, i, arr) => {
+            {students
+              .filter(s => s.full_name.toLowerCase().includes(search.toLowerCase()))
+              .filter(s => gradeFilter === 'all' || String(s.grade) === gradeFilter)
+              .map((student, i, arr) => {
               const status = records[student.id] ?? 'absent'
               const isSaving = saving[student.id]
               const colors: Record<string, string> = {
