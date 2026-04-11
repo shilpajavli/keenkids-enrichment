@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase-browser'
 import { useRouter } from 'next/navigation'
+import ProgramSwitcher from './ProgramSwitcher'
 
 const NAV = [
   {
@@ -38,9 +39,10 @@ const NAV = [
   },
 ]
 
-interface Props { profile: Profile | null }
+interface Program { id: string; name: string; location: string | null }
+interface Props { profile: Profile | null; programs: Program[]; currentProgramId: string | null }
 
-export default function Sidebar({ profile }: Props) {
+export default function Sidebar({ profile, programs, currentProgramId }: Props) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
@@ -105,6 +107,10 @@ export default function Sidebar({ profile }: Props) {
               {profile?.role ?? 'admin'}
             </div>
           </div>
+        </div>
+        <div className="mb-3">
+          <div className="text-[9px] tracking-[0.16em] uppercase mb-1.5" style={{ color: 'rgba(255,255,255,0.28)' }}>Program</div>
+          <ProgramSwitcher programs={programs} currentId={currentProgramId} />
         </div>
         <button onClick={signOut}
           className="flex items-center gap-2 text-[11px] transition-colors"

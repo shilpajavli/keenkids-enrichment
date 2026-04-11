@@ -1,16 +1,20 @@
 import { createServerClient } from '@/lib/supabase-server'
+import { getCurrentProgramId } from '@/lib/program'
 import StudentList from '@/components/students/StudentList'
 
 export const metadata = { title: 'Students — KeenKids Enrichment' }
 
 export default async function StudentsPage() {
   const supabase = await createServerClient()
+  const programId = await getCurrentProgramId()
+
   const { data: students } = await supabase
     .from('students')
     .select(`
       *,
       student_skills (status)
     `)
+    .eq('program_id', programId ?? '')
     .order('last_name')
 
   const enriched = (students ?? []).map(s => ({
@@ -23,9 +27,9 @@ export default async function StudentsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="font-serif text-3xl font-light text-ink">Students</h1>
-        <p className="text-ink-tertiary text-sm mt-1">{enriched.length} enrolled — Spring 2026 term</p>
+        <p className="text-ink-tertiary text-sm mt-1">{enriched.length} enrolled</p>
       </div>
-      <StudentList students={enriched} />
+      <StudentList students={enriched} programId={programId} />
     </div>
   )
 }

@@ -1,13 +1,15 @@
 import { createServerClient } from '@/lib/supabase-server'
+import { getCurrentProgramId } from '@/lib/program'
 import ProgressTracker from '@/components/progress/ProgressTracker'
 
 export const metadata = { title: 'Progress — KeenKids Enrichment' }
 
 export default async function ProgressPage() {
   const supabase = await createServerClient()
+  const programId = await getCurrentProgramId()
 
   const [studentsRes, skillsRes] = await Promise.all([
-    supabase.from('students').select('id, full_name, grade, avatar_url').order('last_name'),
+    supabase.from('students').select('id, full_name, grade, avatar_url').eq('program_id', programId ?? '').order('last_name'),
     supabase.from('skills').select('*').order('subject').order('order'),
   ])
 

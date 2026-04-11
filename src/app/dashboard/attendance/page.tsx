@@ -1,4 +1,5 @@
 import { createServerClient } from '@/lib/supabase-server'
+import { getCurrentProgramId } from '@/lib/program'
 import AttendanceManager from '@/components/attendance/AttendanceManager'
 import { format } from 'date-fns'
 
@@ -7,10 +8,11 @@ export const metadata = { title: 'Attendance — KeenKids Enrichment' }
 export default async function AttendancePage() {
   const supabase = await createServerClient()
   const today = format(new Date(), 'yyyy-MM-dd')
+  const programId = await getCurrentProgramId()
 
   const [studentsRes, classesRes, todayRes, historyRes] = await Promise.all([
-    supabase.from('students').select('id, full_name, grade, avatar_url').order('last_name'),
-    supabase.from('classes').select('*').order('day_of_week').order('start_time'),
+    supabase.from('students').select('id, full_name, grade, avatar_url').eq('program_id', programId ?? '').order('last_name'),
+    supabase.from('classes').select('*').eq('program_id', programId ?? '').order('day_of_week').order('start_time'),
     supabase.from('attendance').select('*').eq('date', today),
     supabase
       .from('attendance')
