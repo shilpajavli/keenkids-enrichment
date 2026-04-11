@@ -48,6 +48,8 @@ export default function StudentProfile({ student, skills, notes, attendance, med
   const [parentName, setParentName] = useState('')
   const [linking, setLinking] = useState(false)
   const [linkMsg, setLinkMsg] = useState('')
+  const [suggestions, setSuggestions] = useState<{ id: string; email: string; full_name: string }[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
   const router = useRouter()
 
   async function updateSkill(id: string, status: 'not_started' | 'in_progress' | 'mastered') {
@@ -57,6 +59,22 @@ export default function StudentProfile({ student, skills, notes, attendance, med
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, status }),
     })
+  }
+
+  async function searchParents(q: string) {
+    setParentEmail(q)
+    if (q.length < 2) { setSuggestions([]); setShowSuggestions(false); return }
+    const res = await fetch(`/api/profiles/search?q=${encodeURIComponent(q)}`)
+    const { data } = await res.json()
+    setSuggestions(data ?? [])
+    setShowSuggestions(true)
+  }
+
+  function selectSuggestion(s: { email: string; full_name: string }) {
+    setParentEmail(s.email)
+    setParentName(s.full_name)
+    setSuggestions([])
+    setShowSuggestions(false)
   }
 
   async function linkParent() {
@@ -169,18 +187,34 @@ export default function StudentProfile({ student, skills, notes, attendance, med
                 value={parentName}
                 onChange={e => setParentName(e.target.value)}
               />
-              <input
-                className="input text-[12.5px] flex-1"
-                placeholder="Parent email"
-                type="email"
-                value={parentEmail}
-                onChange={e => setParentEmail(e.target.value)}
-              />
+              <div className="relative flex-1">
+                <input
+                  className="input text-[12.5px] w-full"
+                  placeholder="Parent email"
+                  type="email"
+                  value={parentEmail}
+                  onChange={e => searchParents(e.target.value)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                  autoComplete="off"
+                />
+                {showSuggestions && suggestions.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 rounded-lg border shadow-lg"
+                    style={{ background: '#fff', borderColor: 'rgba(184,151,58,0.32)' }}>
+                    {suggestions.map(s => (
+                      <button key={s.id} onMouseDown={() => selectSuggestion(s)}
+                        className="w-full text-left px-3 py-2 text-[12px] hover:bg-[#FAF7F2] transition-colors">
+                        <div className="font-medium">{s.full_name}</div>
+                        <div style={{ color: '#8A8580' }}>{s.email}</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <button
                 className="btn btn-gold text-[12px]"
                 onClick={linkParent}
                 disabled={linking || !parentEmail}>
-                {linking ? 'Sending…' : 'Send invite'}
+                {linking ? 'Linking…' : 'Link parent'}
               </button>
             </div>
             {linkMsg && <p className="text-[12px] mt-2" style={{ color: linkMsg.startsWith('✓') ? '#27500A' : '#791F1F' }}>{linkMsg}</p>}
