@@ -146,7 +146,7 @@ export default function StudentList({ students: initial, programId }: { students
                   <span className="text-[14px] font-medium" style={{ color: '#1A1814' }}>
                     {student.full_name}
                   </span>
-                  <Badge variant="blue">Grade {student.grade}</Badge>
+                  <Badge variant="blue">{student.grade === 0 ? 'TK/K' : `Grade ${student.grade}`}</Badge>
                 </div>
                 <div className="text-[11.5px] mb-2" style={{ color: '#8A8580' }}>
                   {(student.classes ?? []).join(' · ')} · Enrolled {student.enrolled_at?.slice(0, 7)}

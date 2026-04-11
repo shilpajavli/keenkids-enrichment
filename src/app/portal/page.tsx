@@ -67,7 +67,7 @@ export default async function ParentPortalPage() {
       <div>
         <h1 className="font-serif text-3xl font-light text-ink">{student.full_name}</h1>
         <div className="flex items-center gap-2 mt-1">
-          <Badge variant="blue">Grade {student.grade === 0 ? 'TK/K' : student.grade}</Badge>
+          <Badge variant="blue">{student.grade === 0 ? 'TK/K' : `Grade ${student.grade}`}</Badge>
           <span className="text-ink-tertiary text-sm">Spring Break · Apr 13–17</span>
         </div>
       </div>

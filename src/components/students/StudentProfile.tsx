@@ -143,7 +143,7 @@ export default function StudentProfile({ student, skills, notes, attendance, med
           <div>
             <h1 className="font-serif text-3xl font-light">{student.full_name}</h1>
             <div className="flex items-center gap-2 mt-1">
-              <Badge variant="blue">Grade {student.grade}</Badge>
+              <Badge variant="blue">{student.grade === 0 ? 'TK/K' : `Grade ${student.grade}`}</Badge>
               <span className="text-[12px]" style={{ color: '#8A8580' }}>
                 Enrolled {formatDate(student.enrolled_at)}
               </span>
