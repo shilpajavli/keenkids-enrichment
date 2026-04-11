@@ -10,16 +10,22 @@ export default async function AttendancePage() {
   const today = format(new Date(), 'yyyy-MM-dd')
   const programId = await getCurrentProgramId()
 
-  const [studentsRes, classesRes, todayRes, historyRes] = await Promise.all([
+  const [studentsRes, classesRes, todayRes] = await Promise.all([
     supabase.from('students').select('id, full_name, grade, avatar_url').eq('program_id', programId ?? '').order('last_name'),
     supabase.from('classes').select('*').eq('program_id', programId ?? '').order('day_of_week').order('start_time'),
     supabase.from('attendance').select('*').eq('date', today),
-    supabase
-      .from('attendance')
-      .select('date, status, class:classes(name)')
-      .order('date', { ascending: false })
-      .limit(50),
   ])
+
+  const students = studentsRes.data ?? []
+  const studentIds = students.map(s => s.id)
+
+  const { data: history } = studentIds.length
+    ? await supabase
+        .from('attendance')
+        .select('student_id, date, status')
+        .in('student_id', studentIds)
+        .order('date', { ascending: true })
+    : { data: [] }
 
   return (
     <div className="space-y-6">
@@ -28,10 +34,10 @@ export default async function AttendancePage() {
         <p className="text-ink-tertiary text-sm mt-1">Mark and review daily attendance</p>
       </div>
       <AttendanceManager
-        students={studentsRes.data ?? []}
+        students={students}
         classes={classesRes.data ?? []}
         todayRecords={todayRes.data ?? []}
-        history={historyRes.data ?? []}
+        history={history ?? []}
         today={today}
       />
     </div>

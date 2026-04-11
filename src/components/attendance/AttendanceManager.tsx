@@ -3,15 +3,13 @@
 import { useState } from 'react'
 import { Card, CardHeader, CardBody } from '@/components/ui/Card'
 import StudentAvatar from '@/components/ui/StudentAvatar'
-import Badge from '@/components/ui/Badge'
-import DataTable from '@/components/ui/DataTable'
 import { formatDate } from '@/lib/utils'
 import type { AttendanceStatus } from '@/types'
 
 interface Student { id: string; full_name: string; grade: number; avatar_url: string | null }
 interface ClassItem { id: string; name: string }
 interface AttRecord { student_id: string; class_id: string; status: AttendanceStatus; note?: string }
-interface HistoryItem { date: string; status: AttendanceStatus; class?: { name: string } | { name: string }[] }
+interface HistoryItem { student_id: string; date: string; status: AttendanceStatus }
 
 interface Props {
   students: Student[]
@@ -53,11 +51,24 @@ export default function AttendanceManager({ students, classes, todayRecords, his
     setSaving(s => ({ ...s, [studentId]: false }))
   }
 
-  const historyColumns = [
-    { key: 'date', header: 'Date', width: '130px', render: (r: HistoryItem) => formatDate(r.date) },
-    { key: 'class', header: 'Class', render: (r: HistoryItem) => (Array.isArray(r.class) ? r.class[0]?.name : r.class?.name) ?? '—' },
-    { key: 'status', header: 'Status', width: '110px', render: (r: HistoryItem) => <Badge variant={ATTEND_VARIANT[r.status]}>{r.status}</Badge> },
-  ]
+  // Build grid data
+  const dates = [...new Set(history.map(h => h.date))].sort()
+  const cellStatus = (studentId: string, date: string): AttendanceStatus | null => {
+    const rec = history.find(h => h.student_id === studentId && h.date === date)
+    return rec?.status ?? null
+  }
+  const cellStyle = (s: AttendanceStatus | null) => {
+    if (s === 'present') return { background: '#EAF3DE', color: '#27500A' }
+    if (s === 'late')    return { background: '#FAEEDA', color: '#633806' }
+    if (s === 'absent')  return { background: '#FCEBEB', color: '#791F1F' }
+    return { background: '#F5F0E8', color: '#8A8580' }
+  }
+  const cellLabel = (s: AttendanceStatus | null) => {
+    if (s === 'present') return '✓'
+    if (s === 'late')    return 'L'
+    if (s === 'absent')  return '✗'
+    return '—'
+  }
 
   return (
     <div className="space-y-4">
@@ -167,7 +178,50 @@ export default function AttendanceManager({ students, classes, todayRecords, his
 
       {tab === 'history' && (
         <Card>
-          <DataTable columns={historyColumns} data={history} keyField="date" emptyMessage="No attendance history yet" />
+          <CardBody className="p-0 overflow-x-auto">
+            {dates.length === 0 ? (
+              <div className="py-12 text-center text-[13px]" style={{ color: '#8A8580' }}>No attendance history yet</div>
+            ) : (
+              <table className="w-full text-[12px]" style={{ borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid rgba(184,151,58,0.2)' }}>
+                    <th className="text-left px-5 py-3 font-medium" style={{ color: '#8A8580', minWidth: '160px' }}>Student</th>
+                    {dates.map(d => (
+                      <th key={d} className="px-3 py-3 font-medium text-center" style={{ color: '#8A8580', minWidth: '60px' }}>
+                        <div>{formatDate(d, 'EEE')}</div>
+                        <div style={{ color: '#B8973A' }}>{formatDate(d, 'MMM d')}</div>
+                      </th>
+                    ))}
+                    <th className="px-3 py-3 font-medium text-center" style={{ color: '#8A8580' }}>Present</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {students.map((s, i) => {
+                    const presentDays = dates.filter(d => cellStatus(s.id, d) === 'present' || cellStatus(s.id, d) === 'late').length
+                    return (
+                      <tr key={s.id} style={{ borderBottom: i < students.length - 1 ? '1px solid rgba(184,151,58,0.1)' : 'none' }}>
+                        <td className="px-5 py-3 font-medium" style={{ color: '#1A1814' }}>{s.full_name}</td>
+                        {dates.map(d => {
+                          const st = cellStatus(s.id, d)
+                          return (
+                            <td key={d} className="px-3 py-3 text-center">
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full text-[11px] font-bold"
+                                style={cellStyle(st)}>
+                                {cellLabel(st)}
+                              </span>
+                            </td>
+                          )
+                        })}
+                        <td className="px-3 py-3 text-center font-medium" style={{ color: '#B8973A' }}>
+                          {presentDays}/{dates.length}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            )}
+          </CardBody>
         </Card>
       )}
     </div>
