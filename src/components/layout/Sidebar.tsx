@@ -55,7 +55,7 @@ export default function Sidebar({ profile }: Props) {
       {/* Brand */}
       <div className="px-6 py-7 border-b border-white/8">
         <div className="font-serif text-[22px] font-light text-white leading-tight">
-          <em className="italic" style={{ color: '#B8973A' }}>Luminary</em> Scholars
+          <em className="italic" style={{ color: '#B8973A' }}>KeenKids</em> Enrichment
         </div>
         <div className="text-[10px] tracking-[0.16em] uppercase mt-1" style={{ color: 'rgba(255,255,255,0.32)' }}>
           Enrichment Program

@@ -30,7 +30,7 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       <div>
         <h1 className="font-serif text-3xl font-light text-ink">
-          Good morning, <em>Shilpa</em>
+          Good Morning, <em>Shilpa</em>
         </h1>
         <p className="text-ink-tertiary text-sm mt-1">
           {format(new Date(), 'EEEE, MMMM d, yyyy')}
