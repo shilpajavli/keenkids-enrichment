@@ -17,7 +17,7 @@ export default async function DashboardPage() {
   const [studentsRes, attendanceRes, paymentsRes, announcementsRes, classesRes] = await Promise.all([
     supabase.from('students').select('id, full_name, grade').eq('program_id', programId ?? '').order('last_name'),
     supabase.from('attendance').select('student_id, status').eq('date', today),
-    supabase.from('payments').select('id, status').in('status', ['pending', 'overdue']),
+    supabase.from('payments').select('id, status, student:students!inner(program_id)').in('status', ['pending', 'overdue']).eq('students.program_id', programId ?? ''),
     supabase.from('announcements').select('*').order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(3),
     supabase.from('classes').select('id, name, start_time, end_time').eq('program_id', programId ?? '').eq('day_of_week', todayDow).order('start_time'),
   ])
