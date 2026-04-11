@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { Search } from 'lucide-react'
+import { Search, UserPlus, X } from 'lucide-react'
 import { Card, CardBody } from '@/components/ui/Card'
 import StudentAvatar from '@/components/ui/StudentAvatar'
 import Badge from '@/components/ui/Badge'
@@ -20,9 +20,31 @@ interface StudentRow {
   skills_total: number
 }
 
-export default function StudentList({ students }: { students: StudentRow[] }) {
+export default function StudentList({ students: initial }: { students: StudentRow[] }) {
+  const [students, setStudents] = useState(initial)
   const [search, setSearch] = useState('')
   const [gradeFilter, setGradeFilter] = useState('all')
+  const [showAdd, setShowAdd] = useState(false)
+  const [form, setForm] = useState({ first_name: '', last_name: '', grade: '1' })
+  const [adding, setAdding] = useState(false)
+  const [addError, setAddError] = useState('')
+
+  async function addStudent() {
+    if (!form.first_name.trim() || !form.last_name.trim()) return
+    setAdding(true)
+    setAddError('')
+    const res = await fetch('/api/students', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ first_name: form.first_name.trim(), last_name: form.last_name.trim(), grade: Number(form.grade) }),
+    })
+    const json = await res.json()
+    setAdding(false)
+    if (json.error) { setAddError(json.error); return }
+    setStudents(prev => [...prev, { ...json.data, skills_mastered: 0, skills_total: 0, classes: [] }])
+    setForm({ first_name: '', last_name: '', grade: '1' })
+    setShowAdd(false)
+  }
 
   const grades = useMemo(() => [...new Set(students.map(s => s.grade))].sort(), [students])
 
@@ -37,6 +59,45 @@ export default function StudentList({ students }: { students: StudentRow[] }) {
 
   return (
     <div className="space-y-4">
+      {/* Add student form */}
+      {showAdd && (
+        <div className="card p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-serif text-lg font-light">Add new student</h3>
+            <button onClick={() => setShowAdd(false)}><X size={16} style={{ color: '#8A8580' }} /></button>
+          </div>
+          <div className="flex gap-3">
+            <input
+              className="input flex-1 text-[13px]"
+              placeholder="First name"
+              value={form.first_name}
+              onChange={e => setForm(f => ({ ...f, first_name: e.target.value }))}
+              autoFocus
+            />
+            <input
+              className="input flex-1 text-[13px]"
+              placeholder="Last name"
+              value={form.last_name}
+              onChange={e => setForm(f => ({ ...f, last_name: e.target.value }))}
+            />
+            <select
+              className="input w-auto text-[13px]"
+              value={form.grade}
+              onChange={e => setForm(f => ({ ...f, grade: e.target.value }))}>
+              <option value="0">TK/K</option>
+              {[1,2,3,4,5,6,7,8].map(g => <option key={g} value={g}>Grade {g}</option>)}
+            </select>
+          </div>
+          {addError && <p className="text-[12px]" style={{ color: '#791F1F' }}>{addError}</p>}
+          <div className="flex gap-2 justify-end">
+            <button className="btn text-[12px]" onClick={() => setShowAdd(false)}>Cancel</button>
+            <button className="btn btn-gold text-[12px]" onClick={addStudent} disabled={adding || !form.first_name || !form.last_name}>
+              {adding ? 'Adding…' : 'Add student'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Filters */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-xs">
@@ -55,8 +116,11 @@ export default function StudentList({ students }: { students: StudentRow[] }) {
           <option value="all">All grades</option>
           {grades.map(g => <option key={g} value={g}>Grade {g}</option>)}
         </select>
-        <div className="ml-auto text-[12px]" style={{ color: '#8A8580' }}>
-          {filtered.length} student{filtered.length !== 1 ? 's' : ''}
+        <div className="ml-auto flex items-center gap-3">
+          <span className="text-[12px]" style={{ color: '#8A8580' }}>{filtered.length} student{filtered.length !== 1 ? 's' : ''}</span>
+          <button className="btn btn-gold text-[12px] flex items-center gap-1.5" onClick={() => setShowAdd(true)}>
+            <UserPlus size={13} /> Add student
+          </button>
         </div>
       </div>
 

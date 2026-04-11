@@ -33,5 +33,16 @@ export async function POST(req: NextRequest) {
     .eq('id', student_id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+
+  // Auto-create payment record if one doesn't exist
+  await admin.from('payments').upsert({
+    student_id,
+    parent_id: parentUser.id,
+    amount_cents: 17500,
+    currency: 'usd',
+    status: 'pending',
+    due_date: '2026-04-13',
+  }, { onConflict: 'student_id,parent_id', ignoreDuplicates: true })
+
   return NextResponse.json({ success: true })
 }
