@@ -84,28 +84,6 @@ export default function DashboardHome({ students, checkedIn, outstandingCount, a
         </Link>
       </div>
 
-      {/* Today's agenda */}
-      <Card>
-        <CardHeader title="Today's agenda" action={
-          <Link href="/dashboard/schedule" className="text-[11px]" style={{ color: '#B8973A' }}>Full schedule →</Link>
-        } />
-        <CardBody className="p-0">
-          {todayClasses.length === 0 ? (
-            <div className="px-5 py-6 text-center text-[13px]" style={{ color: '#8A8580' }}>No classes scheduled today</div>
-          ) : (
-            todayClasses.map((c, i) => (
-              <div key={c.id} className="flex items-center gap-4 px-5 py-3.5"
-                style={{ borderBottom: i < todayClasses.length - 1 ? '1px solid rgba(184,151,58,0.14)' : 'none' }}>
-                <div className="text-[12px] font-medium w-28 flex-shrink-0" style={{ color: '#B8973A' }}>
-                  {fmtTime(c.start_time)} – {fmtTime(c.end_time)}
-                </div>
-                <div className="text-[13px]">{c.name}</div>
-              </div>
-            ))
-          )}
-        </CardBody>
-      </Card>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Dynamic student list */}
         <Card>
@@ -153,6 +131,28 @@ export default function DashboardHome({ students, checkedIn, outstandingCount, a
           </CardBody>
         </Card>
       </div>
+
+      {/* Today's agenda */}
+      <Card>
+        <CardHeader title="Today's agenda" action={
+          <Link href="/dashboard/schedule" className="text-[11px]" style={{ color: '#B8973A' }}>Full schedule →</Link>
+        } />
+        <CardBody className="p-0">
+          {todayClasses.length === 0 ? (
+            <div className="px-5 py-6 text-center text-[13px]" style={{ color: '#8A8580' }}>No classes scheduled today</div>
+          ) : (
+            todayClasses.map((c, i) => (
+              <div key={c.id} className="flex items-center gap-4 px-5 py-3.5"
+                style={{ borderBottom: i < todayClasses.length - 1 ? '1px solid rgba(184,151,58,0.14)' : 'none' }}>
+                <div className="text-[12px] font-medium w-28 flex-shrink-0" style={{ color: '#B8973A' }}>
+                  {fmtTime(c.start_time)} – {fmtTime(c.end_time)}
+                </div>
+                <div className="text-[13px]">{c.name}</div>
+              </div>
+            ))
+          )}
+        </CardBody>
+      </Card>
     </div>
   )
 }
