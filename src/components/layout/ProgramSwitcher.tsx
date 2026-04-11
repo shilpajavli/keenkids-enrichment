@@ -57,7 +57,7 @@ export default function ProgramSwitcher({ programs, currentId }: { programs: Pro
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute bottom-full left-0 right-0 mb-1 rounded-lg overflow-hidden shadow-xl z-50"
+          <div className="absolute top-full left-0 right-0 mt-1 rounded-lg overflow-hidden shadow-xl z-50"
             style={{ background: '#2A2520', border: '1px solid rgba(255,255,255,0.1)' }}>
             {programs.map(p => (
               <button key={p.id} onClick={() => selectProgram(p.id)}
