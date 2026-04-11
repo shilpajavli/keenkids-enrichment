@@ -112,7 +112,7 @@ export default function AttendanceManager({ students, classes, todayRecords, his
                   className="btn btn-gold text-[12px]"
                   onClick={saveAttendance}
                   disabled={saving}>
-                  {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save & notify →'}
+                  {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save attendance'}
                 </button>
               </div>
             }
@@ -157,12 +157,6 @@ export default function AttendanceManager({ students, classes, todayRecords, his
                     )
                   })}
                 </div>
-                <input
-                  className="input flex-1 text-[12px]"
-                  placeholder="Note (optional)"
-                  value={records[student.id]?.note ?? ''}
-                  onChange={e => setNote(student.id, e.target.value)}
-                />
               </div>
             ))}
           </div>
