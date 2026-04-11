@@ -31,8 +31,7 @@ export default async function DashboardPage() {
   const presentCount = checkedIn.length
   const outstandingCount = payments.filter(p => p.status === 'pending' || p.status === 'overdue').length
 
-  const hour = new Date().getHours()
-  const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening'
+  const greeting = 'Welcome'
 
   return (
     <div className="space-y-6">
