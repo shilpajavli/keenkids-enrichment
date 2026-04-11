@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
   const emails = profiles.map((p: { email: string; full_name: string }) => p.email)
 
   const { error } = await resend.emails.send({
-    from: 'KeenKids Enrichment <noreply@keenkidsenrichment.com>',
+    from: 'KeenKids Enrichment <onboarding@resend.dev>',
     to: emails,
     subject,
     html: `

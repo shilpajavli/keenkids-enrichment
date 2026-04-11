@@ -8,17 +8,7 @@ export async function GET(request: NextRequest) {
   if (code) {
     const supabase = await createServerClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
-    if (!error) {
-      const { data: { user } } = await supabase.auth.getUser()
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user!.id)
-        .single()
-
-      const dest = profile?.role === 'parent' ? '/portal' : '/dashboard'
-      return NextResponse.redirect(`${origin}${dest}`)
-    }
+    if (!error) return NextResponse.redirect(`${origin}/`)
     console.error('Auth callback error:', error.message)
     return NextResponse.redirect(`${origin}/auth/login?error=${encodeURIComponent(error.message)}`)
   }
