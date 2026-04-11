@@ -25,13 +25,13 @@ const DATE_MAP: Record<string, string> = {
 
 export default async function ParentPortalPage() {
   const supabase = await createServerClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) redirect('/auth/login')
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/auth/login')
 
   const { data: student } = await supabase
     .from('students')
     .select('*')
-    .eq('parent_id', session.user.id)
+    .eq('parent_id', user.id)
     .single()
 
   if (!student) {
@@ -47,7 +47,7 @@ export default async function ParentPortalPage() {
     supabase.from('student_skills').select('*, skill:skills(*)').eq('student_id', student.id),
     supabase.from('attendance').select('*, class:classes(name)').eq('student_id', student.id).order('date', { ascending: false }).limit(10),
     supabase.from('media').select('*').or(`student_id.eq.${student.id},student_id.is.null`).order('created_at', { ascending: false }).limit(12),
-    supabase.from('payments').select('*').eq('parent_id', session.user.id).order('due_date', { ascending: false }),
+    supabase.from('payments').select('*').eq('parent_id', user.id).order('due_date', { ascending: false }),
     supabase.from('announcements').select('*').order('pinned', { ascending: false }).order('created_at', { ascending: false }),
   ])
 

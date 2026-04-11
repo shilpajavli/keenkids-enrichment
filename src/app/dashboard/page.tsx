@@ -8,6 +8,10 @@ export default async function DashboardPage() {
   const supabase = await createServerClient()
   const today = format(new Date(), 'yyyy-MM-dd')
 
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user?.id ?? '').single()
+  const firstName = profile?.full_name?.split(' ')[0] ?? 'there'
+
   const [studentsRes, attendanceRes, paymentsRes, announcementsRes] = await Promise.all([
     supabase.from('students').select('id', { count: 'exact', head: true }),
     supabase.from('attendance').select('id, status').eq('date', today),
@@ -30,7 +34,7 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       <div>
         <h1 className="font-serif text-3xl font-light text-ink">
-          Good Morning, <em>Shilpa</em>
+          Good Morning, <em>{firstName}</em>
         </h1>
         <p className="text-ink-tertiary text-sm mt-1">
           {format(new Date(), 'EEEE, MMMM d, yyyy')}
