@@ -88,7 +88,7 @@ export default function StudentProfile({ student, skills, notes, attendance, med
     const json = await res.json()
     setLinking(false)
     if (json.success) {
-      setLinkMsg(`✓ Invite sent to ${parentEmail}`)
+      setLinkMsg(`✓ ${parentEmail} linked to ${student.first_name}`)
       setParentEmail('')
       setParentName('')
       setShowLinkParent(false)
@@ -178,7 +178,7 @@ export default function StudentProfile({ student, skills, notes, attendance, med
         <Card>
           <CardBody>
             <p className="text-[12.5px] mb-3" style={{ color: '#4A4640' }}>
-              Enter the parent's email — they'll receive a magic link to log in and see {student.first_name}'s progress.
+              Ask the parent to log in first at <strong>/portal</strong> using their Google account. Then search their email below to link them to {student.first_name}.
             </p>
             <div className="flex gap-2">
               <input
