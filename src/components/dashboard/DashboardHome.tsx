@@ -6,11 +6,13 @@ import Badge from '@/components/ui/Badge'
 import Link from 'next/link'
 
 interface Student { id: string; full_name: string; grade: number }
+interface ClassItem { id: string; name: string; start_time: string; end_time: string }
 interface Props {
   students: Student[]
   checkedIn: string[]
   outstandingCount: number
   announcements: { id: string; title: string; body: string; pinned: boolean }[]
+  todayClasses: ClassItem[]
   firstName: string
   today: string
 }
@@ -19,7 +21,14 @@ type View = 'enrolled' | 'present' | 'absent'
 
 const gradeLabel = (g: number) => g === 0 ? 'TK/K' : `Grade ${g}`
 
-export default function DashboardHome({ students, checkedIn, outstandingCount, announcements, firstName, today }: Props) {
+function fmtTime(t: string) {
+  const [h, m] = t.split(':').map(Number)
+  const ampm = h >= 12 ? 'pm' : 'am'
+  const hour = h % 12 || 12
+  return `${hour}${m ? `:${String(m).padStart(2, '0')}` : ''}${ampm}`
+}
+
+export default function DashboardHome({ students, checkedIn, outstandingCount, announcements, todayClasses, firstName, today }: Props) {
   const [view, setView] = useState<View>('absent')
 
   const present = students.filter(s => checkedIn.includes(s.id))
@@ -74,6 +83,28 @@ export default function DashboardHome({ students, checkedIn, outstandingCount, a
           <div className="text-[10px] mt-1.5 font-medium" style={{ color: '#791F1F' }}>View payments →</div>
         </Link>
       </div>
+
+      {/* Today's agenda */}
+      <Card>
+        <CardHeader title="Today's agenda" action={
+          <Link href="/dashboard/schedule" className="text-[11px]" style={{ color: '#B8973A' }}>Full schedule →</Link>
+        } />
+        <CardBody className="p-0">
+          {todayClasses.length === 0 ? (
+            <div className="px-5 py-6 text-center text-[13px]" style={{ color: '#8A8580' }}>No classes scheduled today</div>
+          ) : (
+            todayClasses.map((c, i) => (
+              <div key={c.id} className="flex items-center gap-4 px-5 py-3.5"
+                style={{ borderBottom: i < todayClasses.length - 1 ? '1px solid rgba(184,151,58,0.14)' : 'none' }}>
+                <div className="text-[12px] font-medium w-28 flex-shrink-0" style={{ color: '#B8973A' }}>
+                  {fmtTime(c.start_time)} – {fmtTime(c.end_time)}
+                </div>
+                <div className="text-[13px]">{c.name}</div>
+              </div>
+            ))
+          )}
+        </CardBody>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Dynamic student list */}
