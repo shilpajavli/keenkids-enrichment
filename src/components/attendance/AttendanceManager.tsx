@@ -37,6 +37,7 @@ export default function AttendanceManager({ students, classes, todayRecords, his
     return init
   })
   const [saving, setSaving] = useState<Record<string, boolean>>({})
+  const [search, setSearch] = useState('')
 
   async function checkIn(studentId: string, status: AttendanceStatus) {
     setRecords(r => ({ ...r, [studentId]: status }))
@@ -81,8 +82,18 @@ export default function AttendanceManager({ students, classes, todayRecords, his
       {tab === 'mark' && (
         <Card>
           <CardHeader title={`${formatDate(today, 'EEEE, MMMM d')}`} />
+          <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(184,151,58,0.14)' }}>
+            <input
+              className="input w-full text-[14px]"
+              placeholder="Search student name…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              autoComplete="off"
+              style={{ minHeight: '44px' }}
+            />
+          </div>
           <div>
-            {students.map((student, i) => {
+            {students.filter(s => s.full_name.toLowerCase().includes(search.toLowerCase())).map((student, i, arr) => {
               const status = records[student.id] ?? 'absent'
               const isSaving = saving[student.id]
               const colors: Record<string, string> = {
@@ -93,7 +104,7 @@ export default function AttendanceManager({ students, classes, todayRecords, his
               }
               return (
                 <div key={student.id} className="flex items-center gap-3 px-4 py-4 lg:px-5 lg:py-3.5"
-                  style={{ borderBottom: i < students.length - 1 ? '1px solid rgba(184,151,58,0.14)' : 'none',
+                  style={{ borderBottom: i < arr.length - 1 ? '1px solid rgba(184,151,58,0.14)' : 'none',
                     background: status === 'present' ? 'rgba(234,243,222,0.3)' : status === 'absent' ? 'rgba(252,235,235,0.2)' : 'rgba(250,238,218,0.2)' }}>
                   <StudentAvatar name={student.full_name} avatarUrl={student.avatar_url} size="sm" />
                   <div className="flex-1 min-w-0">
