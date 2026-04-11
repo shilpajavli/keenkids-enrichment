@@ -55,13 +55,12 @@ export default function Sidebar({ profile, programs, currentProgramId }: Props) 
   return (
     <aside className="w-[220px] flex-shrink-0 hidden lg:flex flex-col" style={{ background: '#1A1814' }}>
       {/* Brand */}
-      <div className="px-6 py-7 border-b border-white/8">
-        <div className="font-serif text-[22px] font-light text-white leading-tight">
+      <div className="px-6 pt-7 pb-4 border-b border-white/8">
+        <div className="font-serif text-[22px] font-light text-white leading-tight mb-4">
           <em className="italic" style={{ color: '#B8973A' }}>KeenKids</em> Enrichment
         </div>
-        <div className="text-[10px] tracking-[0.16em] uppercase mt-1" style={{ color: 'rgba(255,255,255,0.32)' }}>
-          Enrichment Program
-        </div>
+        <div className="text-[9px] tracking-[0.16em] uppercase mb-1.5" style={{ color: 'rgba(255,255,255,0.28)' }}>Program</div>
+        <ProgramSwitcher programs={programs} currentId={currentProgramId} />
       </div>
 
       {/* Nav */}
@@ -107,10 +106,6 @@ export default function Sidebar({ profile, programs, currentProgramId }: Props) 
               {profile?.role ?? 'admin'}
             </div>
           </div>
-        </div>
-        <div className="mb-3">
-          <div className="text-[9px] tracking-[0.16em] uppercase mb-1.5" style={{ color: 'rgba(255,255,255,0.28)' }}>Program</div>
-          <ProgramSwitcher programs={programs} currentId={currentProgramId} />
         </div>
         <button onClick={signOut}
           className="flex items-center gap-2 text-[11px] transition-colors"
