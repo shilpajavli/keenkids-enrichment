@@ -101,20 +101,12 @@ export default function AttendanceManager({ students, classes, todayRecords, his
           <CardHeader
             title={`${formatDate(today, 'EEEE, MMMM d')}`}
             action={
-              <div className="flex items-center gap-3">
-                <select
-                  className="input w-auto text-[12px]"
-                  value={selectedClass}
-                  onChange={e => setSelectedClass(e.target.value)}>
-                  {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-                <button
-                  className="btn btn-gold text-[12px]"
-                  onClick={saveAttendance}
-                  disabled={saving}>
-                  {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save attendance'}
-                </button>
-              </div>
+              <button
+                className="btn btn-gold text-[12px]"
+                onClick={saveAttendance}
+                disabled={saving}>
+                {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save attendance'}
+              </button>
             }
           />
           <div>
