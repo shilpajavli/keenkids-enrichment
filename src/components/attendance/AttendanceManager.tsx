@@ -27,44 +27,26 @@ const ATTEND_VARIANT: Record<string, any> = { present: 'green', late: 'amber', a
 
 export default function AttendanceManager({ students, classes, todayRecords, history, today }: Props) {
   const [tab, setTab] = useState<Tab>('mark')
-  const [selectedClass, setSelectedClass] = useState(classes[0]?.id ?? '')
-  const [records, setRecords] = useState<Record<string, { status: AttendanceStatus; note: string }>>(() => {
-    const init: Record<string, { status: AttendanceStatus; note: string }> = {}
+  const classId = classes[0]?.id ?? ''
+  const [records, setRecords] = useState<Record<string, AttendanceStatus>>(() => {
+    const init: Record<string, AttendanceStatus> = {}
     students.forEach(s => {
       const existing = todayRecords.find(r => r.student_id === s.id)
-      init[s.id] = { status: existing?.status ?? 'present', note: existing?.note ?? '' }
+      init[s.id] = existing?.status ?? 'absent'
     })
     return init
   })
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState<Record<string, boolean>>({})
 
-  function setStatus(studentId: string, status: AttendanceStatus) {
-    setRecords(r => ({ ...r, [studentId]: { ...r[studentId], status } }))
-  }
-
-  function setNote(studentId: string, note: string) {
-    setRecords(r => ({ ...r, [studentId]: { ...r[studentId], note } }))
-  }
-
-  async function saveAttendance() {
-    if (!selectedClass) return
-    setSaving(true)
-    const payload = students.map(s => ({
-      student_id: s.id,
-      class_id: selectedClass,
-      date: today,
-      status: records[s.id]?.status ?? 'present',
-      note: records[s.id]?.note || null,
-    }))
+  async function checkIn(studentId: string, status: AttendanceStatus) {
+    setRecords(r => ({ ...r, [studentId]: status }))
+    setSaving(s => ({ ...s, [studentId]: true }))
     await fetch('/api/attendance', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify([{ student_id: studentId, class_id: classId, date: today, status }]),
     })
-    setSaving(false)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+    setSaving(s => ({ ...s, [studentId]: false }))
   }
 
   const historyColumns = [
@@ -98,59 +80,50 @@ export default function AttendanceManager({ students, classes, todayRecords, his
 
       {tab === 'mark' && (
         <Card>
-          <CardHeader
-            title={`${formatDate(today, 'EEEE, MMMM d')}`}
-            action={
-              <button
-                className="btn btn-gold text-[12px]"
-                onClick={saveAttendance}
-                disabled={saving}>
-                {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save attendance'}
-              </button>
-            }
-          />
+          <CardHeader title={`${formatDate(today, 'EEEE, MMMM d')}`} />
           <div>
-            {students.map((student, i) => (
-              <div key={student.id} className="flex items-center gap-4 px-5 py-3.5"
-                style={{ borderBottom: i < students.length - 1 ? '1px solid rgba(184,151,58,0.14)' : 'none' }}>
-                <StudentAvatar name={student.full_name} avatarUrl={student.avatar_url} size="sm" />
-                <div className="w-40">
-                  <div className="text-[13px] font-medium">{student.full_name}</div>
-                  <div className="text-[11px]" style={{ color: '#8A8580' }}>Grade {student.grade}</div>
-                </div>
-                {/* Status buttons */}
-                <div className="flex gap-1.5">
-                  {(['present', 'late', 'absent'] as AttendanceStatus[]).map(s => {
-                    const active = records[student.id]?.status === s
-                    const colors: Record<string, string> = {
-                      present: active ? '#EAF3DE' : 'transparent',
-                      late:    active ? '#FAEEDA' : 'transparent',
-                      absent:  active ? '#FCEBEB' : 'transparent',
-                    }
-                    const textColors: Record<string, string> = {
-                      present: active ? '#27500A' : '#8A8580',
-                      late:    active ? '#633806' : '#8A8580',
-                      absent:  active ? '#791F1F' : '#8A8580',
-                    }
-                    return (
+            {students.map((student, i) => {
+              const status = records[student.id] ?? 'absent'
+              const isSaving = saving[student.id]
+              const colors: Record<string, string> = {
+                present: '#EAF3DE', late: '#FAEEDA', absent: '#FCEBEB',
+              }
+              const textColors: Record<string, string> = {
+                present: '#27500A', late: '#633806', absent: '#791F1F',
+              }
+              return (
+                <div key={student.id} className="flex items-center gap-4 px-5 py-3.5"
+                  style={{ borderBottom: i < students.length - 1 ? '1px solid rgba(184,151,58,0.14)' : 'none',
+                    background: status === 'present' ? 'rgba(234,243,222,0.3)' : status === 'absent' ? 'rgba(252,235,235,0.2)' : 'rgba(250,238,218,0.2)' }}>
+                  <StudentAvatar name={student.full_name} avatarUrl={student.avatar_url} size="sm" />
+                  <div className="w-40">
+                    <div className="text-[13px] font-medium">{student.full_name}</div>
+                    <div className="text-[11px]" style={{ color: '#8A8580' }}>Grade {student.grade}</div>
+                  </div>
+                  <div className="flex gap-1.5">
+                    {(['present', 'late', 'absent'] as AttendanceStatus[]).map(s => (
                       <button key={s}
-                        onClick={() => setStatus(student.id, s)}
+                        onClick={() => checkIn(student.id, s)}
+                        disabled={isSaving}
                         className="px-3 py-1 rounded-full text-[11px] capitalize transition-all"
                         style={{
-                          background: colors[s],
-                          color: textColors[s],
-                          border: `1px solid ${active ? colors[s] : 'rgba(184,151,58,0.22)'}`,
-                          fontWeight: active ? 500 : 400,
+                          background: status === s ? colors[s] : 'transparent',
+                          color: status === s ? textColors[s] : '#8A8580',
+                          border: `1px solid ${status === s ? colors[s] : 'rgba(184,151,58,0.22)'}`,
+                          fontWeight: status === s ? 600 : 400,
                           cursor: 'pointer',
                           fontFamily: 'inherit',
                         }}>
                         {s}
                       </button>
-                    )
-                  })}
+                    ))}
+                  </div>
+                  <div className="ml-auto text-[11px]" style={{ color: '#8A8580' }}>
+                    {isSaving ? 'Saving…' : status !== 'absent' ? '✓ Checked in' : ''}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </Card>
       )}
