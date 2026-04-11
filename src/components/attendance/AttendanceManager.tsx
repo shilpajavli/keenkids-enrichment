@@ -84,7 +84,9 @@ export default function AttendanceManager({ students, classes, todayRecords, his
 
       {tab === 'mark' && (
         <Card>
-          <CardHeader title={`${formatDate(today, 'EEEE, MMMM d')}`} />
+          <CardHeader title={`${formatDate(today, 'EEEE, MMMM d')}`} action={
+            <span className="text-[11px]" style={{ color: '#8A8580' }}>Tap any button to change status</span>
+          } />
           <div className="px-4 py-3 flex gap-2" style={{ borderBottom: '1px solid rgba(184,151,58,0.14)' }}>
             <input
               className="input flex-1 text-[14px]"
@@ -147,8 +149,14 @@ export default function AttendanceManager({ students, classes, todayRecords, his
                       </button>
                     ))}
                   </div>
-                  <div className="text-[11px] w-16 text-right hidden sm:block" style={{ color: '#8A8580' }}>
-                    {isSaving ? 'Saving…' : status !== 'absent' ? '✓' : ''}
+                  <div className="text-[11px] w-16 text-right hidden sm:block">
+                    {isSaving
+                      ? <span style={{ color: '#8A8580' }}>Saving…</span>
+                      : status === 'present'
+                        ? <span style={{ color: '#27500A', fontWeight: 600 }}>✓ In</span>
+                        : status === 'late'
+                          ? <span style={{ color: '#633806', fontWeight: 600 }}>✓ Late</span>
+                          : null}
                   </div>
                 </div>
               )
