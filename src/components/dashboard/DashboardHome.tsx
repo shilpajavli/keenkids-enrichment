@@ -7,6 +7,7 @@ import Link from 'next/link'
 
 interface Student { id: string; full_name: string; grade: number }
 interface ClassItem { id: string; name: string; start_time: string; end_time: string }
+interface UnlinkedParent { id: string; full_name: string; email: string }
 interface Props {
   students: Student[]
   checkedIn: string[]
@@ -15,6 +16,7 @@ interface Props {
   todayClasses: ClassItem[]
   firstName: string
   today: string
+  unlinkedParents: UnlinkedParent[]
 }
 
 type View = 'enrolled' | 'present' | 'absent'
@@ -28,7 +30,7 @@ function fmtTime(t: string) {
   return `${hour}${m ? `:${String(m).padStart(2, '0')}` : ''}${ampm}`
 }
 
-export default function DashboardHome({ students, checkedIn, outstandingCount, announcements, todayClasses, firstName, today }: Props) {
+export default function DashboardHome({ students, checkedIn, outstandingCount, announcements, todayClasses, firstName, unlinkedParents }: Props) {
   const [view, setView] = useState<View>('absent')
 
   const present = students.filter(s => checkedIn.includes(s.id))
@@ -50,6 +52,28 @@ export default function DashboardHome({ students, checkedIn, outstandingCount, a
 
   return (
     <div className="space-y-6">
+
+      {/* Unlinked parents alert */}
+      {unlinkedParents.length > 0 && (
+        <div className="rounded-xl px-5 py-4" style={{ background: '#FEF3C7', border: '1px solid #F59E0B' }}>
+          <div className="font-medium text-[13px] mb-2" style={{ color: '#92400E' }}>
+            ⚠️ {unlinkedParents.length} parent{unlinkedParents.length > 1 ? 's' : ''} logged in without a linked child
+          </div>
+          <div className="space-y-1">
+            {unlinkedParents.map(p => (
+              <div key={p.id} className="text-[12px] flex items-center gap-2" style={{ color: '#78350F' }}>
+                <span className="font-medium">{p.full_name}</span>
+                <span style={{ color: '#B45309' }}>·</span>
+                <span>{p.email}</span>
+                <Link href={`/dashboard/students`} className="underline ml-1" style={{ color: '#B45309' }}>
+                  Link to a student →
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div>
         <h1 className="font-serif text-3xl font-light text-ink">

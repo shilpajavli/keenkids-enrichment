@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase-server'
+import { createServerClient, createAdminClient } from '@/lib/supabase-server'
 import { getCurrentProgramId } from '@/lib/program'
 import DashboardHome from '@/components/dashboard/DashboardHome'
 import { format } from 'date-fns'
@@ -14,12 +14,14 @@ export default async function DashboardPage() {
 
   const todayDow = new Date().getDay() // 0=Sun, 1=Mon...
 
-  const [studentsRes, attendanceRes, paymentsRes, announcementsRes, classesRes] = await Promise.all([
+  const admin = createAdminClient()
+  const [studentsRes, attendanceRes, paymentsRes, announcementsRes, classesRes, unlinkedParentsRes] = await Promise.all([
     supabase.from('students').select('id, full_name, grade').eq('program_id', programId ?? '').order('last_name'),
     supabase.from('attendance').select('student_id, status').eq('date', today),
     supabase.from('payments').select('id, status, student:students!inner(program_id)').in('status', ['pending', 'overdue']).eq('students.program_id', programId ?? ''),
     supabase.from('announcements').select('*').order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(3),
     supabase.from('classes').select('id, name, start_time, end_time').eq('program_id', programId ?? '').eq('day_of_week', todayDow).order('start_time'),
+    admin.from('profiles').select('id, full_name, email').eq('role', 'parent').not('id', 'in', `(SELECT parent_id FROM students WHERE parent_id IS NOT NULL)`),
   ])
 
   const checkedIn = (attendanceRes.data ?? [])
@@ -35,6 +37,7 @@ export default async function DashboardPage() {
       todayClasses={classesRes.data ?? []}
       firstName={firstName}
       today={today}
+      unlinkedParents={unlinkedParentsRes.data ?? []}
     />
   )
 }
