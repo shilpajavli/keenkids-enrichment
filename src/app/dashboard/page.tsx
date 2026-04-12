@@ -15,21 +15,28 @@ export default async function DashboardPage() {
   const todayDow = new Date().getDay() // 0=Sun, 1=Mon...
 
   const admin = createAdminClient()
-  const [studentsRes, attendanceRes, paymentsRes, announcementsRes, classesRes, unlinkedParentsRes] = await Promise.all([
+  const [studentsRes, attendanceRes, paymentsRes, announcementsRes, classesRes] = await Promise.all([
     supabase.from('students').select('id, full_name, grade, parent_id').eq('program_id', programId ?? '').order('last_name'),
     supabase.from('attendance').select('student_id, status').eq('date', today),
     supabase.from('payments').select('id, status, student:students!inner(program_id)').in('status', ['pending', 'overdue']).eq('students.program_id', programId ?? ''),
     supabase.from('announcements').select('*').order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(3),
     supabase.from('classes').select('id, name, start_time, end_time').eq('program_id', programId ?? '').eq('day_of_week', todayDow).order('name'),
-    admin.from('profiles').select('id, full_name, email').eq('role', 'parent'),
   ])
+
+  let allParents: any[] = []
+  try {
+    const { data } = await admin.from('profiles').select('id, full_name, email').eq('role', 'parent')
+    allParents = data ?? []
+  } catch (e) {
+    console.error('Failed to fetch parents:', e)
+  }
 
   const checkedIn = (attendanceRes.data ?? [])
     .filter(a => a.status === 'present' || a.status === 'late')
     .map(a => a.student_id)
 
   const linkedParentIds = new Set((studentsRes.data ?? []).map((s: any) => s.parent_id).filter(Boolean))
-  const unlinkedParents = (unlinkedParentsRes.data ?? []).filter((p: any) => !linkedParentIds.has(p.id))
+  const unlinkedParents = allParents.filter((p: any) => !linkedParentIds.has(p.id))
 
   return (
     <DashboardHome
