@@ -9,15 +9,19 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { subject, message } = await req.json()
+  const { subject, message, emails: specificEmails } = await req.json()
   if (!subject || !message) return NextResponse.json({ error: 'Subject and message required' }, { status: 400 })
 
-  // Get all parent emails
-  const admin = createAdminClient()
-  const { data: profiles } = await admin.from('profiles').select('email, full_name').eq('role', 'parent')
-  if (!profiles?.length) return NextResponse.json({ error: 'No parents found' }, { status: 400 })
-
-  const emails = profiles.map((p: { email: string; full_name: string }) => p.email)
+  let emails: string[]
+  if (specificEmails?.length) {
+    emails = specificEmails
+  } else {
+    // Fall back to all parents
+    const admin = createAdminClient()
+    const { data: profiles } = await admin.from('profiles').select('email').eq('role', 'parent')
+    if (!profiles?.length) return NextResponse.json({ error: 'No parents found' }, { status: 400 })
+    emails = profiles.map((p: { email: string }) => p.email)
+  }
 
   const { error } = await resend.emails.send({
     from: 'KeenKids Enrichment <onboarding@resend.dev>',

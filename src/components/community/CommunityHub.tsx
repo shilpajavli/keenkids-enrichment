@@ -2,10 +2,9 @@
 
 import { useState } from 'react'
 import { Card, CardHeader, CardBody } from '@/components/ui/Card'
-import { formatDate, formatRelative } from '@/lib/utils'
+import { formatRelative } from '@/lib/utils'
 import type { Announcement } from '@/types'
 import { Pin, Trash2 } from 'lucide-react'
-
 
 interface Parent { id: string; full_name: string; email: string }
 
@@ -19,6 +18,22 @@ export default function CommunityHub({ announcements: initial, parents }: { anno
   const [sending, setSending] = useState(false)
   const [emailSubject, setEmailSubject] = useState('')
   const [emailSent, setEmailSent] = useState('')
+  const [selected, setSelected] = useState<Set<string>>(new Set(parents.map(p => p.id)))
+
+  const allSelected = selected.size === parents.length
+  const selectedParents = parents.filter(p => selected.has(p.id))
+
+  function toggleAll() {
+    setSelected(allSelected ? new Set() : new Set(parents.map(p => p.id)))
+  }
+
+  function toggleOne(id: string) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
 
   async function postAnnouncement() {
     if (!title.trim() || !body.trim()) return
@@ -42,17 +57,17 @@ export default function CommunityHub({ announcements: initial, parents }: { anno
   }
 
   async function sendMessage() {
-    if (!message.trim() || !emailSubject.trim()) return
+    if (!message.trim() || !emailSubject.trim() || selectedParents.length === 0) return
     setSending(true)
     const res = await fetch('/api/email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subject: emailSubject, message }),
+      body: JSON.stringify({ subject: emailSubject, message, emails: selectedParents.map(p => p.email) }),
     })
     const json = await res.json()
     setSending(false)
     if (json.success) {
-      setEmailSent(`✓ Sent to ${json.sent} families`)
+      setEmailSent(`✓ Sent to ${json.sent} famil${json.sent === 1 ? 'y' : 'ies'}`)
       setMessage('')
       setEmailSubject('')
     } else {
@@ -67,13 +82,11 @@ export default function CommunityHub({ announcements: initial, parents }: { anno
         <button className="btn btn-ink text-[12.5px]" onClick={() => document.getElementById('new-ann')?.scrollIntoView({ behavior: 'smooth' })}>
           + New announcement
         </button>
-        <button className="btn text-[12.5px]">Weekly newsletter →</button>
       </div>
 
       <div className="grid grid-cols-2 gap-5">
         {/* Announcement feed */}
         <div className="space-y-4">
-          {/* Post form */}
           <Card id="new-ann">
             <CardHeader title="Post announcement" />
             <CardBody className="space-y-3">
@@ -103,7 +116,6 @@ export default function CommunityHub({ announcements: initial, parents }: { anno
             </CardBody>
           </Card>
 
-          {/* Announcements list */}
           {announcements.map(ann => (
             <Card key={ann.id}>
               <CardBody>
@@ -130,32 +142,49 @@ export default function CommunityHub({ announcements: initial, parents }: { anno
           )}
         </div>
 
-        {/* Right column: parents + message */}
+        {/* Right column */}
         <div className="space-y-4">
+          {/* Families with checkboxes */}
           <Card>
-            <CardHeader title={`Families (${parents.length})`} />
+            <CardHeader
+              title={`Families (${parents.length})`}
+              action={
+                parents.length > 0 ? (
+                  <button className="text-[11px] transition-colors" style={{ color: '#8A6E25' }} onClick={toggleAll}>
+                    {allSelected ? 'Deselect all' : 'Select all'}
+                  </button>
+                ) : undefined
+              }
+            />
             <CardBody className="p-0">
               {parents.length === 0 && (
                 <div className="px-5 py-4 text-[12.5px]" style={{ color: '#8A8580' }}>No parents linked yet</div>
               )}
               {parents.map((p, i) => (
-                <div key={p.id} className="flex items-center gap-3 px-5 py-3"
+                <label key={p.id} className="flex items-center gap-3 px-5 py-3 cursor-pointer hover:bg-[#FAF7F2] transition-colors"
                   style={{ borderBottom: i < parents.length - 1 ? '1px solid rgba(184,151,58,0.14)' : 'none' }}>
+                  <input
+                    type="checkbox"
+                    checked={selected.has(p.id)}
+                    onChange={() => toggleOne(p.id)}
+                    className="flex-shrink-0"
+                  />
                   <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-medium text-white flex-shrink-0"
-                    style={{ background: '#8A6E25' }}>
+                    style={{ background: selected.has(p.id) ? '#8A6E25' : '#C4B89A' }}>
                     {p.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
                   </div>
                   <div className="min-w-0">
                     <div className="text-[12.5px] font-medium truncate">{p.full_name}</div>
                     <div className="text-[11px] truncate" style={{ color: '#8A8580' }}>{p.email}</div>
                   </div>
-                </div>
+                </label>
               ))}
             </CardBody>
           </Card>
 
+          {/* Email form */}
           <Card>
-            <CardHeader title="Email all families" />
+            <CardHeader title="Email families" />
             <CardBody className="space-y-3">
               <input
                 className="input text-[13px]"
@@ -166,13 +195,16 @@ export default function CommunityHub({ announcements: initial, parents }: { anno
               <textarea
                 className="input text-[13px]"
                 rows={4}
-                placeholder="Write a message to all parents…"
+                placeholder="Write a message…"
                 value={message}
                 onChange={e => setMessage(e.target.value)}
                 style={{ resize: 'none' }}
               />
-              <button className="btn btn-gold text-[12px] w-full justify-center" onClick={sendMessage} disabled={sending || !emailSubject || !message || parents.length === 0}>
-                {sending ? 'Sending…' : `Send to ${parents.length} famil${parents.length === 1 ? 'y' : 'ies'}`}
+              <button
+                className="btn btn-gold text-[12px] w-full justify-center"
+                onClick={sendMessage}
+                disabled={sending || !emailSubject || !message || selectedParents.length === 0}>
+                {sending ? 'Sending…' : `Send to ${selectedParents.length} famil${selectedParents.length === 1 ? 'y' : 'ies'}`}
               </button>
               {emailSent && <p className="text-[12px]" style={{ color: emailSent.startsWith('✓') ? '#27500A' : '#791F1F' }}>{emailSent}</p>}
             </CardBody>
