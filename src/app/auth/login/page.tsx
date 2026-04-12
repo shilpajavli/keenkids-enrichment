@@ -49,7 +49,7 @@ export default function LoginPage() {
           <h1 className="font-serif text-4xl font-light text-ink">
             <em>KeenKids</em> Enrichment
           </h1>
-          <p className="text-ink-tertiary text-sm mt-2 tracking-wide">Enrichment Program Portal</p>
+          <p className="text-ink-tertiary text-sm mt-2 tracking-wide">Parent Portal</p>
         </div>
 
         <div className="card p-8">
