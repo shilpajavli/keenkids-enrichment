@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { cn, getInitials } from '@/lib/utils'
 import type { Profile } from '@/types'
 import {
-  LayoutDashboard, Users, CalendarCheck, TrendingUp,
+  LayoutDashboard, Users, CalendarCheck,
   Clock, Image, CreditCard, MessageCircle, FileText, LogOut
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase-browser'
@@ -24,7 +24,6 @@ const NAV = [
   {
     section: 'Learning',
     items: [
-      { href: '/dashboard/progress', label: 'Progress',       icon: TrendingUp },
       { href: '/dashboard/schedule', label: 'Schedule',       icon: Clock },
       { href: '/dashboard/media',    label: 'Media gallery',  icon: Image },
     ],

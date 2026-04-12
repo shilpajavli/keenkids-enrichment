@@ -2,14 +2,7 @@ import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
 import { Card, CardHeader, CardBody } from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
-import ProgressBar from '@/components/ui/ProgressBar'
-import { formatDate, calcProgress } from '@/lib/utils'
-
-const STATUS_BADGE: Record<string, { variant: any; label: string }> = {
-  mastered:    { variant: 'green', label: 'Mastered' },
-  in_progress: { variant: 'blue',  label: 'In progress' },
-  not_started: { variant: 'gray',  label: 'Not started' },
-}
+import { formatDate } from '@/lib/utils'
 
 const ATTEND_BADGE: Record<string, any> = {
   present: 'green', late: 'amber', absent: 'red',
@@ -43,22 +36,20 @@ export default async function ParentPortalPage() {
     )
   }
 
-  const [skillsRes, attendanceRes, mediaRes, paymentsRes, announcementsRes] = await Promise.all([
-    supabase.from('student_skills').select('*, skill:skills(*)').eq('student_id', student.id),
+  const [attendanceRes, mediaRes, paymentsRes, announcementsRes, skillsRes] = await Promise.all([
     supabase.from('attendance').select('*, class:classes(name)').eq('student_id', student.id).order('date', { ascending: false }).limit(10),
     supabase.from('media').select('*').or(`student_id.eq.${student.id},student_id.is.null`).order('created_at', { ascending: false }).limit(12),
     supabase.from('payments').select('*').eq('parent_id', user.id).order('due_date', { ascending: false }),
     supabase.from('announcements').select('*').order('pinned', { ascending: false }).order('created_at', { ascending: false }),
+    supabase.from('student_skills').select('*, skill:skills(*)').eq('student_id', student.id),
   ])
 
-  const skills = skillsRes.data ?? []
   const attendance = attendanceRes.data ?? []
   const media = mediaRes.data ?? []
   const payments = paymentsRes.data ?? []
   const announcements = announcementsRes.data ?? []
+  const skills = skillsRes.data ?? []
 
-  const mastered = skills.filter(s => s.status === 'mastered').length
-  const overall = calcProgress(mastered, skills.length)
   const subjects = [...new Set(skills.map(s => s.skill?.subject).filter(Boolean))]
 
   return (
@@ -97,48 +88,27 @@ export default async function ParentPortalPage() {
         </Card>
       )}
 
-      {/* Overall progress */}
-      <Card>
-        <CardBody>
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[13px] font-medium">Overall progress</span>
-            <span className="font-serif text-2xl font-light" style={{ color: '#B8973A' }}>{overall}%</span>
-          </div>
-          <ProgressBar value={overall} />
-          <p className="text-[11.5px] mt-2" style={{ color: '#8A8580' }}>
-            {mastered} of {skills.length} activities completed
-          </p>
-        </CardBody>
-      </Card>
-
-      {/* Curriculum / Skills */}
-      <Card>
-        <CardHeader title="This week's activities" />
-        <CardBody className="p-0">
-          {subjects.map((subject, si) => {
-            const subSkills = skills.filter(s => s.skill?.subject === subject)
-            const date = subject ? DATE_MAP[subject] : null
-            return (
-              <div key={subject} style={{ borderBottom: si < subjects.length - 1 ? '1px solid rgba(184,151,58,0.14)' : 'none' }}>
-                <div className="px-5 pt-4 pb-2 flex items-center justify-between">
+      {/* Schedule */}
+      {subjects.length > 0 && (
+        <Card>
+          <CardHeader title="This week's schedule" />
+          <CardBody className="p-0">
+            {subjects.map((subject, si) => {
+              const date = subject ? DATE_MAP[subject] : null
+              return (
+                <div key={subject} className="flex items-center justify-between px-5 py-3"
+                  style={{ borderBottom: si < subjects.length - 1 ? '1px solid rgba(184,151,58,0.14)' : 'none' }}>
                   <span className="text-[13px] font-medium">{subject}</span>
-                  {date && <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: '#EFE6CC', color: '#8A6E25' }}>{date}</span>}
+                  {date && (
+                    <span className="text-[11px] px-2 py-0.5 rounded-full"
+                      style={{ background: '#EFE6CC', color: '#8A6E25' }}>{date}</span>
+                  )}
                 </div>
-                {subSkills.map(ss => {
-                  const info = STATUS_BADGE[ss.status]
-                  return (
-                    <div key={ss.id} className="flex items-center justify-between px-5 py-2.5"
-                      style={{ borderTop: '1px solid rgba(184,151,58,0.08)' }}>
-                      <span className="text-[12.5px]" style={{ color: '#4A4640' }}>{ss.skill?.name}</span>
-                      <Badge variant={info.variant}>{info.label}</Badge>
-                    </div>
-                  )
-                })}
-              </div>
-            )
-          })}
-        </CardBody>
-      </Card>
+              )
+            })}
+          </CardBody>
+        </Card>
+      )}
 
       {/* Attendance */}
       {attendance.length > 0 && (
