@@ -169,7 +169,7 @@ export default function DashboardHome({ students, checkedIn, outstandingCount, a
               <div key={c.id} className="flex items-center gap-4 px-5 py-3.5"
                 style={{ borderBottom: i < todayClasses.length - 1 ? '1px solid rgba(184,151,58,0.14)' : 'none' }}>
                 <div className="text-[12px] font-medium w-28 flex-shrink-0" style={{ color: '#B8973A' }}>
-                  {fmtTime(c.start_time)} – {fmtTime(c.end_time)}
+                  {c.start_time && c.end_time ? `${fmtTime(c.start_time)} – ${fmtTime(c.end_time)}` : 'Morning & Afternoon'}
                 </div>
                 <div className="text-[13px]">{c.name}</div>
               </div>
