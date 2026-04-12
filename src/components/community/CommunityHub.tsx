@@ -18,7 +18,7 @@ export default function CommunityHub({ announcements: initial, parents }: { anno
   const [sending, setSending] = useState(false)
   const [emailSubject, setEmailSubject] = useState('')
   const [emailSent, setEmailSent] = useState('')
-  const [selected, setSelected] = useState<Set<string>>(new Set(parents.map(p => p.id)))
+  const [selected, setSelected] = useState<Set<string>>(new Set())
   const [parentList, setParentList] = useState(parents)
 
   const allSelected = selected.size === parentList.length
