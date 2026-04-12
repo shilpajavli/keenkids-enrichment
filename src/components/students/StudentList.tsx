@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { Search, UserPlus, X } from 'lucide-react'
-import { Card, CardBody } from '@/components/ui/Card'
+import { Card } from '@/components/ui/Card'
 import StudentAvatar from '@/components/ui/StudentAvatar'
 import Badge from '@/components/ui/Badge'
 import ProgressBar from '@/components/ui/ProgressBar'
@@ -134,8 +134,8 @@ export default function StudentList({ students: initial, programId }: { students
         {filtered.map((student, i) => {
           const progress = calcProgress(student.skills_mastered, student.skills_total)
           return (
-            <div key={student.id}
-              className="flex items-center gap-4 px-5 py-4 transition-colors group"
+            <Link key={student.id} href={`/dashboard/students/${student.id}`}
+              className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-[#FAF7F2]"
               style={{
                 borderBottom: i < filtered.length - 1 ? '1px solid rgba(184,151,58,0.14)' : 'none',
               }}>
@@ -159,11 +159,8 @@ export default function StudentList({ students: initial, programId }: { students
                 </div>
               </div>
 
-              <Link href={`/dashboard/students/${student.id}`}
-                className="btn text-[12px] opacity-0 group-hover:opacity-100 transition-opacity">
-                View profile →
-              </Link>
-            </div>
+              <span className="text-[12px]" style={{ color: '#B8973A' }}>→</span>
+            </Link>
           )
         })}
       </Card>
