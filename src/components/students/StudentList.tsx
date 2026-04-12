@@ -36,7 +36,7 @@ export default function StudentList({ students: initial, programId }: { students
     const res = await fetch('/api/students', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ first_name: form.first_name.trim(), last_name: form.last_name.trim(), grade: Number(form.grade), program_id: programId }),
+      body: JSON.stringify({ first_name: form.first_name.trim(), last_name: form.last_name.trim(), full_name: `${form.first_name.trim()} ${form.last_name.trim()}`, grade: Number(form.grade), program_id: programId }),
     })
     const json = await res.json()
     setAdding(false)
