@@ -12,7 +12,9 @@ const TESTIMONIALS = [
   { initials: 'TF', name: 'Thompson family', text: '"Kai built his first game — we were blown away!"' },
 ]
 
-export default function CommunityHub({ announcements: initial }: { announcements: Announcement[] }) {
+interface Parent { id: string; full_name: string; email: string }
+
+export default function CommunityHub({ announcements: initial, parents }: { announcements: Announcement[]; parents: Parent[] }) {
   const [announcements, setAnnouncements] = useState(initial)
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
@@ -133,8 +135,30 @@ export default function CommunityHub({ announcements: initial }: { announcements
           )}
         </div>
 
-        {/* Right column: testimonials + message */}
+        {/* Right column: parents + message */}
         <div className="space-y-4">
+          <Card>
+            <CardHeader title={`Families (${parents.length})`} />
+            <CardBody className="p-0">
+              {parents.length === 0 && (
+                <div className="px-5 py-4 text-[12.5px]" style={{ color: '#8A8580' }}>No parents linked yet</div>
+              )}
+              {parents.map((p, i) => (
+                <div key={p.id} className="flex items-center gap-3 px-5 py-3"
+                  style={{ borderBottom: i < parents.length - 1 ? '1px solid rgba(184,151,58,0.14)' : 'none' }}>
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-medium text-white flex-shrink-0"
+                    style={{ background: '#8A6E25' }}>
+                    {p.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[12.5px] font-medium truncate">{p.full_name}</div>
+                    <div className="text-[11px] truncate" style={{ color: '#8A8580' }}>{p.email}</div>
+                  </div>
+                </div>
+              ))}
+            </CardBody>
+          </Card>
+
           <Card>
             <CardHeader title="Parent voices" />
             <CardBody className="p-0">
@@ -171,8 +195,8 @@ export default function CommunityHub({ announcements: initial }: { announcements
                 onChange={e => setMessage(e.target.value)}
                 style={{ resize: 'none' }}
               />
-              <button className="btn btn-gold text-[12px] w-full justify-center" onClick={sendMessage} disabled={sending || !emailSubject || !message}>
-                {sending ? 'Sending…' : 'Send to all families'}
+              <button className="btn btn-gold text-[12px] w-full justify-center" onClick={sendMessage} disabled={sending || !emailSubject || !message || parents.length === 0}>
+                {sending ? 'Sending…' : `Send to ${parents.length} famil${parents.length === 1 ? 'y' : 'ies'}`}
               </button>
               {emailSent && <p className="text-[12px]" style={{ color: emailSent.startsWith('✓') ? '#27500A' : '#791F1F' }}>{emailSent}</p>}
             </CardBody>
