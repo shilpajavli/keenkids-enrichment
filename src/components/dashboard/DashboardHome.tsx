@@ -15,7 +15,6 @@ interface Props {
   announcements: { id: string; title: string; body: string; pinned: boolean }[]
   todayClasses: ClassItem[]
   firstName: string
-  today: string
   unlinkedParents: UnlinkedParent[]
 }
 

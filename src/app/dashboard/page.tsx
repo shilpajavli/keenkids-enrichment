@@ -1,11 +1,10 @@
 import { createServerClient, createAdminClient } from '@/lib/supabase-server'
 import { getCurrentProgramId } from '@/lib/program'
 import DashboardHome from '@/components/dashboard/DashboardHome'
-import { format } from 'date-fns'
 
 export default async function DashboardPage() {
   const supabase = await createServerClient()
-  const today = format(new Date(), 'yyyy-MM-dd')
+  const today = new Date().toISOString().slice(0, 10)
   const programId = await getCurrentProgramId()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -46,8 +45,7 @@ export default async function DashboardPage() {
       announcements={announcementsRes.data ?? []}
       todayClasses={classesRes.data ?? []}
       firstName={firstName}
-      today={today}
-      unlinkedParents={unlinkedParents}
+unlinkedParents={unlinkedParents}
     />
   )
 }
