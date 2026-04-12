@@ -19,12 +19,21 @@ export default function CommunityHub({ announcements: initial, parents }: { anno
   const [emailSubject, setEmailSubject] = useState('')
   const [emailSent, setEmailSent] = useState('')
   const [selected, setSelected] = useState<Set<string>>(new Set(parents.map(p => p.id)))
+  const [parentList, setParentList] = useState(parents)
 
-  const allSelected = selected.size === parents.length
-  const selectedParents = parents.filter(p => selected.has(p.id))
+  const allSelected = selected.size === parentList.length
+  const selectedParents = parentList.filter(p => selected.has(p.id))
 
   function toggleAll() {
-    setSelected(allSelected ? new Set() : new Set(parents.map(p => p.id)))
+    setSelected(allSelected ? new Set() : new Set(parentList.map(p => p.id)))
+  }
+
+  async function deleteParent(id: string, e: React.MouseEvent) {
+    e.stopPropagation()
+    if (!confirm('Remove this parent? This will unlink them from their child.')) return
+    await fetch(`/api/profiles?id=${id}`, { method: 'DELETE' })
+    setParentList(prev => prev.filter(p => p.id !== id))
+    setSelected(prev => { const n = new Set(prev); n.delete(id); return n })
   }
 
   function toggleOne(id: string) {
@@ -149,41 +158,49 @@ export default function CommunityHub({ announcements: initial, parents }: { anno
             <CardBody>
               <div className="flex items-center justify-between mb-3">
                 <span className="text-[12px] font-medium" style={{ color: '#4A4640' }}>
-                  {selectedParents.length === parents.length
+                  {selectedParents.length === parentList.length
                     ? 'All families selected'
-                    : `${selectedParents.length} of ${parents.length} selected`}
+                    : `${selectedParents.length} of ${parentList.length} selected`}
                 </span>
-                {parents.length > 0 && (
+                {parentList.length > 0 && (
                   <button className="text-[11px]" style={{ color: '#8A6E25' }} onClick={toggleAll}>
                     {allSelected ? 'Deselect all' : 'Select all'}
                   </button>
                 )}
               </div>
-              {parents.length === 0 && (
+              {parentList.length === 0 && (
                 <div className="text-[12.5px]" style={{ color: '#8A8580' }}>No parents linked yet</div>
               )}
               <div className="flex flex-wrap gap-2">
-                {parents.map(p => {
+                {parentList.map(p => {
                   const isSelected = selected.has(p.id)
                   const initials = p.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
                   return (
-                    <button
-                      key={p.id}
-                      onClick={() => toggleOne(p.id)}
-                      title={p.email}
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-full transition-all text-[12px]"
-                      style={{
-                        background: isSelected ? '#EFE6CC' : '#F1EFE8',
-                        border: `1.5px solid ${isSelected ? '#B8973A' : 'rgba(184,151,58,0.2)'}`,
-                        color: isSelected ? '#8A6E25' : '#8A8580',
-                        fontWeight: isSelected ? 500 : 400,
-                      }}>
-                      <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-medium text-white flex-shrink-0"
-                        style={{ background: isSelected ? '#8A6E25' : '#C4B89A' }}>
-                        {initials}
-                      </div>
-                      {p.full_name?.split(' ')[0]}
-                    </button>
+                    <div key={p.id} className="flex items-center gap-1 group/chip">
+                      <button
+                        onClick={() => toggleOne(p.id)}
+                        title={p.email}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-full transition-all text-[12px]"
+                        style={{
+                          background: isSelected ? '#EFE6CC' : '#F1EFE8',
+                          border: `1.5px solid ${isSelected ? '#B8973A' : 'rgba(184,151,58,0.2)'}`,
+                          color: isSelected ? '#8A6E25' : '#8A8580',
+                          fontWeight: isSelected ? 500 : 400,
+                        }}>
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-medium text-white flex-shrink-0"
+                          style={{ background: isSelected ? '#8A6E25' : '#C4B89A' }}>
+                          {initials}
+                        </div>
+                        {p.full_name?.split(' ')[0]}
+                      </button>
+                      <button
+                        onClick={e => deleteParent(p.id, e)}
+                        title="Remove parent"
+                        className="opacity-0 group-hover/chip:opacity-100 transition-opacity p-1 rounded-full hover:bg-red-50"
+                        style={{ color: '#8A8580' }}>
+                        <Trash2 size={11} />
+                      </button>
+                    </div>
                   )
                 })}
               </div>
