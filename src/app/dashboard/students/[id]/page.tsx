@@ -18,13 +18,25 @@ export default async function StudentDetailPage({ params }: Props) {
 
   if (!studentRes.data) notFound()
 
+  const student = studentRes.data
+  let parentProfile: { full_name: string; email: string } | null = null
+  if (student.parent_id) {
+    const { data } = await supabase
+      .from('profiles')
+      .select('full_name, email')
+      .eq('id', student.parent_id)
+      .single()
+    parentProfile = data
+  }
+
   return (
     <StudentProfile
-      student={studentRes.data}
+      student={student}
       skills={skillsRes.data ?? []}
       notes={notesRes.data ?? []}
       attendance={attendanceRes.data ?? []}
       media={mediaRes.data ?? []}
+      parentProfile={parentProfile}
     />
   )
 }

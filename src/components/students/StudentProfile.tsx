@@ -18,6 +18,7 @@ interface Props {
   notes: TeacherNote[]
   attendance: AttendanceRecord[]
   media: MediaItem[]
+  parentProfile: { full_name: string; email: string } | null
 }
 
 type Tab = 'progress' | 'attendance' | 'media' | 'notes'
@@ -37,7 +38,7 @@ const ATTEND_BADGE: Record<string, any> = {
 const subjects = (skills: StudentSkill[]) =>
   [...new Set(skills.map(s => s.skill?.subject).filter(Boolean))]
 
-export default function StudentProfile({ student, skills, notes, attendance, media }: Props) {
+export default function StudentProfile({ student, skills, notes, attendance, media, parentProfile }: Props) {
   const [tab, setTab] = useState<Tab>('progress')
   const [noteText, setNoteText] = useState('')
   const [saving, setSaving] = useState(false)
@@ -220,6 +221,20 @@ export default function StudentProfile({ student, skills, notes, attendance, med
             {linkMsg && <p className="text-[12px] mt-2" style={{ color: linkMsg.startsWith('✓') ? '#27500A' : '#791F1F' }}>{linkMsg}</p>}
           </CardBody>
         </Card>
+      )}
+
+      {/* Parent info */}
+      {parentProfile ? (
+        <div className="flex items-center gap-2 text-[12.5px] px-1" style={{ color: '#4A4640' }}>
+          <span style={{ color: '#8A8580' }}>Parent:</span>
+          <span className="font-medium">{parentProfile.full_name}</span>
+          <span style={{ color: '#8A8580' }}>·</span>
+          <span style={{ color: '#8A8580' }}>{parentProfile.email}</span>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 text-[12px] px-1" style={{ color: '#8A8580' }}>
+          <span>No parent linked yet</span>
+        </div>
       )}
 
       {/* Tabs */}
