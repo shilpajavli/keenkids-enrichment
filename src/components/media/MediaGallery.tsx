@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
 import Image from 'next/image'
-import { Upload, X, Play, Filter } from 'lucide-react'
+import { Upload, X, Play, Trash2 } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { formatDate } from '@/lib/utils'
 import type { MediaItem } from '@/types'
@@ -24,6 +24,7 @@ export default function MediaGallery({ media: initialMedia, students }: Props) {
   const [uploadStudent, setUploadStudent] = useState('')
   const [uploadCaption, setUploadCaption] = useState('')
   const [showUploadPanel, setShowUploadPanel] = useState(false)
+  const [deleting, setDeleting] = useState<string | null>(null)
 
   const onDrop = useCallback(async (files: File[]) => {
     setUploading(true)
@@ -39,6 +40,15 @@ export default function MediaGallery({ media: initialMedia, students }: Props) {
     setUploading(false)
     setShowUploadPanel(false)
   }, [uploadStudent, uploadCaption])
+
+  async function deleteItem(id: string, e: React.MouseEvent) {
+    e.stopPropagation()
+    if (!confirm('Delete this photo/video?')) return
+    setDeleting(id)
+    await fetch(`/api/media?id=${id}`, { method: 'DELETE' })
+    setMedia(prev => prev.filter(m => m.id !== id))
+    setDeleting(null)
+  }
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -136,6 +146,13 @@ export default function MediaGallery({ media: initialMedia, students }: Props) {
                 style={{ background: 'rgba(26,24,20,0.25)' }}>
                 <div className="text-white text-[12px]">View</div>
               </div>
+              <button
+                onClick={e => deleteItem(item.id, e)}
+                disabled={deleting === item.id}
+                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-full"
+                style={{ background: 'rgba(26,24,20,0.7)' }}>
+                <Trash2 size={12} className="text-white" />
+              </button>
             </div>
             {/* Meta */}
             <div className="p-3 bg-white">

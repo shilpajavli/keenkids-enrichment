@@ -65,3 +65,26 @@ export async function POST(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
   return NextResponse.json({ data }, { status: 201 })
 }
+
+export async function DELETE(req: NextRequest) {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { searchParams } = new URL(req.url)
+  const id = searchParams.get('id')
+  if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+
+  const { data: item } = await supabase.from('media').select('url, type').eq('id', id).single()
+  if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  // Delete from storage
+  const admin = createAdminClient()
+  const bucket = item.type === 'video' ? 'Videos' : 'Photos'
+  const path = new URL(item.url).pathname.split(`/${bucket}/`)[1]
+  if (path) await admin.storage.from(bucket).remove([path])
+
+  const { error } = await supabase.from('media').delete().eq('id', id)
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+  return NextResponse.json({ success: true })
+}
