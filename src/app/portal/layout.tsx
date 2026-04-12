@@ -22,7 +22,7 @@ export default async function PortalLayout({ children }: { children: React.React
       {/* Top bar */}
       <header style={{ background: '#1A1814' }}>
         <div className="max-w-3xl mx-auto px-5 py-4 flex items-center justify-between">
-          <Link href="/portal" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+          <Link href="https://keenkidsenrichment.com" className="flex items-center gap-3 hover:opacity-80 transition-opacity" target="_blank" rel="noopener noreferrer">
             <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
               style={{ background: 'rgba(184,151,58,0.18)', border: '1px solid rgba(184,151,58,0.35)' }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
