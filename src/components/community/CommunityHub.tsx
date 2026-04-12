@@ -6,11 +6,6 @@ import { formatDate, formatRelative } from '@/lib/utils'
 import type { Announcement } from '@/types'
 import { Pin, Trash2 } from 'lucide-react'
 
-const TESTIMONIALS = [
-  { initials: 'LF', name: 'Lee family',      text: '"Aiden comes home excited every single week!"' },
-  { initials: 'MF', name: 'Martinez family', text: '"Sofia\'s confidence has grown tremendously."' },
-  { initials: 'TF', name: 'Thompson family', text: '"Kai built his first game — we were blown away!"' },
-]
 
 interface Parent { id: string; full_name: string; email: string }
 
@@ -153,25 +148,6 @@ export default function CommunityHub({ announcements: initial, parents }: { anno
                   <div className="min-w-0">
                     <div className="text-[12.5px] font-medium truncate">{p.full_name}</div>
                     <div className="text-[11px] truncate" style={{ color: '#8A8580' }}>{p.email}</div>
-                  </div>
-                </div>
-              ))}
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardHeader title="Parent voices" />
-            <CardBody className="p-0">
-              {TESTIMONIALS.map((t, i) => (
-                <div key={t.name} className="flex items-start gap-3 px-5 py-4"
-                  style={{ borderBottom: i < TESTIMONIALS.length - 1 ? '1px solid rgba(184,151,58,0.14)' : 'none' }}>
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-medium flex-shrink-0"
-                    style={{ background: '#EFE6CC', color: '#8A6E25' }}>
-                    {t.initials}
-                  </div>
-                  <div>
-                    <div className="text-[12.5px] font-medium mb-0.5">{t.name}</div>
-                    <div className="text-[12px] italic leading-relaxed" style={{ color: '#4A4640' }}>{t.text}</div>
                   </div>
                 </div>
               ))}
