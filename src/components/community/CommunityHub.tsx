@@ -144,41 +144,49 @@ export default function CommunityHub({ announcements: initial, parents }: { anno
 
         {/* Right column */}
         <div className="space-y-4">
-          {/* Families with checkboxes */}
+          {/* Families chip selector */}
           <Card>
-            <CardHeader
-              title={`Families (${parents.length})`}
-              action={
-                parents.length > 0 ? (
-                  <button className="text-[11px] transition-colors" style={{ color: '#8A6E25' }} onClick={toggleAll}>
+            <CardBody>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[12px] font-medium" style={{ color: '#4A4640' }}>
+                  {selectedParents.length === parents.length
+                    ? 'All families selected'
+                    : `${selectedParents.length} of ${parents.length} selected`}
+                </span>
+                {parents.length > 0 && (
+                  <button className="text-[11px]" style={{ color: '#8A6E25' }} onClick={toggleAll}>
                     {allSelected ? 'Deselect all' : 'Select all'}
                   </button>
-                ) : undefined
-              }
-            />
-            <CardBody className="p-0">
+                )}
+              </div>
               {parents.length === 0 && (
-                <div className="px-5 py-4 text-[12.5px]" style={{ color: '#8A8580' }}>No parents linked yet</div>
+                <div className="text-[12.5px]" style={{ color: '#8A8580' }}>No parents linked yet</div>
               )}
-              {parents.map((p, i) => (
-                <label key={p.id} className="flex items-center gap-3 px-5 py-3 cursor-pointer hover:bg-[#FAF7F2] transition-colors"
-                  style={{ borderBottom: i < parents.length - 1 ? '1px solid rgba(184,151,58,0.14)' : 'none' }}>
-                  <input
-                    type="checkbox"
-                    checked={selected.has(p.id)}
-                    onChange={() => toggleOne(p.id)}
-                    className="flex-shrink-0"
-                  />
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-medium text-white flex-shrink-0"
-                    style={{ background: selected.has(p.id) ? '#8A6E25' : '#C4B89A' }}>
-                    {p.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[12.5px] font-medium truncate">{p.full_name}</div>
-                    <div className="text-[11px] truncate" style={{ color: '#8A8580' }}>{p.email}</div>
-                  </div>
-                </label>
-              ))}
+              <div className="flex flex-wrap gap-2">
+                {parents.map(p => {
+                  const isSelected = selected.has(p.id)
+                  const initials = p.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => toggleOne(p.id)}
+                      title={p.email}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-full transition-all text-[12px]"
+                      style={{
+                        background: isSelected ? '#EFE6CC' : '#F1EFE8',
+                        border: `1.5px solid ${isSelected ? '#B8973A' : 'rgba(184,151,58,0.2)'}`,
+                        color: isSelected ? '#8A6E25' : '#8A8580',
+                        fontWeight: isSelected ? 500 : 400,
+                      }}>
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-medium text-white flex-shrink-0"
+                        style={{ background: isSelected ? '#8A6E25' : '#C4B89A' }}>
+                        {initials}
+                      </div>
+                      {p.full_name?.split(' ')[0]}
+                    </button>
+                  )
+                })}
+              </div>
             </CardBody>
           </Card>
 
