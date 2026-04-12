@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
 import Link from 'next/link'
 import { getInitials } from '@/lib/utils'
+import SignOutButton from '@/components/ui/SignOutButton'
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createServerClient()
@@ -48,6 +49,7 @@ export default async function PortalLayout({ children }: { children: React.React
               style={{ background: '#8A6E25' }}>
               {getInitials(profile.full_name)}
             </div>
+            <SignOutButton />
           </div>
         </div>
       </header>
