@@ -114,7 +114,7 @@ export default function StudentList({ students: initial, programId }: { students
           value={gradeFilter}
           onChange={e => setGradeFilter(e.target.value)}>
           <option value="all">All grades</option>
-          {grades.map(g => <option key={g} value={g}>Grade {g}</option>)}
+          {grades.map(g => <option key={g} value={g}>{g === 0 ? 'TK/K' : `Grade ${g}`}</option>)}
         </select>
         <div className="ml-auto flex items-center gap-3">
           <span className="text-[12px]" style={{ color: '#8A8580' }}>{filtered.length} student{filtered.length !== 1 ? 's' : ''}</span>
