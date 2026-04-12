@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
   const isVideo = file.type.startsWith('video/')
   const ext = file.name.split('.').pop()
   const path = `${session.user.id}/${Date.now()}.${ext}`
-  const bucket = isVideo ? 'videos' : 'photos'
+  const bucket = isVideo ? 'Videos' : 'Photos'
 
   // Upload to Supabase Storage
   const admin = createAdminClient()
