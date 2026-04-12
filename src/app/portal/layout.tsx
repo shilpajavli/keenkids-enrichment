@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
+import Link from 'next/link'
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createServerClient()
@@ -28,7 +29,7 @@ export default async function PortalLayout({ children }: { children: React.React
                 stroke="#B8973A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
-          <span className="font-serif text-lg font-light">KeenKids Enrichment</span>
+          <Link href="/portal" className="font-serif text-lg font-light hover:opacity-75 transition-opacity">KeenKids Enrichment</Link>
         </div>
         <div className="text-[12px]" style={{ color: '#8A8580' }}>
           Parent Portal · {profile.full_name}
