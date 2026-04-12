@@ -16,6 +16,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
     getCurrentProgramId(),
   ])
 
+  if (profileRes.data?.role === 'parent') redirect('/portal')
+
   return (
     <div className="flex min-h-screen bg-paper">
       <Sidebar profile={profileRes.data} programs={programsRes.data ?? []} currentProgramId={currentProgramId} />
