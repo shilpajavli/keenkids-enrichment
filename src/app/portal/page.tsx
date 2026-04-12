@@ -54,12 +54,15 @@ export default async function ParentPortalPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="font-serif text-3xl font-light text-ink">{student.full_name}</h1>
-        <div className="flex items-center gap-2 mt-1">
+      {/* Student header */}
+      <div className="flex items-center gap-3 mb-2">
+        <div className="w-12 h-12 rounded-full flex items-center justify-center text-base font-medium text-white flex-shrink-0"
+          style={{ background: '#8A6E25' }}>
+          {student.full_name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+        </div>
+        <div>
+          <h1 className="font-serif text-2xl font-light" style={{ color: '#1A1814' }}>{student.full_name}</h1>
           <Badge variant="blue">{student.grade === 0 ? 'TK/K' : `Grade ${student.grade}`}</Badge>
-          <span className="text-ink-tertiary text-sm">Spring Break · Apr 13–17</span>
         </div>
       </div>
 
