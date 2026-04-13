@@ -159,7 +159,14 @@ export default function StudentList({ students: initial, programId }: { students
                 </div>
               </div>
 
-              <span className="text-[12px]" style={{ color: '#B8973A' }}>→</span>
+              <div className="flex flex-col items-end gap-1.5">
+                <span className="text-[12px]" style={{ color: '#B8973A' }}>→</span>
+                {student.parent_id ? (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: '#EAF3DE', color: '#27500A' }}>✓ Parent linked</span>
+                ) : (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: '#F5F0E8', color: '#8A8580' }}>No parent</span>
+                )}
+              </div>
             </Link>
           )
         })}

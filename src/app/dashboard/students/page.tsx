@@ -15,7 +15,7 @@ export default async function StudentsPage() {
       student_skills (status)
     `)
     .eq('program_id', programId ?? '')
-    .order('last_name')
+    .order('full_name')
 
   const enriched = (students ?? []).map(s => ({
     ...s,
