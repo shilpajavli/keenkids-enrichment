@@ -18,6 +18,7 @@ interface StudentRow {
   enrolled_at: string
   skills_mastered: number
   skills_total: number
+  parent_id: string | null
 }
 
 export default function StudentList({ students: initial, programId }: { students: StudentRow[]; programId: string | null }) {
