@@ -7,6 +7,7 @@ import { Upload, X, Play, Trash2 } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { formatDate } from '@/lib/utils'
 import type { MediaItem } from '@/types'
+import { createClient } from '@/lib/supabase-browser'
 
 interface StudentOption { id: string; full_name: string }
 
@@ -28,12 +29,36 @@ export default function MediaGallery({ media: initialMedia, students }: Props) {
 
   const onDrop = useCallback(async (files: File[]) => {
     setUploading(true)
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setUploading(false); return }
+
     for (const file of files) {
-      const fd = new FormData()
-      fd.append('file', file)
-      if (uploadStudent) fd.append('student_id', uploadStudent)
-      if (uploadCaption) fd.append('caption', uploadCaption)
-      const res = await fetch('/api/media', { method: 'POST', body: fd })
+      const isVideo = file.type.startsWith('video/')
+      const bucket = isVideo ? 'Videos' : 'Photos'
+      const ext = file.name.split('.').pop()
+      const path = `${user.id}/${Date.now()}.${ext}`
+
+      // Upload directly from browser to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(path, file, { contentType: file.type, upsert: false })
+
+      if (uploadError) { console.error(uploadError); continue }
+
+      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path)
+
+      // Save metadata via API
+      const res = await fetch('/api/media/meta', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: urlData.publicUrl,
+          type: isVideo ? 'video' : 'photo',
+          student_id: uploadStudent || null,
+          caption: uploadCaption || null,
+        }),
+      })
       const { data } = await res.json()
       if (data) setMedia(prev => [data, ...prev])
     }
@@ -52,8 +77,8 @@ export default function MediaGallery({ media: initialMedia, students }: Props) {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: { 'image/*': [], 'video/*': [] },
-    maxSize: 50 * 1024 * 1024,
+    accept: { 'image/*': [], 'video/*': [], 'video/mp4': [], 'video/quicktime': [], 'video/x-msvideo': [] },
+    maxSize: 200 * 1024 * 1024,
   })
 
   const filtered = media.filter(m => {
