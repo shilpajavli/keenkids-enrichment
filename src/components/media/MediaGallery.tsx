@@ -131,7 +131,7 @@ export default function MediaGallery({ media: initialMedia, students }: Props) {
               <div className="text-[13px]" style={{ color: '#4A4640' }}>
                 {uploading ? 'Uploading…' : isDragActive ? 'Drop to upload' : 'Drag photos or videos here, or click to browse'}
               </div>
-              <div className="text-[11px] mt-1.5" style={{ color: '#8A8580' }}>JPEG, PNG, MP4, MOV · Max 50MB per file</div>
+              <div className="text-[11px] mt-1.5" style={{ color: '#8A8580' }}>JPEG, PNG, MP4, MOV · Max 200MB per file</div>
             </div>
           </div>
         </Card>
