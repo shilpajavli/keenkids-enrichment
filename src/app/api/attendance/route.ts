@@ -23,51 +23,51 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = createAdminClient()
-  const body = await req.json()
+  try {
+    const supabase = createAdminClient()
+    const body = await req.json()
 
-  const records = (Array.isArray(body) ? body : [body]).map((r: Record<string, unknown>) => ({
-    ...r,
-    class_id: r.class_id || null,
-  }))
+    const records: Record<string, unknown>[] = (Array.isArray(body) ? body : [body]).map((r: Record<string, unknown>) => ({
+      ...r,
+      class_id: r.class_id || null,
+    }))
 
-  const results = []
-  for (const record of records) {
-    // Check if a record already exists for this student+date
-    let query = supabase
-      .from('attendance')
-      .select('id')
-      .eq('student_id', record.student_id as string)
-      .eq('date', record.date as string)
-
-    if (record.class_id) query = query.eq('class_id', record.class_id as string)
-    else query = query.is('class_id', null)
-
-    const { data: existing } = await query.maybeSingle()
-
-    if (existing?.id) {
-      // Update existing record
-      const { data, error } = await supabase
+    const results = []
+    for (const record of records) {
+      const { data: rows, error: selErr } = await supabase
         .from('attendance')
-        .update(record)
-        .eq('id', existing.id)
-        .select()
-        .single()
-      if (error) return NextResponse.json({ error: error.message }, { status: 400 })
-      results.push(data)
-    } else {
-      // Insert new record
-      const { data, error } = await supabase
-        .from('attendance')
-        .insert(record)
-        .select()
-        .single()
-      if (error) return NextResponse.json({ error: error.message }, { status: 400 })
-      results.push(data)
+        .select('id')
+        .eq('student_id', record.student_id as string)
+        .eq('date', record.date as string)
+
+      if (selErr) return NextResponse.json({ error: 'select: ' + selErr.message }, { status: 400 })
+
+      const existing = rows?.[0]
+
+      if (existing?.id) {
+        const { data, error } = await supabase
+          .from('attendance')
+          .update(record)
+          .eq('id', existing.id)
+          .select()
+          .single()
+        if (error) return NextResponse.json({ error: 'update: ' + error.message }, { status: 400 })
+        results.push(data)
+      } else {
+        const { data, error } = await supabase
+          .from('attendance')
+          .insert(record)
+          .select()
+          .single()
+        if (error) return NextResponse.json({ error: 'insert: ' + error.message }, { status: 400 })
+        results.push(data)
+      }
     }
-  }
 
-  return NextResponse.json({ data: results })
+    return NextResponse.json({ data: results })
+  } catch (e: unknown) {
+    return NextResponse.json({ error: String(e) }, { status: 400 })
+  }
 }
 
 export async function PATCH(req: NextRequest) {
