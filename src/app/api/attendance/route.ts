@@ -26,9 +26,19 @@ export async function POST(req: NextRequest) {
   const supabase = await createServerClient()
   const body = await req.json()
 
+  // Normalize: treat empty string class_id as null
+  const records = (Array.isArray(body) ? body : [body]).map((r: Record<string, unknown>) => ({
+    ...r,
+    class_id: r.class_id || null,
+  }))
+
+  // If no class_id, upsert on student_id+date only
+  const hasClassId = records.every(r => r.class_id)
+  const conflictKey = hasClassId ? 'student_id,class_id,date' : 'student_id,date'
+
   const { data, error } = await supabase
     .from('attendance')
-    .upsert(body, { onConflict: 'student_id,class_id,date' })
+    .upsert(records, { onConflict: conflictKey })
     .select()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })

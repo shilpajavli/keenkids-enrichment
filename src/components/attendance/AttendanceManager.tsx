@@ -9,6 +9,7 @@ import type { AttendanceStatus } from '@/types'
 interface Student {
   id: string
   full_name: string
+  last_name?: string | null
   grade: number
   avatar_url: string | null
   room_number: string | null
@@ -93,6 +94,7 @@ export default function AttendanceManager({ students, classes, todayRecords, his
     .filter(s => dayFilter === 'all' || !s.session_day || s.session_day === dayFilter)
     .filter(s => s.full_name.toLowerCase().includes(search.toLowerCase()))
     .filter(s => gradeFilter === 'all' || String(s.grade) === gradeFilter)
+    .sort((a, b) => a.full_name.localeCompare(b.full_name))
 
   // Mark attendance (existing flow)
   async function checkIn(studentId: string, status: AttendanceStatus) {
