@@ -76,7 +76,7 @@ export default function ProgressTracker({ students, allSkills }: Props) {
         {selected && (
           <div className="flex items-center gap-2">
             <StudentAvatar name={selected.full_name} avatarUrl={selected.avatar_url} size="sm" />
-            <span className="text-[12.5px]" style={{ color: '#8A8580' }}>{selected.grade === 0 ? 'TK/K' : `Grade ${selected.grade}`}</span>
+            <span className="text-[12.5px]" style={{ color: '#8A8580' }}>{selected.grade === 0 ? 'K' : `Grade ${selected.grade}`}</span>
           </div>
         )}
         <div className="ml-auto flex items-center gap-2">

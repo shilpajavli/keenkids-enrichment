@@ -52,7 +52,7 @@ export default function Sidebar({ profile, programs, currentProgramId }: Props) 
   }
 
   return (
-    <aside className="w-[220px] flex-shrink-0 hidden lg:flex flex-col" style={{ background: '#1A1814' }}>
+    <aside className="w-[200px] md:w-[220px] flex-shrink-0 hidden md:flex flex-col" style={{ background: '#1A1814' }}>
       {/* Brand */}
       <div className="px-6 pt-7 pb-4 border-b border-white/8">
         <div className="font-serif text-[22px] font-light text-white leading-tight mb-4">

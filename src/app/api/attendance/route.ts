@@ -26,11 +26,28 @@ export async function POST(req: NextRequest) {
   const supabase = await createServerClient()
   const body = await req.json()
 
-  // Upsert to handle re-marking
   const { data, error } = await supabase
     .from('attendance')
     .upsert(body, { onConflict: 'student_id,class_id,date' })
     .select()
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+  return NextResponse.json({ data })
+}
+
+export async function PATCH(req: NextRequest) {
+  const supabase = await createServerClient()
+  const { searchParams } = new URL(req.url)
+  const id = searchParams.get('id')
+  if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+
+  const body = await req.json()
+  const { data, error } = await supabase
+    .from('attendance')
+    .update(body)
+    .eq('id', id)
+    .select()
+    .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
   return NextResponse.json({ data })

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Edit2, Save, Trash2, Link2 } from 'lucide-react'
+import { ArrowLeft, Trash2, Link2 } from 'lucide-react'
 import { Card, CardHeader, CardBody } from '@/components/ui/Card'
 import StudentAvatar from '@/components/ui/StudentAvatar'
 import Badge from '@/components/ui/Badge'
@@ -42,6 +42,19 @@ export default function StudentProfile({ student, skills, notes, attendance, med
   const [tab, setTab] = useState<Tab>('progress')
   const [noteText, setNoteText] = useState('')
   const [saving, setSaving] = useState(false)
+  const [roomNumber, setRoomNumber] = useState(student.room_number ?? '')
+  const [needsEscort, setNeedsEscort] = useState(student.needs_escort ?? false)
+  const [savingInfo, setSavingInfo] = useState(false)
+
+  async function saveLogisticsInfo() {
+    setSavingInfo(true)
+    await fetch(`/api/students?id=${student.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ room_number: roomNumber || null, needs_escort: needsEscort }),
+    })
+    setSavingInfo(false)
+  }
   const [deleting, setDeleting] = useState(false)
   const [skillsState, setSkillsState] = useState(skills)
   const [showLinkParent, setShowLinkParent] = useState(false)
@@ -144,7 +157,7 @@ export default function StudentProfile({ student, skills, notes, attendance, med
           <div>
             <h1 className="font-serif text-3xl font-light">{student.full_name}</h1>
             <div className="flex items-center gap-2 mt-1">
-              <Badge variant="blue">{student.grade === 0 ? 'TK/K' : `Grade ${student.grade}`}</Badge>
+              <Badge variant="blue">{student.grade === 0 ? 'K' : `Grade ${student.grade}`}</Badge>
               <span className="text-[12px]" style={{ color: '#8A8580' }}>
                 Enrolled {formatDate(student.enrolled_at)}
               </span>
@@ -222,6 +235,37 @@ export default function StudentProfile({ student, skills, notes, attendance, med
           </CardBody>
         </Card>
       )}
+
+      {/* Logistics */}
+      <Card>
+        <CardBody>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[12px] font-medium uppercase tracking-wide" style={{ color: '#8A8580' }}>Pickup Info</span>
+            <button className="btn btn-gold text-[11px]" onClick={saveLogisticsInfo} disabled={savingInfo}>
+              {savingInfo ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <label className="text-[12.5px]" style={{ color: '#4A4640' }}>Room #</label>
+              <input
+                className="input text-[13px] w-24"
+                placeholder="e.g. 12"
+                value={roomNumber}
+                onChange={e => setRoomNumber(e.target.value)}
+              />
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={needsEscort}
+                onChange={e => setNeedsEscort(e.target.checked)}
+              />
+              <span className="text-[12.5px]" style={{ color: '#4A4640' }}>Needs escort to program room</span>
+            </label>
+          </div>
+        </CardBody>
+      </Card>
 
       {/* Parent info */}
       {parentProfile ? (

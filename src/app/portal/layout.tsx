@@ -3,6 +3,7 @@ import { createServerClient } from '@/lib/supabase-server'
 import Link from 'next/link'
 import { getInitials } from '@/lib/utils'
 import SignOutButton from '@/components/ui/SignOutButton'
+import TrackPresence from '@/components/ui/TrackPresence'
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createServerClient()
@@ -66,6 +67,7 @@ export default async function PortalLayout({ children }: { children: React.React
         </div>
       </div>
 
+      <TrackPresence />
       <main className="max-w-3xl mx-auto px-4 py-8">
         {children}
       </main>

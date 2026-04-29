@@ -15,7 +15,7 @@ export default function MobileNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 border-t flex z-50"
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t flex z-50"
       style={{ background: '#1A1814', borderColor: 'rgba(255,255,255,0.08)' }}>
       {NAV.map(({ href, label, icon: Icon }) => {
         const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))

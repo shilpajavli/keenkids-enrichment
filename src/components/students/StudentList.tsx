@@ -19,6 +19,7 @@ interface StudentRow {
   skills_mastered: number
   skills_total: number
   parent_id: string | null
+  parent_email: string | null
 }
 
 export default function StudentList({ students: initial, programId }: { students: StudentRow[]; programId: string | null }) {
@@ -85,7 +86,7 @@ export default function StudentList({ students: initial, programId }: { students
               className="input w-auto text-[13px]"
               value={form.grade}
               onChange={e => setForm(f => ({ ...f, grade: e.target.value }))}>
-              <option value="0">TK/K</option>
+              <option value="0">K</option>
               {[1,2,3,4,5,6,7,8].map(g => <option key={g} value={g}>Grade {g}</option>)}
             </select>
           </div>
@@ -115,7 +116,7 @@ export default function StudentList({ students: initial, programId }: { students
           value={gradeFilter}
           onChange={e => setGradeFilter(e.target.value)}>
           <option value="all">All grades</option>
-          {grades.map(g => <option key={g} value={g}>{g === 0 ? 'TK/K' : `Grade ${g}`}</option>)}
+          {grades.map(g => <option key={g} value={g}>{g === 0 ? 'K' : `Grade ${g}`}</option>)}
         </select>
         <div className="ml-auto flex items-center gap-3">
           <span className="text-[12px]" style={{ color: '#8A8580' }}>{filtered.length} student{filtered.length !== 1 ? 's' : ''}</span>
@@ -147,7 +148,7 @@ export default function StudentList({ students: initial, programId }: { students
                   <span className="text-[14px] font-medium" style={{ color: '#1A1814' }}>
                     {student.full_name}
                   </span>
-                  <Badge variant="blue">{student.grade === 0 ? 'TK/K' : `Grade ${student.grade}`}</Badge>
+                  <Badge variant="blue">{student.grade === 0 ? 'K' : `Grade ${student.grade}`}</Badge>
                 </div>
                 <div className="text-[11.5px] mb-2" style={{ color: '#8A8580' }}>
                   {(student.classes ?? []).join(' · ')} · Enrolled {student.enrolled_at?.slice(0, 7)}
@@ -160,10 +161,15 @@ export default function StudentList({ students: initial, programId }: { students
                 </div>
               </div>
 
-              <div className="flex flex-col items-end gap-1.5">
+              <div className="flex flex-col items-end gap-1">
                 <span className="text-[12px]" style={{ color: '#B8973A' }}>→</span>
                 {student.parent_id ? (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: '#EAF3DE', color: '#27500A' }}>✓ Parent linked</span>
+                  <>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: '#EAF3DE', color: '#27500A' }}>✓ Parent linked</span>
+                    {student.parent_email && (
+                      <span className="text-[10px]" style={{ color: '#8A8580' }}>{student.parent_email}</span>
+                    )}
+                  </>
                 ) : (
                   <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: '#F5F0E8', color: '#8A8580' }}>No parent</span>
                 )}

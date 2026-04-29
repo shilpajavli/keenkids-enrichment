@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
 import Image from 'next/image'
-import { Upload, X, Play, Trash2, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Upload, X, Play, Trash2, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { formatDate } from '@/lib/utils'
 import type { MediaItem } from '@/types'
@@ -86,6 +86,32 @@ export default function MediaGallery({ media: initialMedia, students }: Props) {
     setDeleting(null)
   }
 
+  const filtered = media.filter(m => {
+    const matchType = filter === 'all' || m.type === filter
+    const matchStudent = studentFilter === 'all' || m.student_id === studentFilter
+    return matchType && matchStudent
+  })
+
+  const lightboxIndex = lightbox ? filtered.findIndex(m => m.id === lightbox.id) : -1
+
+  function goNext() {
+    if (lightboxIndex < filtered.length - 1) setLightbox(filtered[lightboxIndex + 1])
+  }
+  function goPrev() {
+    if (lightboxIndex > 0) setLightbox(filtered[lightboxIndex - 1])
+  }
+
+  useEffect(() => {
+    if (!lightbox) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'ArrowRight') goNext()
+      if (e.key === 'ArrowLeft') goPrev()
+      if (e.key === 'Escape') setLightbox(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [lightbox, lightboxIndex, filtered])
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: { 'image/*': [], 'video/*': [], 'video/mp4': [], 'video/quicktime': [], 'video/x-msvideo': [] },
@@ -93,13 +119,6 @@ export default function MediaGallery({ media: initialMedia, students }: Props) {
     multiple: true,
   })
 
-  const filtered = media.filter(m => {
-    const matchType = filter === 'all' || m.type === filter
-    const matchStudent = studentFilter === 'all' || m.student_id === studentFilter
-    return matchType && matchStudent
-  })
-
-  const isUploading = uploadQueue.some(u => u.status === 'uploading' || u.status === 'pending')
   const allDone = uploadQueue.length > 0 && uploadQueue.every(u => u.status === 'done' || u.status === 'error')
 
   return (
@@ -193,18 +212,34 @@ export default function MediaGallery({ media: initialMedia, students }: Props) {
         <div className="py-16 text-center text-[13px]" style={{ color: '#8A8580' }}>No media uploaded yet</div>
       )}
 
-      <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(3, minmax(0,1fr))' }}>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {filtered.map(item => (
           <div key={item.id}
             className="rounded-xl overflow-hidden cursor-pointer group transition-all"
             style={{ border: '1px solid rgba(184,151,58,0.28)' }}
             onClick={() => setLightbox(item)}>
-            <div className="relative w-full flex items-center justify-center"
-              style={{ aspectRatio: '4/3', background: '#F5F0E8' }}>
+            <div className="relative w-full overflow-hidden"
+              style={{ aspectRatio: '4/3', background: '#1A1814' }}>
               {item.url && item.type === 'photo' ? (
-                <Image src={item.url} alt={item.caption ?? ''} fill className="object-cover" />
+                <Image src={item.url} alt={item.caption ?? ''} fill className="object-contain" />
+              ) : item.url ? (
+                <>
+                  <video
+                    src={`${item.url}#t=0.1`}
+                    preload="metadata"
+                    muted
+                    playsInline
+                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }}
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center"
+                      style={{ background: 'rgba(26,24,20,0.55)' }}>
+                      <Play size={16} className="text-white" style={{ marginLeft: 2 }} />
+                    </div>
+                  </div>
+                </>
               ) : (
-                <div className="flex flex-col items-center gap-2" style={{ color: '#8A8580' }}>
+                <div className="flex flex-col items-center gap-2 absolute inset-0 flex items-center justify-center" style={{ color: '#8A8580' }}>
                   <Play size={28} style={{ opacity: 0.4 }} />
                   <span className="text-[10px] uppercase tracking-wider" style={{ color: '#B8973A' }}>Video</span>
                 </div>
@@ -233,22 +268,73 @@ export default function MediaGallery({ media: initialMedia, students }: Props) {
 
       {/* Lightbox */}
       {lightbox && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{ background: 'rgba(26,24,20,0.92)' }}
+        <div
+          className="fixed inset-0 z-50 overflow-hidden"
+          style={{ background: 'rgba(26,24,20,0.95)' }}
           onClick={() => setLightbox(null)}>
-          <button className="absolute top-5 right-5 text-white/60 hover:text-white transition-colors"
-            onClick={() => setLightbox(null)}>
-            <X size={24} />
-          </button>
-          <div className="relative max-w-3xl max-h-[80vh] w-full mx-6" onClick={e => e.stopPropagation()}>
+
+          {/* Top bar */}
+          <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-5 py-4 z-10">
+            <div className="text-white/40 text-[12px] tabular-nums">{lightboxIndex + 1} / {filtered.length}</div>
+            <button className="text-white/60 hover:text-white transition-colors" onClick={() => setLightbox(null)}>
+              <X size={22} />
+            </button>
+          </div>
+
+          {/* Prev */}
+          {lightboxIndex > 0 && (
+            <button
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center z-10"
+              style={{ background: 'rgba(255,255,255,0.15)' }}
+              onClick={e => { e.stopPropagation(); goPrev() }}>
+              <ChevronLeft size={22} className="text-white" />
+            </button>
+          )}
+
+          {/* Next */}
+          {lightboxIndex < filtered.length - 1 && (
+            <button
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center z-10"
+              style={{ background: 'rgba(255,255,255,0.15)' }}
+              onClick={e => { e.stopPropagation(); goNext() }}>
+              <ChevronRight size={22} className="text-white" />
+            </button>
+          )}
+
+          {/* Media — centred, never overflows */}
+          <div
+            className="absolute inset-0 flex flex-col items-center justify-center gap-3"
+            style={{ padding: '56px 64px 20px' }}
+            onClick={e => e.stopPropagation()}>
             {lightbox.type === 'photo' && lightbox.url ? (
-              <Image src={lightbox.url} alt={lightbox.caption ?? ''} width={900} height={600}
-                className="w-full h-auto rounded-xl object-contain" />
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={lightbox.url}
+                alt={lightbox.caption ?? ''}
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: 'calc(100vh - 130px)',
+                  width: 'auto',
+                  height: 'auto',
+                  borderRadius: 12,
+                  display: 'block',
+                  flexShrink: 0,
+                }}
+              />
             ) : (
-              <video src={lightbox.url} controls className="w-full rounded-xl" />
+              <video
+                src={lightbox.url}
+                controls
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: 'calc(100vh - 130px)',
+                  borderRadius: 12,
+                  flexShrink: 0,
+                }}
+              />
             )}
             {(lightbox.caption || lightbox.student?.full_name) && (
-              <div className="mt-3 text-center">
+              <div className="text-center flex-shrink-0">
                 {lightbox.caption && <div className="text-white text-sm">{lightbox.caption}</div>}
                 {lightbox.student?.full_name && (
                   <div className="text-white/50 text-xs mt-1">{lightbox.student.full_name} · {formatDate(lightbox.created_at)}</div>

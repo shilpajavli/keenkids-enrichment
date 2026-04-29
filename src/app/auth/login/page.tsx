@@ -9,7 +9,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState('')
-  const [showEmail, setShowEmail] = useState(false)
 
   async function handleGoogleLogin() {
     await supabase.auth.signInWithOAuth({
@@ -86,40 +85,28 @@ export default function LoginPage() {
                 <span className="text-[14px] font-medium" style={{ color: '#1A1814' }}>Continue with Google</span>
               </button>
 
-              {/* Email fallback */}
-              {!showEmail ? (
-                <button
-                  onClick={() => setShowEmail(true)}
-                  className="w-full text-center text-[12px] py-2 transition-colors"
-                  style={{ color: '#8A8580' }}>
-                  Don't have a Google account? Sign in with email →
+              {/* Email — always visible */}
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex-1 h-px" style={{ background: 'rgba(184,151,58,0.22)' }} />
+                <span className="text-[11px]" style={{ color: '#8A8580' }}>or sign in with email</span>
+                <div className="flex-1 h-px" style={{ background: 'rgba(184,151,58,0.22)' }} />
+              </div>
+              <form onSubmit={handleLogin} className="space-y-3">
+                <input
+                  type="email"
+                  className="input"
+                  placeholder="your@email.com"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  required
+                />
+                {error && (
+                  <p className="text-[#791F1F] text-xs bg-[#FCEBEB] px-3 py-2 rounded-lg">{error}</p>
+                )}
+                <button type="submit" className="btn btn-gold w-full justify-center py-2.5" disabled={loading}>
+                  {loading ? 'Sending link…' : 'Send magic link'}
                 </button>
-              ) : (
-                <>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="flex-1 h-px" style={{ background: 'rgba(184,151,58,0.22)' }} />
-                    <span className="text-[11px]" style={{ color: '#8A8580' }}>or sign in with email</span>
-                    <div className="flex-1 h-px" style={{ background: 'rgba(184,151,58,0.22)' }} />
-                  </div>
-                  <form onSubmit={handleLogin} className="space-y-3">
-                    <input
-                      type="email"
-                      className="input"
-                      placeholder="your@email.com"
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                      required
-                      autoFocus
-                    />
-                    {error && (
-                      <p className="text-[#791F1F] text-xs bg-[#FCEBEB] px-3 py-2 rounded-lg">{error}</p>
-                    )}
-                    <button type="submit" className="btn btn-gold w-full justify-center py-2.5" disabled={loading}>
-                      {loading ? 'Sending link…' : 'Send magic link'}
-                    </button>
-                  </form>
-                </>
-              )}
+              </form>
             </>
           )}
         </div>

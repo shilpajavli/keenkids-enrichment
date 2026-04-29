@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase-server'
+import { createServerClient, createAdminClient } from '@/lib/supabase-server'
 import { notFound } from 'next/navigation'
 import StudentProfile from '@/components/students/StudentProfile'
 
@@ -21,7 +21,8 @@ export default async function StudentDetailPage({ params }: Props) {
   const student = studentRes.data
   let parentProfile: { full_name: string; email: string } | null = null
   if (student.parent_id) {
-    const { data } = await supabase
+    const admin = createAdminClient()
+    const { data } = await admin
       .from('profiles')
       .select('full_name, email')
       .eq('id', student.parent_id)

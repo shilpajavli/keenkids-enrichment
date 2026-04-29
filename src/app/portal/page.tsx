@@ -62,7 +62,7 @@ export default async function ParentPortalPage() {
         </div>
         <div>
           <h1 className="font-serif text-2xl font-light" style={{ color: '#1A1814' }}>{student.full_name}</h1>
-          <Badge variant="blue">{student.grade === 0 ? 'TK/K' : `Grade ${student.grade}`}</Badge>
+          <Badge variant="blue">{student.grade === 0 ? 'K' : `Grade ${student.grade}`}</Badge>
         </div>
       </div>
 
@@ -134,22 +134,34 @@ export default async function ParentPortalPage() {
         </Card>
       )}
 
-      {/* Photos */}
+      {/* Photos & Videos */}
       {media.length > 0 && (
         <Card>
           <CardHeader title="Photos & videos from class" />
           <CardBody>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-3">
               {media.map(item => (
-                <a key={item.id} href={item.url} target="_blank" rel="noopener noreferrer"
-                  className="block rounded-lg overflow-hidden aspect-square bg-paper">
+                <div key={item.id} className="rounded-lg overflow-hidden"
+                  style={{ background: '#1A1814', border: '1px solid rgba(184,151,58,0.2)' }}>
                   {item.type === 'photo' ? (
-                    <img src={item.url} alt={item.caption ?? ''} className="w-full h-full object-cover" />
+                    <a href={item.url} target="_blank" rel="noopener noreferrer" className="block">
+                      <img src={item.url} alt={item.caption ?? ''}
+                        className="w-full"
+                        style={{ display: 'block', maxHeight: 240, objectFit: 'contain', background: '#1A1814' }} />
+                    </a>
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-[11px]"
-                      style={{ color: '#B8973A' }}>▶ Video</div>
+                    <video
+                      src={`${item.url}#t=0.1`}
+                      controls
+                      playsInline
+                      preload="metadata"
+                      style={{ width: '100%', maxHeight: 240, display: 'block', background: '#1A1814' }}
+                    />
                   )}
-                </a>
+                  {item.caption && (
+                    <div className="px-2 py-1.5 text-[11px]" style={{ color: '#C4B89A' }}>{item.caption}</div>
+                  )}
+                </div>
               ))}
             </div>
           </CardBody>

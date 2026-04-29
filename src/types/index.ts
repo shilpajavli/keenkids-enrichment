@@ -20,6 +20,8 @@ export interface Student {
   classes: string[]
   parent_id: string
   notes: string | null
+  room_number: string | null
+  needs_escort: boolean | null
   created_at: string
   updated_at: string
 }

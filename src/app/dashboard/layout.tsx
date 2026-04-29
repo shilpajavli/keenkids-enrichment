@@ -23,7 +23,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <Sidebar profile={profileRes.data} programs={programsRes.data ?? []} currentProgramId={currentProgramId} />
       <div className="flex-1 flex flex-col min-w-0">
         <Topbar profile={profileRes.data} />
-        <main className="flex-1 p-4 lg:p-8 overflow-auto pb-20 lg:pb-8">
+        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto pb-20 md:pb-6 lg:pb-8">
           {children}
         </main>
         <MobileNav />

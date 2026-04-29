@@ -4,7 +4,7 @@ import { Card, CardHeader, CardBody } from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
 import Link from 'next/link'
 
-const gradeLabel = (g: number) => g === 0 ? 'TK/K' : `Grade ${g}`
+const gradeLabel = (g: number) => g === 0 ? 'K' : `Grade ${g}`
 
 export default async function DashboardPage() {
   const supabase = await createServerClient()

@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase-server'
+import { createServerClient, createAdminClient } from '@/lib/supabase-server'
 import { getCurrentProgramId } from '@/lib/program'
 import StudentList from '@/components/students/StudentList'
 
@@ -17,10 +17,23 @@ export default async function StudentsPage() {
     .eq('program_id', programId ?? '')
     .order('full_name')
 
+  // Fetch parent emails for linked students using admin client (bypasses RLS)
+  const admin = createAdminClient()
+  const parentIds = [...new Set((students ?? []).map(s => s.parent_id).filter(Boolean))] as string[]
+  let parentMap: Record<string, string> = {}
+  if (parentIds.length > 0) {
+    const { data: parentProfiles } = await admin
+      .from('profiles')
+      .select('id, email')
+      .in('id', parentIds)
+    parentProfiles?.forEach((p: { id: string; email: string }) => { parentMap[p.id] = p.email })
+  }
+
   const enriched = (students ?? []).map(s => ({
     ...s,
     skills_total: s.student_skills?.length ?? 0,
     skills_mastered: s.student_skills?.filter((sk: any) => sk.status === 'mastered').length ?? 0,
+    parent_email: s.parent_id ? (parentMap[s.parent_id] ?? null) : null,
   }))
 
   return (

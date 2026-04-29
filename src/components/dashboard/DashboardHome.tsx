@@ -20,7 +20,7 @@ interface Props {
 
 type View = 'enrolled' | 'present' | 'absent'
 
-const gradeLabel = (g: number) => g === 0 ? 'TK/K' : `Grade ${g}`
+const gradeLabel = (g: number) => g === 0 ? 'K' : `Grade ${g}`
 
 function fmtTime(t: string) {
   const [h, m] = t.split(':').map(Number)

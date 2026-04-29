@@ -17,7 +17,7 @@ export default function Topbar({ profile }: Props) {
           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
           <Bell size={15} />
         </button>
-        <div className="text-sm text-ink-tertiary font-light">
+        <div className="hidden lg:block text-sm text-ink-tertiary font-light">
           {profile?.email}
         </div>
       </div>

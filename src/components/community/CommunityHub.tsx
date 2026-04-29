@@ -6,9 +6,16 @@ import { formatRelative } from '@/lib/utils'
 import type { Announcement } from '@/types'
 import { Pin, Trash2 } from 'lucide-react'
 
-interface Parent { id: string; full_name: string; email: string }
+interface Parent { id: string; full_name: string; email: string; last_seen_at: string | null }
+interface Program { id: string; name: string }
+interface Student { id: string; parent_id: string | null; program_id: string | null }
 
-export default function CommunityHub({ announcements: initial, parents }: { announcements: Announcement[]; parents: Parent[] }) {
+export default function CommunityHub({ announcements: initial, parents, programs, students }: {
+  announcements: Announcement[]
+  parents: Parent[]
+  programs: Program[]
+  students: Student[]
+}) {
   const [announcements, setAnnouncements] = useState(initial)
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
@@ -20,12 +27,21 @@ export default function CommunityHub({ announcements: initial, parents }: { anno
   const [emailSent, setEmailSent] = useState('')
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [parentList, setParentList] = useState(parents)
+  const [programFilter, setProgramFilter] = useState<string>('all')
 
-  const allSelected = selected.size === parentList.length
-  const selectedParents = parentList.filter(p => selected.has(p.id))
+  // Filter parents by selected program
+  const filteredParentList = programFilter === 'all'
+    ? parentList
+    : parentList.filter(p => {
+        const parentStudents = students.filter(s => s.parent_id === p.id)
+        return parentStudents.some(s => s.program_id === programFilter)
+      })
+
+  const allSelected = selected.size === filteredParentList.length && filteredParentList.length > 0
+  const selectedParents = filteredParentList.filter(p => selected.has(p.id))
 
   function toggleAll() {
-    setSelected(allSelected ? new Set() : new Set(parentList.map(p => p.id)))
+    setSelected(allSelected ? new Set() : new Set(filteredParentList.map(p => p.id)))
   }
 
   async function deleteParent(id: string, e: React.MouseEvent) {
@@ -93,7 +109,7 @@ export default function CommunityHub({ announcements: initial, parents }: { anno
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Announcement feed */}
         <div className="space-y-4">
           <Card id="new-ann">
@@ -156,27 +172,43 @@ export default function CommunityHub({ announcements: initial, parents }: { anno
           {/* Families chip selector */}
           <Card>
             <CardBody>
+              {/* Program filter dropdown */}
+              <div className="mb-3">
+                <select
+                  className="input text-[12px] w-full"
+                  value={programFilter}
+                  onChange={e => { setProgramFilter(e.target.value); setSelected(new Set()) }}>
+                  <option value="all">All camps ({parentList.length} families)</option>
+                  {programs.map(p => {
+                    const count = parentList.filter(par =>
+                      students.some(s => s.parent_id === par.id && s.program_id === p.id)
+                    ).length
+                    return <option key={p.id} value={p.id}>{p.name} ({count} families)</option>
+                  })}
+                </select>
+              </div>
               <div className="flex items-center justify-between mb-3">
                 <span className="text-[12px] font-medium" style={{ color: '#4A4640' }}>
-                  {selectedParents.length === parentList.length
+                  {selectedParents.length === filteredParentList.length && filteredParentList.length > 0
                     ? 'All families selected'
-                    : `${selectedParents.length} of ${parentList.length} selected`}
+                    : `${selectedParents.length} of ${filteredParentList.length} selected`}
                 </span>
-                {parentList.length > 0 && (
+                {filteredParentList.length > 0 && (
                   <button className="text-[11px]" style={{ color: '#8A6E25' }} onClick={toggleAll}>
                     {allSelected ? 'Deselect all' : 'Select all'}
                   </button>
                 )}
               </div>
-              {parentList.length === 0 && (
-                <div className="text-[12.5px]" style={{ color: '#8A8580' }}>No parents linked yet</div>
+              {filteredParentList.length === 0 && (
+                <div className="text-[12.5px]" style={{ color: '#8A8580' }}>No parents in this camp</div>
               )}
               <div className="flex flex-wrap gap-2">
-                {parentList.map(p => {
+                {filteredParentList.map(p => {
                   const isSelected = selected.has(p.id)
                   const initials = p.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
                   return (
                     <div key={p.id} className="flex items-center gap-1 group/chip">
+                      <div className="flex flex-col items-start">
                       <button
                         onClick={() => toggleOne(p.id)}
                         title={p.email}
@@ -193,6 +225,10 @@ export default function CommunityHub({ announcements: initial, parents }: { anno
                         </div>
                         {p.full_name?.split(' ')[0]}
                       </button>
+                      <span className="text-[10px] pl-3 mt-0.5" style={{ color: p.last_seen_at ? '#27500A' : '#C4B89A' }}>
+                        {p.last_seen_at ? `Visited ${formatRelative(p.last_seen_at)}` : 'Never visited'}
+                      </span>
+                      </div>
                       <button
                         onClick={e => deleteParent(p.id, e)}
                         title="Remove parent"
