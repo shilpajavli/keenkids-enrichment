@@ -27,18 +27,19 @@ export async function POST(req: NextRequest) {
     const supabase = createAdminClient()
     const body = await req.json()
 
-    const records: Record<string, unknown>[] = (Array.isArray(body) ? body : [body]).map((r: Record<string, unknown>) => ({
-      ...r,
-      class_id: r.class_id || null,
-    }))
+    const raw: Record<string, unknown>[] = Array.isArray(body) ? body : [body]
+    const records: Record<string, unknown>[] = raw.map(r => ({ ...r, class_id: (r.class_id as string) || null }))
 
     const results = []
     for (const record of records) {
+      const studentId = record.student_id as string
+      const date = record.date as string
+
       const { data: rows, error: selErr } = await supabase
         .from('attendance')
         .select('id')
-        .eq('student_id', record.student_id as string)
-        .eq('date', record.date as string)
+        .eq('student_id', studentId)
+        .eq('date', date)
 
       if (selErr) return NextResponse.json({ error: 'select: ' + selErr.message }, { status: 400 })
 
