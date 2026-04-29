@@ -1,8 +1,8 @@
-import { createServerClient } from '@/lib/supabase-server'
+import { createAdminClient } from '@/lib/supabase-server'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(req: NextRequest) {
-  const supabase = await createServerClient()
+  const supabase = createAdminClient()
   const { searchParams } = new URL(req.url)
   const date = searchParams.get('date')
   const studentId = searchParams.get('student_id')
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = await createServerClient()
+  const supabase = createAdminClient()
   const body = await req.json()
 
   const records = (Array.isArray(body) ? body : [body]).map((r: Record<string, unknown>) => ({
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const supabase = await createServerClient()
+  const supabase = createAdminClient()
   const { searchParams } = new URL(req.url)
   const id = searchParams.get('id')
   if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
