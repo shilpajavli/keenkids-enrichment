@@ -21,7 +21,7 @@ interface ClassItem { id: string; name: string }
 interface AttRecord {
   id: string
   student_id: string
-  class_id: string
+  class_id?: string
   status: AttendanceStatus
   sign_in_time: string | null
   sign_out_time: string | null
