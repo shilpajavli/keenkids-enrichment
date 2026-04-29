@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Trash2, Link2 } from 'lucide-react'
+import { ArrowLeft, Trash2, Link2, Check } from 'lucide-react'
 import { Card, CardHeader, CardBody } from '@/components/ui/Card'
 import StudentAvatar from '@/components/ui/StudentAvatar'
 import Badge from '@/components/ui/Badge'
@@ -330,7 +330,6 @@ export default function StudentProfile({ student, skills, notes, attendance, med
                   <ProgressBar value={subPct} showLabel={false} className="mb-4" />
                   <div className="space-y-2">
                     {subSkills.map(ss => {
-                      const info = STATUS_BADGE[ss.status]
                       return (
                         <div key={ss.id} className="flex items-center justify-between py-1.5"
                           style={{ borderBottom: '1px solid rgba(184,151,58,0.12)' }}>
@@ -403,7 +402,7 @@ export default function StudentProfile({ student, skills, notes, attendance, med
                 style={{ resize: 'none' }}
               />
               <button className="btn btn-gold" onClick={saveNote} disabled={saving}>
-                <Save size={13} /> {saving ? 'Saving…' : 'Save note'}
+                <Check size={13} /> {saving ? 'Saving…' : 'Save note'}
               </button>
             </CardBody>
           </Card>
