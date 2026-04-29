@@ -26,23 +26,48 @@ export async function POST(req: NextRequest) {
   const supabase = await createServerClient()
   const body = await req.json()
 
-  // Normalize: treat empty string class_id as null
   const records = (Array.isArray(body) ? body : [body]).map((r: Record<string, unknown>) => ({
     ...r,
     class_id: r.class_id || null,
   }))
 
-  // If no class_id, upsert on student_id+date only
-  const hasClassId = records.every(r => r.class_id)
-  const conflictKey = hasClassId ? 'student_id,class_id,date' : 'student_id,date'
+  const results = []
+  for (const record of records) {
+    // Check if a record already exists for this student+date
+    let query = supabase
+      .from('attendance')
+      .select('id')
+      .eq('student_id', record.student_id as string)
+      .eq('date', record.date as string)
 
-  const { data, error } = await supabase
-    .from('attendance')
-    .upsert(records, { onConflict: conflictKey })
-    .select()
+    if (record.class_id) query = query.eq('class_id', record.class_id as string)
+    else query = query.is('class_id', null)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 })
-  return NextResponse.json({ data })
+    const { data: existing } = await query.maybeSingle()
+
+    if (existing?.id) {
+      // Update existing record
+      const { data, error } = await supabase
+        .from('attendance')
+        .update(record)
+        .eq('id', existing.id)
+        .select()
+        .single()
+      if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+      results.push(data)
+    } else {
+      // Insert new record
+      const { data, error } = await supabase
+        .from('attendance')
+        .insert(record)
+        .select()
+        .single()
+      if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+      results.push(data)
+    }
+  }
+
+  return NextResponse.json({ data: results })
 }
 
 export async function PATCH(req: NextRequest) {
