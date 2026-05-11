@@ -6,16 +6,14 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const date = searchParams.get('date')
   const studentId = searchParams.get('student_id')
-  const classId = searchParams.get('class_id')
 
   let query = supabase
     .from('attendance')
-    .select('*, student:students(full_name, avatar_url), class:classes(name)')
+    .select('*')
     .order('date', { ascending: false })
 
   if (date) query = query.eq('date', date)
   if (studentId) query = query.eq('student_id', studentId)
-  if (classId) query = query.eq('class_id', classId)
 
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -23,52 +21,46 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  try {
-    const supabase = createAdminClient()
-    const body = await req.json()
+  const supabase = createAdminClient()
+  const body = await req.json()
+  const items: Record<string, unknown>[] = Array.isArray(body) ? body : [body]
 
-    const raw: Record<string, unknown>[] = Array.isArray(body) ? body : [body]
-    const records: Record<string, unknown>[] = raw.map(r => ({ ...r, class_id: (r.class_id as string) || null }))
+  const results = []
+  for (const item of items) {
+    const studentId = item.student_id as string
+    const date = item.date as string
 
-    const results = []
-    for (const record of records) {
-      const studentId = record.student_id as string
-      const date = record.date as string
+    // Check for existing record for this student on this date
+    const { data: existing } = await supabase
+      .from('attendance')
+      .select('id')
+      .eq('student_id', studentId)
+      .eq('date', date)
+      .maybeSingle()
 
-      const { data: rows, error: selErr } = await supabase
+    if (existing) {
+      // Update it
+      const { data, error } = await supabase
         .from('attendance')
-        .select('id')
-        .eq('student_id', studentId)
-        .eq('date', date)
-
-      if (selErr) return NextResponse.json({ error: 'select: ' + selErr.message }, { status: 400 })
-
-      const existing = rows?.[0]
-
-      if (existing?.id) {
-        const { data, error } = await supabase
-          .from('attendance')
-          .update(record)
-          .eq('id', existing.id)
-          .select()
-          .single()
-        if (error) return NextResponse.json({ error: 'update: ' + error.message }, { status: 400 })
-        results.push(data)
-      } else {
-        const { data, error } = await supabase
-          .from('attendance')
-          .insert(record)
-          .select()
-          .single()
-        if (error) return NextResponse.json({ error: 'insert: ' + error.message }, { status: 400 })
-        results.push(data)
-      }
+        .update({ status: item.status, sign_in_time: item.sign_in_time ?? null, sign_out_time: item.sign_out_time ?? null })
+        .eq('id', existing.id)
+        .select()
+        .single()
+      if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+      results.push(data)
+    } else {
+      // Insert new
+      const { data, error } = await supabase
+        .from('attendance')
+        .insert({ student_id: studentId, date, status: item.status, sign_in_time: item.sign_in_time ?? null })
+        .select()
+        .single()
+      if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+      results.push(data)
     }
-
-    return NextResponse.json({ data: results })
-  } catch (e: unknown) {
-    return NextResponse.json({ error: String(e) }, { status: 400 })
   }
+
+  return NextResponse.json({ data: results })
 }
 
 export async function PATCH(req: NextRequest) {
