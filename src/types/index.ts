@@ -5,6 +5,17 @@ export type SkillStatus = 'mastered' | 'in_progress' | 'not_started'
 export type PaymentStatus = 'paid' | 'pending' | 'overdue'
 export type MediaType = 'photo' | 'video'
 export type UserRole = 'admin' | 'teacher' | 'parent'
+export type EnrollmentType = '5_day' | '3_day' | '1_day'
+export type SignEventType = 'sign_in' | 'sign_out'
+
+// ─── School ─────────────────────────────────────────────────────────────────
+
+export interface School {
+  id: string
+  name: string
+  location: string | null
+  created_at: string
+}
 
 // ─── Student ────────────────────────────────────────────────────────────────
 
@@ -19,11 +30,15 @@ export interface Student {
   avatar_url: string | null
   classes: string[]
   parent_id: string
+  school_id: string | null
+  enrollment_type: EnrollmentType
+  enrolled_days: number[]  // 0=Sun, 1=Mon, ... 5=Fri, 6=Sat
   notes: string | null
   room_number: string | null
   needs_escort: boolean | null
   created_at: string
   updated_at: string
+  school?: School
 }
 
 export interface StudentWithProgress extends Student {
@@ -52,14 +67,30 @@ export interface Class {
 export interface AttendanceRecord {
   id: string
   student_id: string
-  class_id: string
+  class_id: string | null
   date: string        // ISO date "2026-04-03"
   status: AttendanceStatus
+  sign_in_time: string | null
+  sign_out_time: string | null
   note: string | null
   created_at: string
   updated_at: string
   student?: Student
   class?: Class
+}
+
+// ─── Sign Events (detailed sign-in/out log) ─────────────────────────────────
+
+export interface SignEvent {
+  id: string
+  student_id: string
+  event_type: SignEventType
+  timestamp: string
+  recorded_by: string | null
+  notified_at: string | null
+  notification_error: string | null
+  created_at: string
+  student?: Pick<Student, 'id' | 'full_name'>
 }
 
 // ─── Progress / Skills ──────────────────────────────────────────────────────
@@ -132,9 +163,33 @@ export interface Announcement {
   title: string
   body: string
   author_id: string
+  school_id: string | null  // null = all schools
   pinned: boolean
   created_at: string
   updated_at: string
+  school?: School
+}
+
+// ─── Curriculum ─────────────────────────────────────────────────────────────
+
+export interface CurriculumItem {
+  day: string           // 'Monday', 'Tuesday', etc.
+  subject: string
+  activity: string
+  materials?: string
+}
+
+export interface Curriculum {
+  id: string
+  school_id: string
+  title: string
+  description: string | null
+  week_of: string       // ISO date of Monday
+  content: CurriculumItem[]
+  created_by: string | null
+  created_at: string
+  updated_at: string
+  school?: School
 }
 
 // ─── Users / Auth ────────────────────────────────────────────────────────────

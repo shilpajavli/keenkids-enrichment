@@ -11,16 +11,27 @@ create table public.profiles (
   created_at  timestamptz default now() not null
 );
 
+-- ─── Schools (JS, Mattos, etc.) ─────────────────────────────────────────────
+create table public.schools (
+  id          uuid primary key default uuid_generate_v4(),
+  name        text not null unique,
+  location    text,
+  created_at  timestamptz default now() not null
+);
+
 -- ─── Students ────────────────────────────────────────────────────────────────
 create table public.students (
   id              uuid primary key default uuid_generate_v4(),
   first_name      text not null,
   last_name       text not null,
-  grade           int  not null check (grade between 1 and 12),
+  grade           int  not null check (grade between 0 and 12),
   date_of_birth   date,
   enrolled_at     date default current_date not null,
   avatar_url      text,
   parent_id       uuid references public.profiles(id) on delete set null,
+  school_id       uuid references public.schools(id) on delete set null,
+  enrollment_type text check (enrollment_type in ('5_day','3_day','1_day')) default '5_day',
+  enrolled_days   int[] default '{1,2,3,4,5}',  -- 0=Sun, 1=Mon, ... 5=Fri, 6=Sat
   notes           text,
   created_at      timestamptz default now() not null,
   updated_at      timestamptz default now() not null,
@@ -50,15 +61,29 @@ create table public.enrollments (
 
 -- ─── Attendance ───────────────────────────────────────────────────────────────
 create table public.attendance (
-  id          uuid primary key default uuid_generate_v4(),
-  student_id  uuid references public.students(id) on delete cascade not null,
-  class_id    uuid references public.classes(id)  on delete cascade not null,
-  date        date not null,
-  status      text not null check (status in ('present','late','absent')) default 'present',
-  note        text,
-  created_at  timestamptz default now() not null,
-  updated_at  timestamptz default now() not null,
-  unique (student_id, class_id, date)
+  id            uuid primary key default uuid_generate_v4(),
+  student_id    uuid references public.students(id) on delete cascade not null,
+  class_id      uuid references public.classes(id)  on delete set null,
+  date          date not null,
+  status        text not null check (status in ('present','late','absent')) default 'present',
+  sign_in_time  timestamptz,
+  sign_out_time timestamptz,
+  note          text,
+  created_at    timestamptz default now() not null,
+  updated_at    timestamptz default now() not null,
+  unique (student_id, date)
+);
+
+-- ─── Sign Events (detailed sign-in/out log with notifications) ──────────────
+create table public.sign_events (
+  id            uuid primary key default uuid_generate_v4(),
+  student_id    uuid references public.students(id) on delete cascade not null,
+  event_type    text not null check (event_type in ('sign_in', 'sign_out')),
+  timestamp     timestamptz default now() not null,
+  recorded_by   uuid references public.profiles(id) on delete set null,
+  notified_at   timestamptz,
+  notification_error text,
+  created_at    timestamptz default now() not null
 );
 
 -- ─── Skills curriculum ───────────────────────────────────────────────────────
@@ -126,29 +151,56 @@ create table public.announcements (
   title       text not null,
   body        text not null,
   author_id   uuid references public.profiles(id) on delete set null,
+  school_id   uuid references public.schools(id) on delete set null,  -- null = all schools
   pinned      boolean default false not null,
   created_at  timestamptz default now() not null,
   updated_at  timestamptz default now() not null
 );
 
+-- ─── Curriculum (weekly/monthly content per school) ─────────────────────────
+create table public.curriculum (
+  id          uuid primary key default uuid_generate_v4(),
+  school_id   uuid references public.schools(id) on delete cascade not null,
+  title       text not null,
+  description text,
+  week_of     date not null,              -- Monday of the week
+  content     jsonb default '[]'::jsonb,  -- structured curriculum items
+  created_by  uuid references public.profiles(id) on delete set null,
+  created_at  timestamptz default now() not null,
+  updated_at  timestamptz default now() not null,
+  unique (school_id, week_of)
+);
+
 -- ─── Row Level Security ──────────────────────────────────────────────────────
-alter table public.profiles      enable row level security;
-alter table public.students      enable row level security;
-alter table public.classes       enable row level security;
-alter table public.enrollments   enable row level security;
-alter table public.attendance    enable row level security;
-alter table public.skills        enable row level security;
+alter table public.profiles       enable row level security;
+alter table public.schools        enable row level security;
+alter table public.students       enable row level security;
+alter table public.classes        enable row level security;
+alter table public.enrollments    enable row level security;
+alter table public.attendance     enable row level security;
+alter table public.sign_events    enable row level security;
+alter table public.skills         enable row level security;
 alter table public.student_skills enable row level security;
-alter table public.teacher_notes enable row level security;
-alter table public.media         enable row level security;
-alter table public.payments      enable row level security;
-alter table public.announcements enable row level security;
+alter table public.teacher_notes  enable row level security;
+alter table public.media          enable row level security;
+alter table public.payments       enable row level security;
+alter table public.announcements  enable row level security;
+alter table public.curriculum     enable row level security;
+
+-- Schools: everyone can read
+create policy "schools_read" on public.schools for select using (true);
+create policy "schools_staff_write" on public.schools for all using (
+  exists (select 1 from public.profiles where id = auth.uid() and role in ('admin','teacher'))
+);
 
 -- Admins & teachers see everything
 create policy "staff_all" on public.students     for all using (
   exists (select 1 from public.profiles where id = auth.uid() and role in ('admin','teacher'))
 );
 create policy "staff_all" on public.attendance   for all using (
+  exists (select 1 from public.profiles where id = auth.uid() and role in ('admin','teacher'))
+);
+create policy "staff_all" on public.sign_events  for all using (
   exists (select 1 from public.profiles where id = auth.uid() and role in ('admin','teacher'))
 );
 create policy "staff_all" on public.media        for all using (
@@ -160,12 +212,18 @@ create policy "staff_all" on public.payments     for all using (
 create policy "staff_all" on public.announcements for all using (
   exists (select 1 from public.profiles where id = auth.uid() and role in ('admin','teacher'))
 );
+create policy "staff_all" on public.curriculum   for all using (
+  exists (select 1 from public.profiles where id = auth.uid() and role in ('admin','teacher'))
+);
 
 -- Parents see only their child's data
 create policy "parent_own_child" on public.students for select using (
   parent_id = auth.uid()
 );
 create policy "parent_own_attendance" on public.attendance for select using (
+  exists (select 1 from public.students s where s.id = student_id and s.parent_id = auth.uid())
+);
+create policy "parent_own_sign_events" on public.sign_events for select using (
   exists (select 1 from public.students s where s.id = student_id and s.parent_id = auth.uid())
 );
 create policy "parent_own_media" on public.media for select using (
@@ -176,6 +234,7 @@ create policy "parent_own_payments" on public.payments for select using (
   parent_id = auth.uid()
 );
 create policy "parent_announcements" on public.announcements for select using (true);
+create policy "parent_curriculum" on public.curriculum for select using (true);
 
 -- ─── Updated_at trigger ──────────────────────────────────────────────────────
 create or replace function public.handle_updated_at()
@@ -183,8 +242,15 @@ returns trigger language plpgsql as $$
 begin new.updated_at = now(); return new; end;
 $$;
 
-create trigger students_updated_at      before update on public.students      for each row execute function handle_updated_at();
-create trigger attendance_updated_at    before update on public.attendance    for each row execute function handle_updated_at();
+create trigger students_updated_at       before update on public.students       for each row execute function handle_updated_at();
+create trigger attendance_updated_at     before update on public.attendance     for each row execute function handle_updated_at();
 create trigger student_skills_updated_at before update on public.student_skills for each row execute function handle_updated_at();
-create trigger teacher_notes_updated_at before update on public.teacher_notes for each row execute function handle_updated_at();
-create trigger announcements_updated_at before update on public.announcements for each row execute function handle_updated_at();
+create trigger teacher_notes_updated_at  before update on public.teacher_notes  for each row execute function handle_updated_at();
+create trigger announcements_updated_at  before update on public.announcements  for each row execute function handle_updated_at();
+create trigger curriculum_updated_at     before update on public.curriculum     for each row execute function handle_updated_at();
+
+-- ─── Seed default schools ───────────────────────────────────────────────────
+insert into public.schools (name, location) values
+  ('JS', 'JS Campus'),
+  ('Mattos', 'Mattos Campus')
+on conflict (name) do nothing;
