@@ -6,7 +6,7 @@ import { cn, getInitials } from '@/lib/utils'
 import type { Profile } from '@/types'
 import {
   LayoutDashboard, Users, CalendarCheck,
-  Clock, Image, CreditCard, MessageCircle, FileText, LogOut
+  Clock, Image, CreditCard, MessageCircle, FileText, LogOut, BookOpen
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase-browser'
 import { useRouter } from 'next/navigation'
@@ -24,8 +24,9 @@ const NAV = [
   {
     section: 'Learning',
     items: [
-      { href: '/dashboard/schedule', label: 'Schedule',      icon: Clock },
-      { href: '/dashboard/media',    label: 'Media gallery', icon: Image },
+      { href: '/dashboard/curriculum', label: 'Curriculum',    icon: BookOpen },
+      { href: '/dashboard/schedule',   label: 'Schedule',      icon: Clock },
+      { href: '/dashboard/media',      label: 'Media gallery', icon: Image },
     ],
   },
   {

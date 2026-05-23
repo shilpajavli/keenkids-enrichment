@@ -8,14 +8,22 @@ export default async function StudentsPage() {
   const supabase = await createServerClient()
   const programId = await getCurrentProgramId()
 
+  // Fetch students with school info
   const { data: students } = await supabase
     .from('students')
     .select(`
       *,
-      student_skills (status)
+      student_skills (status),
+      school:schools(*)
     `)
     .eq('program_id', programId ?? '')
     .order('full_name')
+
+  // Fetch schools
+  const { data: schools } = await supabase
+    .from('schools')
+    .select('*')
+    .order('name')
 
   // Fetch parent emails for linked students using admin client (bypasses RLS)
   const admin = createAdminClient()
@@ -42,7 +50,7 @@ export default async function StudentsPage() {
         <h1 className="font-serif text-3xl font-light text-ink">Students</h1>
         <p className="text-ink-tertiary text-sm mt-1">{enriched.length} enrolled</p>
       </div>
-      <StudentList students={enriched} programId={programId} />
+      <StudentList students={enriched} programId={programId} schools={schools ?? []} />
     </div>
   )
 }

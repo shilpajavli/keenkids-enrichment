@@ -9,7 +9,7 @@ import StudentAvatar from '@/components/ui/StudentAvatar'
 import Badge from '@/components/ui/Badge'
 import ProgressBar from '@/components/ui/ProgressBar'
 import { formatDate, calcProgress } from '@/lib/utils'
-import type { Student, StudentSkill, TeacherNote, AttendanceRecord, MediaItem } from '@/types'
+import type { Student, StudentSkill, TeacherNote, AttendanceRecord, MediaItem, School, EnrollmentType } from '@/types'
 import MediaGrid from '@/components/media/MediaGrid'
 
 interface Props {
@@ -19,6 +19,22 @@ interface Props {
   attendance: AttendanceRecord[]
   media: MediaItem[]
   parentProfile: { full_name: string; email: string } | null
+  schools?: School[]
+  weeklySessionsAttended?: number
+}
+
+const DAYS = [
+  { value: 1, label: 'Mon' },
+  { value: 2, label: 'Tue' },
+  { value: 3, label: 'Wed' },
+  { value: 4, label: 'Thu' },
+  { value: 5, label: 'Fri' },
+]
+
+const ENROLLMENT_LABELS: Record<EnrollmentType, string> = {
+  '5_day': '5-day',
+  '3_day': '3-day',
+  '1_day': '1-day',
 }
 
 type Tab = 'progress' | 'attendance' | 'media' | 'notes'
@@ -38,13 +54,22 @@ const ATTEND_BADGE: Record<string, any> = {
 const subjects = (skills: StudentSkill[]) =>
   [...new Set(skills.map(s => s.skill?.subject).filter(Boolean))]
 
-export default function StudentProfile({ student, skills, notes, attendance, media, parentProfile }: Props) {
+export default function StudentProfile({ student, skills, notes, attendance, media, parentProfile, schools = [], weeklySessionsAttended = 0 }: Props) {
   const [tab, setTab] = useState<Tab>('progress')
   const [noteText, setNoteText] = useState('')
   const [saving, setSaving] = useState(false)
   const [roomNumber, setRoomNumber] = useState(student.room_number ?? '')
   const [needsEscort, setNeedsEscort] = useState(student.needs_escort ?? false)
   const [savingInfo, setSavingInfo] = useState(false)
+  
+  // School & enrollment state
+  const [schoolId, setSchoolId] = useState(student.school_id ?? '')
+  const [enrollmentType, setEnrollmentType] = useState<EnrollmentType>(student.enrollment_type ?? '5_day')
+  const [enrolledDays, setEnrolledDays] = useState<number[]>(student.enrolled_days ?? [1,2,3,4,5])
+  const [savingEnrollment, setSavingEnrollment] = useState(false)
+
+  const expectedSessions = enrolledDays.length
+  const sessionProgress = expectedSessions > 0 ? Math.round((weeklySessionsAttended / expectedSessions) * 100) : 0
 
   async function saveLogisticsInfo() {
     setSavingInfo(true)
@@ -54,6 +79,26 @@ export default function StudentProfile({ student, skills, notes, attendance, med
       body: JSON.stringify({ room_number: roomNumber || null, needs_escort: needsEscort }),
     })
     setSavingInfo(false)
+  }
+
+  async function saveEnrollmentInfo() {
+    setSavingEnrollment(true)
+    await fetch(`/api/students?id=${student.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        school_id: schoolId || null, 
+        enrollment_type: enrollmentType,
+        enrolled_days: enrolledDays,
+      }),
+    })
+    setSavingEnrollment(false)
+  }
+
+  function toggleDay(day: number) {
+    setEnrolledDays(prev => 
+      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day].sort()
+    )
   }
   const [deleting, setDeleting] = useState(false)
   const [skillsState, setSkillsState] = useState(skills)
@@ -156,14 +201,34 @@ export default function StudentProfile({ student, skills, notes, attendance, med
           <StudentAvatar name={student.full_name} avatarUrl={student.avatar_url} size="lg" />
           <div>
             <h1 className="font-serif text-3xl font-light">{student.full_name}</h1>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
               <Badge variant="blue">{student.grade === 0 ? 'K' : `Grade ${student.grade}`}</Badge>
+              {student.school && (
+                <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" 
+                  style={{ background: '#E8E4F8', color: '#5B4B8A' }}>
+                  {student.school.name}
+                </span>
+              )}
+              {enrollmentType !== '5_day' && (
+                <span className="text-[11px] px-2 py-0.5 rounded-full" 
+                  style={{ background: '#FEF3C7', color: '#92400E' }}>
+                  {ENROLLMENT_LABELS[enrollmentType]}
+                </span>
+              )}
               <span className="text-[12px]" style={{ color: '#8A8580' }}>
                 Enrolled {formatDate(student.enrolled_at)}
               </span>
             </div>
           </div>
           <div className="ml-auto flex items-center gap-4">
+            {enrollmentType !== '5_day' && (
+              <div className="text-right">
+                <div className="font-serif text-2xl font-light" style={{ color: sessionProgress >= 100 ? '#27500A' : '#633806' }}>
+                  {weeklySessionsAttended}/{expectedSessions}
+                </div>
+                <div className="text-[11px]" style={{ color: '#8A8580' }}>sessions this week</div>
+              </div>
+            )}
             <div className="text-right">
               <div className="font-serif text-3xl font-light" style={{ color: '#B8973A' }}>{overall}%</div>
               <div className="text-[11px]" style={{ color: '#8A8580' }}>overall progress</div>
@@ -235,6 +300,72 @@ export default function StudentProfile({ student, skills, notes, attendance, med
           </CardBody>
         </Card>
       )}
+
+      {/* Enrollment Info */}
+      <Card>
+        <CardBody>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[12px] font-medium uppercase tracking-wide" style={{ color: '#8A8580' }}>Enrollment Info</span>
+            <button className="btn btn-gold text-[11px]" onClick={saveEnrollmentInfo} disabled={savingEnrollment}>
+              {savingEnrollment ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+          <div className="space-y-4">
+            {/* School & Program Type */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <label className="text-[12.5px]" style={{ color: '#4A4640' }}>School</label>
+                <select
+                  className="input text-[13px] w-32"
+                  value={schoolId}
+                  onChange={e => setSchoolId(e.target.value)}>
+                  <option value="">Select…</option>
+                  {schools.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-[12.5px]" style={{ color: '#4A4640' }}>Program</label>
+                <div className="flex gap-1">
+                  {(['5_day', '3_day', '1_day'] as EnrollmentType[]).map(type => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setEnrollmentType(type)}
+                      className="py-1.5 px-3 rounded-lg text-[11px] font-medium transition-all"
+                      style={{
+                        background: enrollmentType === type ? '#EFE6CC' : '#F5F0E8',
+                        color: enrollmentType === type ? '#8A6E25' : '#8A8580',
+                        border: enrollmentType === type ? '1.5px solid #B8973A' : '1.5px solid transparent',
+                      }}>
+                      {ENROLLMENT_LABELS[type]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            {/* Days of Week */}
+            <div className="flex items-center gap-2">
+              <label className="text-[12.5px]" style={{ color: '#4A4640' }}>Days</label>
+              <div className="flex gap-1">
+                {DAYS.map(day => (
+                  <button
+                    key={day.value}
+                    type="button"
+                    onClick={() => toggleDay(day.value)}
+                    className="w-10 py-1.5 rounded-lg text-[11px] font-medium transition-all"
+                    style={{
+                      background: enrolledDays.includes(day.value) ? '#EAF3DE' : '#F5F0E8',
+                      color: enrolledDays.includes(day.value) ? '#27500A' : '#8A8580',
+                      border: enrolledDays.includes(day.value) ? '1.5px solid #8BC34A' : '1.5px solid transparent',
+                    }}>
+                    {day.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </CardBody>
+      </Card>
 
       {/* Logistics */}
       <Card>

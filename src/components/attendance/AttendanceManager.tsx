@@ -112,40 +112,70 @@ export default function AttendanceManager({ students, classes, todayRecords, his
     setSaving(s => ({ ...s, [studentId]: false }))
   }
 
-  // Sign in — marks present + stamps time
+  const [notificationStatus, setNotificationStatus] = useState<Record<string, 'sent' | 'failed' | null>>({})
+
+  // Sign in — marks present + stamps time + notifies parent
   async function signIn(student: Student) {
     setSaving(s => ({ ...s, [student.id]: true }))
-    const now = new Date().toISOString()
-    // First upsert to get/create the record
-    const res = await fetch('/api/attendance', {
+    setNotificationStatus(n => ({ ...n, [student.id]: null }))
+    
+    // Call sign-events API which handles attendance + notification
+    const res = await fetch('/api/sign-events', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify([{ student_id: student.id, class_id: classId, date: today, status: 'present', sign_in_time: now }]),
+      body: JSON.stringify({ student_id: student.id, event_type: 'sign_in' }),
     })
     const json = await res.json()
-    if (json.data?.[0]) {
-      setRosterRecords(r => ({ ...r, [student.id]: json.data[0] }))
+    
+    if (json.data) {
+      // Update local state with the attendance record
+      const now = new Date().toISOString()
+      setRosterRecords(r => ({ 
+        ...r, 
+        [student.id]: { 
+          ...r[student.id], 
+          id: json.data.id,
+          sign_in_time: now,
+          status: 'present' 
+        } 
+      }))
       setRecords(r => ({ ...r, [student.id]: 'present' }))
+      setNotificationStatus(n => ({ ...n, [student.id]: json.notified ? 'sent' : 'failed' }))
     }
     setSaving(s => ({ ...s, [student.id]: false }))
+    
+    // Clear notification status after 3 seconds
+    setTimeout(() => {
+      setNotificationStatus(n => ({ ...n, [student.id]: null }))
+    }, 3000)
   }
 
-  // Sign out — stamps sign_out_time
+  // Sign out — stamps sign_out_time + notifies parent
   async function signOut(student: Student) {
     const rec = rosterRecords[student.id]
-    if (!rec?.id) return
+    if (!rec?.sign_in_time) return
     setSaving(s => ({ ...s, [student.id]: true }))
-    const now = new Date().toISOString()
-    const res = await fetch(`/api/attendance?id=${rec.id}`, {
-      method: 'PATCH',
+    setNotificationStatus(n => ({ ...n, [student.id]: null }))
+    
+    // Call sign-events API which handles attendance + notification
+    const res = await fetch('/api/sign-events', {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sign_out_time: now }),
+      body: JSON.stringify({ student_id: student.id, event_type: 'sign_out' }),
     })
     const json = await res.json()
+    
     if (json.data) {
-      setRosterRecords(r => ({ ...r, [student.id]: json.data }))
+      const now = new Date().toISOString()
+      setRosterRecords(r => ({ ...r, [student.id]: { ...r[student.id], sign_out_time: now } }))
+      setNotificationStatus(n => ({ ...n, [student.id]: json.notified ? 'sent' : 'failed' }))
     }
     setSaving(s => ({ ...s, [student.id]: false }))
+    
+    // Clear notification status after 3 seconds
+    setTimeout(() => {
+      setNotificationStatus(n => ({ ...n, [student.id]: null }))
+    }, 3000)
   }
 
   // History helpers
@@ -270,28 +300,42 @@ export default function AttendanceManager({ students, classes, todayRecords, his
                           : <span style={{ color: '#C4B89A' }}>—</span>}
                       </td>
                       <td className="px-3 py-3 text-center">
-                        {signedIn
-                          ? <span className="text-[12px] font-medium" style={{ color: '#27500A' }}>{formatTime(rec.sign_in_time)}</span>
-                          : <button
-                              onClick={() => signIn(student)}
-                              disabled={isSav}
-                              className="px-3 py-1.5 rounded-full text-[11px] font-medium transition-all"
-                              style={{ background: '#EAF3DE', color: '#27500A', border: '1px solid #B8D99A', cursor: 'pointer' }}>
-                              Sign In
-                            </button>}
+                        {signedIn ? (
+                          <div className="flex flex-col items-center gap-0.5">
+                            <span className="text-[12px] font-medium" style={{ color: '#27500A' }}>{formatTime(rec.sign_in_time)}</span>
+                            {notificationStatus[student.id] === 'sent' && (
+                              <span className="text-[9px]" style={{ color: '#27500A' }}>✓ Parent notified</span>
+                            )}
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => signIn(student)}
+                            disabled={isSav}
+                            className="px-3 py-1.5 rounded-full text-[11px] font-medium transition-all"
+                            style={{ background: '#EAF3DE', color: '#27500A', border: '1px solid #B8D99A', cursor: 'pointer' }}>
+                            {isSav ? '…' : 'Sign In'}
+                          </button>
+                        )}
                       </td>
                       <td className="px-3 py-3 text-center">
-                        {signedOut
-                          ? <span className="text-[12px] font-medium" style={{ color: '#633806' }}>{formatTime(rec.sign_out_time)}</span>
-                          : signedIn
-                            ? <button
-                                onClick={() => signOut(student)}
-                                disabled={isSav}
-                                className="px-3 py-1.5 rounded-full text-[11px] font-medium transition-all"
-                                style={{ background: '#FAEEDA', color: '#633806', border: '1px solid #E8C49A', cursor: 'pointer' }}>
-                                Sign Out
-                              </button>
-                            : <span style={{ color: '#C4B89A' }}>—</span>}
+                        {signedOut ? (
+                          <div className="flex flex-col items-center gap-0.5">
+                            <span className="text-[12px] font-medium" style={{ color: '#633806' }}>{formatTime(rec.sign_out_time)}</span>
+                            {notificationStatus[student.id] === 'sent' && (
+                              <span className="text-[9px]" style={{ color: '#27500A' }}>✓ Parent notified</span>
+                            )}
+                          </div>
+                        ) : signedIn ? (
+                          <button
+                            onClick={() => signOut(student)}
+                            disabled={isSav}
+                            className="px-3 py-1.5 rounded-full text-[11px] font-medium transition-all"
+                            style={{ background: '#FAEEDA', color: '#633806', border: '1px solid #E8C49A', cursor: 'pointer' }}>
+                            {isSav ? '…' : 'Sign Out'}
+                          </button>
+                        ) : (
+                          <span style={{ color: '#C4B89A' }}>—</span>
+                        )}
                       </td>
                     </tr>
                   )

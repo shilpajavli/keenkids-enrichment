@@ -3,17 +3,28 @@ import { createServerClient } from '@/lib/supabase-server'
 import { Card, CardHeader, CardBody } from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
 import { formatDate } from '@/lib/utils'
+import type { CurriculumItem } from '@/types'
 
 const ATTEND_BADGE: Record<string, any> = {
   present: 'green', late: 'amber', absent: 'red',
 }
 
-const DATE_MAP: Record<string, string> = {
-  'Bio-Engineering':           'Mon · Apr 13',
-  'Cargo & Balance':           'Tue · Apr 14',
-  'Solar Optics':              'Wed · Apr 15',
-  'Aerodynamics & Wind Power': 'Thu · Apr 16',
-  'Global Engineering Summit': 'Fri · Apr 17',
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+
+function getMonday(date: Date = new Date()): string {
+  const d = new Date(date)
+  const day = d.getDay()
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
+  d.setDate(diff)
+  return d.toISOString().slice(0, 10)
+}
+
+function formatWeekLabel(weekOf: string): string {
+  const date = new Date(weekOf + 'T00:00:00')
+  const endDate = new Date(date)
+  endDate.setDate(date.getDate() + 4)
+  const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' }
+  return `${date.toLocaleDateString('en-US', opts)} – ${endDate.toLocaleDateString('en-US', opts)}`
 }
 
 export default async function ParentPortalPage() {
@@ -23,7 +34,7 @@ export default async function ParentPortalPage() {
 
   const { data: student } = await supabase
     .from('students')
-    .select('*')
+    .select('*, school:schools(*)')
     .eq('parent_id', user.id)
     .single()
 
@@ -36,21 +47,23 @@ export default async function ParentPortalPage() {
     )
   }
 
-  const [attendanceRes, mediaRes, paymentsRes, announcementsRes, skillsRes] = await Promise.all([
+  const currentWeek = getMonday()
+
+  const [attendanceRes, mediaRes, paymentsRes, announcementsRes, curriculumRes] = await Promise.all([
     supabase.from('attendance').select('*, class:classes(name)').eq('student_id', student.id).order('date', { ascending: false }).limit(10),
     supabase.from('media').select('*').or(`student_id.eq.${student.id},student_id.is.null`).order('created_at', { ascending: false }).limit(12),
     supabase.from('payments').select('*').eq('parent_id', user.id).order('due_date', { ascending: false }),
-    supabase.from('announcements').select('*').order('pinned', { ascending: false }).order('created_at', { ascending: false }),
-    supabase.from('student_skills').select('*, skill:skills(*)').eq('student_id', student.id),
+    supabase.from('announcements').select('*').order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(5),
+    student.school_id 
+      ? supabase.from('curriculum').select('*').eq('school_id', student.school_id).eq('week_of', currentWeek).single()
+      : Promise.resolve({ data: null }),
   ])
 
   const attendance = attendanceRes.data ?? []
   const media = mediaRes.data ?? []
   const payments = paymentsRes.data ?? []
   const announcements = announcementsRes.data ?? []
-  const skills = skillsRes.data ?? []
-
-  const subjects = [...new Set(skills.map(s => s.skill?.subject).filter(Boolean))]
+  const curriculum = curriculumRes.data
 
   return (
     <div className="space-y-6">
@@ -62,7 +75,21 @@ export default async function ParentPortalPage() {
         </div>
         <div>
           <h1 className="font-serif text-2xl font-light" style={{ color: '#1A1814' }}>{student.full_name}</h1>
-          <Badge variant="blue">{student.grade === 0 ? 'K' : `Grade ${student.grade}`}</Badge>
+          <div className="flex items-center gap-2 mt-1">
+            <Badge variant="blue">{student.grade === 0 ? 'K' : `Grade ${student.grade}`}</Badge>
+            {student.school && (
+              <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" 
+                style={{ background: '#E8E4F8', color: '#5B4B8A' }}>
+                {student.school.name}
+              </span>
+            )}
+            {student.enrollment_type && student.enrollment_type !== '5_day' && (
+              <span className="text-[11px] px-2 py-0.5 rounded-full" 
+                style={{ background: '#FEF3C7', color: '#92400E' }}>
+                {student.enrollment_type.replace('_', '-')} program
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -91,24 +118,48 @@ export default async function ParentPortalPage() {
         </Card>
       )}
 
-      {/* Schedule */}
-      {subjects.length > 0 && (
+      {/* Curriculum for this week */}
+      {curriculum && (
         <Card>
-          <CardHeader title="This week's schedule" />
-          <CardBody className="p-0">
-            {subjects.map((subject, si) => {
-              const date = subject ? DATE_MAP[subject] : null
-              return (
-                <div key={subject} className="flex items-center justify-between px-5 py-3"
-                  style={{ borderBottom: si < subjects.length - 1 ? '1px solid rgba(184,151,58,0.14)' : 'none' }}>
-                  <span className="text-[13px] font-medium">{subject}</span>
-                  {date && (
-                    <span className="text-[11px] px-2 py-0.5 rounded-full"
-                      style={{ background: '#EFE6CC', color: '#8A6E25' }}>{date}</span>
-                  )}
-                </div>
-              )
-            })}
+          <CardHeader 
+            title={curriculum.title} 
+            action={<span className="text-[11px]" style={{ color: '#8A8580' }}>{formatWeekLabel(curriculum.week_of)}</span>}
+          />
+          <CardBody>
+            {curriculum.description && (
+              <p className="text-[13px] mb-4" style={{ color: '#4A4640' }}>{curriculum.description}</p>
+            )}
+            <div className="space-y-1">
+              {DAYS.map(day => {
+                const dayItems = ((curriculum.content ?? []) as CurriculumItem[]).filter(item => item.day === day)
+                if (dayItems.length === 0) return null
+                return (
+                  <div key={day} className="flex gap-4 py-3" style={{ borderBottom: '1px solid rgba(184,151,58,0.12)' }}>
+                    <div className="w-24 text-[12px] font-medium" style={{ color: '#B8973A' }}>{day}</div>
+                    <div className="flex-1 space-y-1">
+                      {dayItems.map((item, i) => (
+                        <div key={i}>
+                          <span className="text-[13px] font-medium">{item.subject}</span>
+                          {item.activity && <span className="text-[13px]" style={{ color: '#4A4640' }}> — {item.activity}</span>}
+                          {item.materials && <span className="text-[11px] ml-2 px-1.5 py-0.5 rounded" style={{ background: '#F5F0E8', color: '#8A8580' }}>{item.materials}</span>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </CardBody>
+        </Card>
+      )}
+
+      {!curriculum && student.school && (
+        <Card>
+          <CardHeader title="This Week's Curriculum" />
+          <CardBody>
+            <p className="text-[13px] text-center py-4" style={{ color: '#8A8580' }}>
+              No curriculum has been posted for this week yet.
+            </p>
           </CardBody>
         </Card>
       )}
