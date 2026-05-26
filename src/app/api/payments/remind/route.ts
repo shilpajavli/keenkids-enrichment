@@ -31,7 +31,7 @@ export async function GET() {
     .select('id, email, full_name')
     .in('id', parentIds)
 
-  const profileMap = Object.fromEntries((profiles ?? []).map(p => [p.id, p]))
+  const profileMap = Object.fromEntries((profiles ?? []).map((p: any) => [p.id, p]))
 
   // Build grouped summary per parent
   const grouped: Record<string, {
@@ -44,7 +44,7 @@ export async function GET() {
     payments: { amount_cents: number; due_date: string; status: string }[]
   }> = {}
 
-  for (const p of payments ?? []) {
+  for (const p of (payments ?? []) as any[]) {
     const parentId = p.student?.parent_id
     if (!parentId) continue
     const profile = profileMap[parentId]
