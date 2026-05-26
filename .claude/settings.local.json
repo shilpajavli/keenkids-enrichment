@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(Get-Content \"C:\\\\Users\\\\shilp\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-shilp-OneDrive-Desktop-keenkids-enrichment-main\\\\2fbd1545-0090-4f72-9e4e-e08188e3a929\\\\tasks\\\\bf3qvza7b.output\" -Wait)",
+      "Bash(npm install *)",
+      "Bash(Get-Content \"C:\\\\Users\\\\shilp\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-shilp-OneDrive-Desktop-keenkids-enrichment-main\\\\2fbd1545-0090-4f72-9e4e-e08188e3a929\\\\tasks\\\\bnb2bzh5m.output\" -Wait)",
+      "Bash(Get-Content \"C:\\\\Users\\\\shilp\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-shilp-OneDrive-Desktop-keenkids-enrichment-main\\\\2fbd1545-0090-4f72-9e4e-e08188e3a929\\\\tasks\\\\b3t7abbku.output\" -Wait)",
+      "Bash(taskkill /PID 11472 /F)",
+      "PowerShell(Stop-Process -Id 11472 -Force)",
+      "Bash(Get-Content \"C:\\\\Users\\\\shilp\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-shilp-OneDrive-Desktop-keenkids-enrichment-main\\\\2fbd1545-0090-4f72-9e4e-e08188e3a929\\\\tasks\\\\bt83km4sk.output\" -Wait)",
+      "Bash(Get-Content \"C:\\\\Users\\\\shilp\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-shilp-OneDrive-Desktop-keenkids-enrichment-main\\\\2fbd1545-0090-4f72-9e4e-e08188e3a929\\\\tasks\\\\b8p6t5g1t.output\" -Wait)",
+      "Bash(Get-Content \"C:\\\\Users\\\\shilp\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-shilp-OneDrive-Desktop-keenkids-enrichment-main\\\\2fbd1545-0090-4f72-9e4e-e08188e3a929\\\\tasks\\\\bsuz0o7uq.output\" -Wait)",
+      "PowerShell(Stop-Process -Id 18436 -Force -ErrorAction SilentlyContinue; Get-Process -Name \"node\" -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -eq \"\" } | Stop-Process -Force -ErrorAction SilentlyContinue; Write-Output \"All node processes stopped\")",
+      "Bash(Get-Content \"C:\\\\Users\\\\shilp\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-shilp-OneDrive-Desktop-keenkids-enrichment-main\\\\2fbd1545-0090-4f72-9e4e-e08188e3a929\\\\tasks\\\\bsay7n89q.output\" -Wait)",
+      "Bash(Get-Content \"C:\\\\Users\\\\shilp\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-shilp-OneDrive-Desktop-keenkids-enrichment-main\\\\2fbd1545-0090-4f72-9e4e-e08188e3a929\\\\tasks\\\\bxb0ns331.output\" -Wait)",
+      "Bash(git --version)",
+      "Bash(where git *)",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ]
+  }
+}
