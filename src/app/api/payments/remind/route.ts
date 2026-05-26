@@ -24,7 +24,7 @@ export async function GET() {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   // Group by parent_id and collect their email from profiles
-  const parentIds = [...new Set((payments ?? []).map(p => p.student?.parent_id).filter(Boolean))]
+  const parentIds = [...new Set((payments ?? []).map((p: any) => p.student?.parent_id).filter(Boolean))]
 
   const { data: profiles } = await admin
     .from('profiles')
