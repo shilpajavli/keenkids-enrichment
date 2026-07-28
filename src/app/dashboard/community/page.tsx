@@ -17,12 +17,13 @@ export default async function CommunityPage() {
     : { data: null }
   const schoolId = program?.school_id ?? null
 
-  const [announcementsRes, programsRes, allParentsRes, studentsRes] = await Promise.all([
+  const allParentsRes = await admin.from('profiles').select('id, full_name, email, last_seen_at').eq('role', 'parent').order('full_name')
+
+  const [announcementsRes, programsRes, studentsRes] = await Promise.all([
     schoolId
       ? supabase.from('announcements').select('*').or(`school_id.eq.${schoolId},school_id.is.null`).order('pinned', { ascending: false }).order('created_at', { ascending: false })
       : supabase.from('announcements').select('*').order('pinned', { ascending: false }).order('created_at', { ascending: false }),
     supabase.from('programs').select('id, name').order('start_date', { ascending: false }),
-    admin.from('profiles').select('id, full_name, email, last_seen_at').eq('role', 'parent').order('full_name'),
     programId
       ? admin.from('students').select('id, parent_id, program_id').eq('program_id', programId)
       : admin.from('students').select('id, parent_id, program_id'),
