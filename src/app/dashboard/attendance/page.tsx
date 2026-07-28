@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { createServerClient } from '@/lib/supabase-server'
 import { getCurrentProgramId } from '@/lib/program'
 import AttendanceManager from '@/components/attendance/AttendanceManager'
