@@ -6,7 +6,7 @@ import { formatRelative } from '@/lib/utils'
 import type { Announcement } from '@/types'
 import { Pin, Trash2 } from 'lucide-react'
 
-interface Parent { id: string; full_name: string; email: string; last_seen_at: string | null }
+interface Parent { id: string; full_name: string; email: string }
 interface Program { id: string; name: string }
 interface Student { id: string; parent_id: string | null; program_id: string | null }
 
@@ -225,10 +225,7 @@ export default function CommunityHub({ announcements: initial, parents, programs
                         </div>
                         {p.full_name?.split(' ')[0]}
                       </button>
-                      <span className="text-[10px] pl-3 mt-0.5" style={{ color: p.last_seen_at ? '#27500A' : '#C4B89A' }}>
-                        {p.last_seen_at ? `Visited ${formatRelative(p.last_seen_at)}` : 'Never visited'}
-                      </span>
-                      </div>
+</div>
                       <button
                         onClick={e => deleteParent(p.id, e)}
                         title="Remove parent"
