@@ -17,17 +17,7 @@ export default async function CommunityPage() {
     : { data: null }
   const schoolId = program?.school_id ?? null
 
-  const parentsRaw = await fetch(
-    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/profiles?role=eq.parent&select=id,full_name,email,last_seen_at&order=full_name`,
-    {
-      headers: {
-        'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY!}`,
-      },
-      cache: 'no-store',
-    }
-  )
-  const allParentsRes = { data: await parentsRaw.json(), error: null }
+  const allParentsRes = await admin.from('profiles').select('id, full_name, email').eq('role', 'parent').order('full_name')
 
   const [announcementsRes, programsRes, studentsRes] = await Promise.all([
     schoolId
