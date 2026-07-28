@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { createServerClient, createAdminClient } from '@/lib/supabase-server'
 import { getCurrentProgramId } from '@/lib/program'
 import CommunityHub from '@/components/community/CommunityHub'
