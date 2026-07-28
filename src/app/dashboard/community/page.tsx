@@ -34,6 +34,8 @@ export default async function CommunityPage() {
       : admin.from('students').select('id, parent_id, program_id'),
   ])
 
+  console.log('[Community] parents:', allParentsRes.data?.length, 'error:', allParentsRes.error)
+
   return (
     <div className="space-y-6">
       <div>
