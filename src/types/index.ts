@@ -35,6 +35,7 @@ export interface Student {
   enrolled_days: number[]  // 0=Sun, 1=Mon, ... 5=Fri, 6=Sat
   notes: string | null
   room_number: string | null
+  teacher_name: string | null
   needs_escort: boolean | null
   created_at: string
   updated_at: string
