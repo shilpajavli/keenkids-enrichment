@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase-server'
+import { createServerClient, createAdminClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
 
 export async function PATCH(req: Request) {
@@ -8,7 +8,8 @@ export async function PATCH(req: Request) {
 
   const { teacher_name, room_number } = await req.json()
 
-  const { error } = await supabase
+  const admin = createAdminClient()
+  const { error } = await admin
     .from('students')
     .update({ teacher_name, room_number })
     .eq('parent_id', user.id)
