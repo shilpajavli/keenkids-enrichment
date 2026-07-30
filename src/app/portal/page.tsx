@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
+import { createAdminClient } from '@/lib/supabase-server'
 import { Card, CardHeader, CardBody } from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
 import { formatDate } from '@/lib/utils'
@@ -84,7 +85,9 @@ export default async function ParentPortalPage({
   const todaySchedule = todayDayIndex >= 1 && todayDayIndex <= 5 ? DAILY_SCHEDULE[todayDayIndex - 1] : null
   const initials = student.full_name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
 
-  const [todayAttendanceRes, attendanceRes, paymentsRes, announcementsRes, curriculumRes, mediaRes] = await Promise.all([
+  const admin = createAdminClient()
+
+  const [todayAttendanceRes, attendanceRes, paymentsRes, announcementsRes, curriculumRes, mediaRes, notesRes] = await Promise.all([
     supabase.from('attendance').select('*').eq('student_id', student.id).eq('date', today).maybeSingle(),
     supabase.from('attendance').select('date, status, sign_in_time, sign_out_time').eq('student_id', student.id).order('date', { ascending: false }).limit(10),
     supabase.from('payments').select('*').eq('student_id', student.id).order('due_date', { ascending: false }),
@@ -93,6 +96,7 @@ export default async function ParentPortalPage({
       ? supabase.from('curriculum').select('*').eq('school_id', student.school_id).eq('week_of', currentWeek).single()
       : Promise.resolve({ data: null }),
     supabase.from('media').select('*').or(`student_id.eq.${student.id},student_id.is.null`).order('created_at', { ascending: false }).limit(8),
+    admin.from('teacher_notes').select('content, created_at').eq('student_id', student.id).order('created_at', { ascending: false }).limit(5),
   ])
 
   const todayRec = todayAttendanceRes.data
@@ -101,6 +105,7 @@ export default async function ParentPortalPage({
   const announcements = announcementsRes.data ?? []
   const curriculum = curriculumRes.data
   const media = mediaRes.data ?? []
+  const notes = notesRes.data ?? []
   const pendingPayments = payments.filter(p => p.status !== 'paid')
 
   const tabs = [
@@ -233,6 +238,24 @@ export default async function ParentPortalPage({
                     <div className="text-[12.5px] leading-relaxed" style={{ color: '#4A4640' }}>{ann.body}</div>
                     <div className="text-[11px] mt-2" style={{ color: '#8A8580' }}>
                       {new Date(ann.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </div>
+                  </div>
+                ))}
+              </CardBody>
+            </Card>
+          )}
+
+          {/* Teacher notes */}
+          {notes.length > 0 && (
+            <Card>
+              <CardHeader title="Notes from your teacher" />
+              <CardBody className="p-0">
+                {notes.map((note, i) => (
+                  <div key={i} className="px-5 py-4"
+                    style={{ borderBottom: i < notes.length - 1 ? '1px solid rgba(184,151,58,0.14)' : 'none' }}>
+                    <div className="text-[13px] leading-relaxed" style={{ color: '#1A1814' }}>{note.content}</div>
+                    <div className="text-[11px] mt-1.5" style={{ color: '#8A8580' }}>
+                      {new Date(note.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </div>
                   </div>
                 ))}
