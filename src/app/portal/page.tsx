@@ -8,6 +8,7 @@ import { formatDate } from '@/lib/utils'
 import type { CurriculumItem } from '@/types'
 import Link from 'next/link'
 import LocalDate from '@/components/ui/LocalDate'
+import StudentInfoCard from '@/components/portal/StudentInfoCard'
 
 const STRIPE_LINKS: Record<string, string> = {
   '5_day': 'https://buy.stripe.com/fZu3co3pf6zT1MHg1me3e02',
@@ -153,6 +154,13 @@ export default async function ParentPortalPage({
       {/* ── TODAY TAB ── */}
       {tab === 'today' && (
         <div className="space-y-4">
+          {/* School info */}
+          <StudentInfoCard
+            studentId={student.id}
+            teacherName={student.teacher_name ?? null}
+            roomNumber={student.room_number ?? null}
+          />
+
           {/* Today's status */}
           <Card>
             <CardBody>
