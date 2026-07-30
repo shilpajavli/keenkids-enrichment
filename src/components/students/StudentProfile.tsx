@@ -59,6 +59,7 @@ export default function StudentProfile({ student, skills, notes, attendance, med
   const [noteText, setNoteText] = useState('')
   const [saving, setSaving] = useState(false)
   const [roomNumber, setRoomNumber] = useState(student.room_number ?? '')
+  const [teacherName, setTeacherName] = useState(student.teacher_name ?? '')
   const [needsEscort, setNeedsEscort] = useState(student.needs_escort ?? false)
   const [savingInfo, setSavingInfo] = useState(false)
   
@@ -76,7 +77,7 @@ export default function StudentProfile({ student, skills, notes, attendance, med
     await fetch(`/api/students?id=${student.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ room_number: roomNumber || null, needs_escort: needsEscort }),
+      body: JSON.stringify({ room_number: roomNumber || null, teacher_name: teacherName || null, needs_escort: needsEscort }),
     })
     setSavingInfo(false)
   }
@@ -376,7 +377,16 @@ export default function StudentProfile({ student, skills, notes, attendance, med
               {savingInfo ? 'Saving…' : 'Save'}
             </button>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <label className="text-[12.5px]" style={{ color: '#4A4640' }}>Teacher</label>
+              <input
+                className="input text-[13px] w-36"
+                placeholder="e.g. Ms. Johnson"
+                value={teacherName}
+                onChange={e => setTeacherName(e.target.value)}
+              />
+            </div>
             <div className="flex items-center gap-2">
               <label className="text-[12.5px]" style={{ color: '#4A4640' }}>Room #</label>
               <input
