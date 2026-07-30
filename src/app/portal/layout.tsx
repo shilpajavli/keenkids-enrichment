@@ -19,6 +19,24 @@ export default async function PortalLayout({ children }: { children: React.React
   if (!profile) redirect('/auth/login')
   if (profile.role !== 'parent') redirect('/dashboard')
 
+  const today = new Date().toISOString().slice(0, 10)
+  const { data: currentProgram } = await supabase
+    .from('programs')
+    .select('name, start_date, end_date')
+    .lte('start_date', today)
+    .gte('end_date', today)
+    .limit(1)
+    .single()
+
+  const programLabel = currentProgram
+    ? (() => {
+        const start = new Date(currentProgram.start_date + 'T00:00:00')
+        const end = new Date(currentProgram.end_date + 'T00:00:00')
+        const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' }
+        return `${currentProgram.name} · ${start.toLocaleDateString('en-US', opts)}–${end.toLocaleDateString('en-US', opts)}`
+      })()
+    : null
+
   return (
     <div className="min-h-screen" style={{ background: '#F7F4EF' }}>
       {/* Top bar */}
@@ -58,9 +76,11 @@ export default async function PortalLayout({ children }: { children: React.React
       {/* Hero band */}
       <div style={{ background: 'linear-gradient(135deg, #1A1814 0%, #2C2820 100%)', borderBottom: '3px solid #B8973A' }}>
         <div className="max-w-3xl mx-auto px-5 py-6">
-          <div className="text-[11px] tracking-[0.18em] uppercase mb-1" style={{ color: 'rgba(184,151,58,0.7)' }}>
-            Spring Break · Apr 13–17
-          </div>
+          {programLabel && (
+            <div className="text-[11px] tracking-[0.18em] uppercase mb-1" style={{ color: 'rgba(184,151,58,0.7)' }}>
+              {programLabel}
+            </div>
+          )}
           <div className="font-serif text-2xl font-light text-white">
             Welcome back, {profile.full_name?.split(' ')[0]}
           </div>

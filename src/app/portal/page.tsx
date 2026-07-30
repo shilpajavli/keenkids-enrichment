@@ -59,7 +59,7 @@ export default async function ParentPortalPage() {
   const [attendanceRes, mediaRes, paymentsRes, announcementsRes, curriculumRes] = await Promise.all([
     supabase.from('attendance').select('*, class:classes(name)').eq('student_id', student.id).order('date', { ascending: false }).limit(10),
     supabase.from('media').select('*').or(`student_id.eq.${student.id},student_id.is.null`).order('created_at', { ascending: false }).limit(12),
-    supabase.from('payments').select('*').eq('parent_id', user.id).order('due_date', { ascending: false }),
+    supabase.from('payments').select('*').eq('student_id', student.id).order('due_date', { ascending: false }),
     supabase.from('announcements').select('*').order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(5),
     student.school_id 
       ? supabase.from('curriculum').select('*').eq('school_id', student.school_id).eq('week_of', currentWeek).single()
