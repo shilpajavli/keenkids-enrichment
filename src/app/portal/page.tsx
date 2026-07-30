@@ -100,6 +100,89 @@ export default async function ParentPortalPage() {
         </div>
       </div>
 
+      {/* Weekly Schedule */}
+      <Card>
+        <CardHeader title="Weekly Schedule" />
+        <CardBody className="p-0">
+          {[
+            { day: 'Monday', emoji: '🔧', theme: 'STEAM Build Day', sub: 'Engineering & Design', desc: 'Hands-on engineering and creative builds that inspire young innovators!', bullets: ['Design', 'Build', 'Test', 'Improve'], tagline: 'BUILD IDEAS. BUILD CONFIDENCE.' },
+            { day: 'Tuesday', emoji: '💻', theme: 'Coding & Technology', sub: 'Scratch (G2–6) · ScratchJr (G1–2)', desc: 'Learn coding through fun animation, games and interactive projects!', bullets: ['Build stories & games', 'Animate characters', 'Solve problems', 'Think creatively'], tagline: 'CODE TODAY. CREATE TOMORROW.' },
+            { day: 'Wednesday', emoji: '🎤', theme: 'Public Speaking & Communication', sub: 'Confidence Building', desc: 'Build confidence, express ideas and become strong communicators!', bullets: ['Speak with confidence', 'Share ideas', 'Listen & connect', 'Lead with impact'], tagline: 'SPEAK UP. STAND OUT.' },
+            { day: 'Thursday', emoji: '🧪', theme: 'Science Lab & Experiments', sub: 'Hands-on Discovery', desc: 'Explore the world of science through exciting experiments and real discoveries!', bullets: ['Fun experiments', 'Ask questions', 'Make observations', 'Discover science'], tagline: 'EXPLORE SCIENCE. DISCOVER POSSIBILITIES.' },
+            { day: 'Friday', emoji: '🎨', theme: 'Free Exploration Station', sub: 'Open Creative Time', desc: 'A creative open station where kids can create, build and explore their own ideas!', bullets: ['Create freely', 'Build & design', 'Explore materials', 'Imagine & innovate'], tagline: 'EXPLORE FREELY. CREATE FEARLESSLY.' },
+          ].map((d, i, arr) => (
+            <div key={d.day} className="px-5 py-4" style={{ borderBottom: i < arr.length - 1 ? '1px solid rgba(184,151,58,0.14)' : 'none' }}>
+              <div className="flex items-start gap-3">
+                <div className="text-2xl flex-shrink-0 mt-0.5">{d.emoji}</div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-medium text-[13px]" style={{ color: '#B8973A' }}>{d.day}</span>
+                    <span className="text-[12px] font-semibold" style={{ color: '#1A1814' }}>{d.theme}</span>
+                  </div>
+                  <div className="text-[11px] mb-1" style={{ color: '#8A8580' }}>{d.sub}</div>
+                  <div className="text-[12.5px] mb-2" style={{ color: '#4A4640' }}>{d.desc}</div>
+                  <div className="flex flex-wrap gap-x-4 gap-y-0.5 mb-2">
+                    {d.bullets.map(b => (
+                      <span key={b} className="text-[11.5px]" style={{ color: '#5B4B8A' }}>● {b}</span>
+                    ))}
+                  </div>
+                  <div className="text-[10px] tracking-[0.12em] font-semibold" style={{ color: '#8A6E25' }}>{d.tagline}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </CardBody>
+      </Card>
+
+      {/* What Kids Build */}
+      <Card>
+        <CardHeader title="What Kids Build" />
+        <CardBody>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { emoji: '🧠', title: 'Build Skills', desc: 'Critical thinking, problem solving & creativity' },
+              { emoji: '🎤', title: 'Speak Confidently', desc: 'Public speaking, teamwork & self-expression' },
+              { emoji: '🔬', title: 'Explore & Discover', desc: 'Hands-on experiments that make learning exciting' },
+              { emoji: '💡', title: 'Innovate & Create', desc: 'Design, build and bring ideas to life' },
+            ].map(item => (
+              <div key={item.title} className="rounded-lg p-3" style={{ background: '#F5F0E8', border: '1px solid rgba(184,151,58,0.2)' }}>
+                <div className="text-xl mb-1">{item.emoji}</div>
+                <div className="text-[12px] font-semibold mb-0.5" style={{ color: '#1A1814' }}>{item.title}</div>
+                <div className="text-[11px]" style={{ color: '#4A4640' }}>{item.desc}</div>
+              </div>
+            ))}
+          </div>
+        </CardBody>
+      </Card>
+
+      {/* Monthly Themes */}
+      <Card>
+        <CardHeader title="Monthly Themes · Aug 2026 – May 2027" />
+        <CardBody className="p-0">
+          {[
+            { month: 'August 2026', emoji: '🚗', theme: 'Motion & Transportation' },
+            { month: 'September 2026', emoji: '✈️', theme: 'Air & Flight' },
+            { month: 'October 2026', emoji: '🧙', theme: 'Spooky Science' },
+            { month: 'November 2026', emoji: '⚙️', theme: 'Engineering Machines' },
+            { month: 'December 2026', emoji: '🏔️', theme: 'Winter Builders' },
+            { month: 'January 2027', emoji: '🪐', theme: 'Space Explorers' },
+            { month: 'February 2027', emoji: '💡', theme: 'Electricity & Light' },
+            { month: 'March 2027', emoji: '🌱', theme: 'Nature Engineers' },
+            { month: 'April 2027', emoji: '🤖', theme: 'Robotics & Coding' },
+            { month: 'May 2027', emoji: '🏆', theme: 'Inventor Challenge Month' },
+          ].map((m, i, arr) => (
+            <div key={m.month} className="flex items-center gap-3 px-5 py-3"
+              style={{ borderBottom: i < arr.length - 1 ? '1px solid rgba(184,151,58,0.14)' : 'none' }}>
+              <span className="text-lg">{m.emoji}</span>
+              <div>
+                <div className="text-[11px]" style={{ color: '#8A8580' }}>{m.month}</div>
+                <div className="text-[13px] font-medium" style={{ color: '#1A1814' }}>{m.theme}</div>
+              </div>
+            </div>
+          ))}
+        </CardBody>
+      </Card>
+
       {/* Announcements */}
       {announcements.length > 0 && (
         <Card>
