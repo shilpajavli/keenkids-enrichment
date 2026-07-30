@@ -7,6 +7,7 @@ import Badge from '@/components/ui/Badge'
 import { formatDate } from '@/lib/utils'
 import type { CurriculumItem } from '@/types'
 import Link from 'next/link'
+import LocalDate from '@/components/ui/LocalDate'
 
 const STRIPE_LINKS: Record<string, string> = {
   '5_day': 'https://buy.stripe.com/fZu3co3pf6zT1MHg1me3e02',
@@ -75,8 +76,9 @@ export default async function ParentPortalPage({
     )
   }
 
-  const today = new Date().toISOString().slice(0, 10)
-  const todayDayIndex = new Date().getDay()
+  const localNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }))
+  const today = localNow.toLocaleDateString('en-CA') // YYYY-MM-DD
+  const todayDayIndex = localNow.getDay()
   const currentWeek = getMonday()
   const todaySchedule = todayDayIndex >= 1 && todayDayIndex <= 5 ? DAILY_SCHEDULE[todayDayIndex - 1] : null
   const initials = student.full_name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
@@ -157,7 +159,7 @@ export default async function ParentPortalPage({
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <div className="text-[11px] uppercase tracking-[0.1em] font-medium mb-0.5" style={{ color: '#8A8580' }}>
-                    {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                    <LocalDate />
                   </div>
                   <div className="font-serif text-[17px] font-light" style={{ color: '#1A1814' }}>Today's Status</div>
                 </div>
