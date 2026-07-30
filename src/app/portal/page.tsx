@@ -372,43 +372,53 @@ export default async function ParentPortalPage({
             </Card>
           )}
 
-          {/* Weekly schedule */}
+          {/* Weekly schedule — compact */}
           <Card>
             <CardHeader title="Weekly Schedule" />
             <CardBody className="p-0">
               {DAILY_SCHEDULE.map((d, i) => (
-                <div key={d.day} className="px-5 py-4"
-                  style={{ borderBottom: i < DAILY_SCHEDULE.length - 1 ? '1px solid rgba(184,151,58,0.14)' : 'none' }}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xl">{d.emoji}</span>
-                    <span className="font-semibold text-[12px]" style={{ color: '#B8973A' }}>{d.day}</span>
-                    <span className="text-[13px] font-medium" style={{ color: '#1A1814' }}>{d.theme}</span>
-                  </div>
-                  <div className="text-[11px] mb-1.5 pl-8" style={{ color: '#8A8580' }}>{d.sub}</div>
-                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 pl-8">
-                    {d.bullets.map(b => <span key={b} className="text-[11.5px]" style={{ color: '#5B4B8A' }}>● {b}</span>)}
+                <div key={d.day} className="flex items-center gap-3 px-5 py-3"
+                  style={{ borderBottom: i < DAILY_SCHEDULE.length - 1 ? '1px solid rgba(184,151,58,0.12)' : 'none' }}>
+                  <span className="text-xl w-7 flex-shrink-0">{d.emoji}</span>
+                  <div>
+                    <div className="text-[11px]" style={{ color: '#8A8580' }}>{d.day}</div>
+                    <div className="text-[13px] font-medium" style={{ color: '#1A1814' }}>{d.theme}</div>
                   </div>
                 </div>
               ))}
             </CardBody>
           </Card>
 
-          {/* Monthly themes */}
-          <Card>
-            <CardHeader title="Monthly Themes · Aug 2026 – May 2027" />
-            <CardBody className="p-0">
-              {MONTHLY_THEMES.map((m, i) => (
-                <div key={m.month} className="flex items-center gap-3 px-5 py-3"
-                  style={{ borderBottom: i < MONTHLY_THEMES.length - 1 ? '1px solid rgba(184,151,58,0.12)' : 'none' }}>
-                  <span className="text-lg w-7 flex-shrink-0">{m.emoji}</span>
-                  <div>
-                    <div className="text-[11px]" style={{ color: '#8A8580' }}>{m.month}</div>
-                    <div className="text-[13px] font-medium" style={{ color: '#1A1814' }}>{m.theme}</div>
-                  </div>
-                </div>
-              ))}
-            </CardBody>
-          </Card>
+          {/* Monthly themes — current + next 2 */}
+          {(() => {
+            const now = localNow
+            const currentIdx = MONTHLY_THEMES.findIndex(m => {
+              const [monthName, year] = m.month.split(' ')
+              const d = new Date(`${monthName} 1, ${year}`)
+              return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
+            })
+            const startIdx = currentIdx >= 0 ? currentIdx : 0
+            const upcoming = MONTHLY_THEMES.slice(startIdx, startIdx + 3)
+            return (
+              <Card>
+                <CardHeader title="Upcoming Themes" />
+                <CardBody className="p-0">
+                  {upcoming.map((m, i) => (
+                    <div key={m.month} className="flex items-center gap-3 px-5 py-3"
+                      style={{ borderBottom: i < upcoming.length - 1 ? '1px solid rgba(184,151,58,0.12)' : 'none',
+                               background: i === 0 ? 'rgba(184,151,58,0.06)' : 'transparent' }}>
+                      <span className="text-xl w-7 flex-shrink-0">{m.emoji}</span>
+                      <div className="flex-1">
+                        <div className="text-[11px]" style={{ color: '#8A8580' }}>{m.month}</div>
+                        <div className="text-[13px] font-medium" style={{ color: '#1A1814' }}>{m.theme}</div>
+                      </div>
+                      {i === 0 && <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: '#EFE6CC', color: '#8A6E25' }}>This month</span>}
+                    </div>
+                  ))}
+                </CardBody>
+              </Card>
+            )
+          })()}
         </div>
       )}
 
