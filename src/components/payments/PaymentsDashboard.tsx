@@ -56,12 +56,26 @@ export default function PaymentsDashboard({ payments: initial, summary: initialS
   const [unmatched, setUnmatched] = useState<UnmatchedPayment[]>([])
   const [linking, setLinking] = useState<string | null>(null)
   const [linkSelections, setLinkSelections] = useState<Record<string, string>>({})
+  const [syncing, setSyncing] = useState(false)
+  const [syncResult, setSyncResult] = useState<{ synced: number; unmatched: number } | null>(null)
 
   useEffect(() => {
     fetch('/api/payments/unmatched')
       .then(r => r.json())
       .then(j => setUnmatched(j.data ?? []))
   }, [])
+
+  async function syncStripe() {
+    setSyncing(true)
+    setSyncResult(null)
+    const res = await fetch('/api/payments/sync-stripe', { method: 'POST' })
+    const json = await res.json()
+    setSyncResult(json)
+    // Reload unmatched list
+    const u = await fetch('/api/payments/unmatched').then(r => r.json())
+    setUnmatched(u.data ?? [])
+    setSyncing(false)
+  }
 
   async function linkStudent(paymentId: string) {
     const studentId = linkSelections[paymentId]
@@ -215,6 +229,22 @@ export default function PaymentsDashboard({ payments: initial, summary: initialS
           )}
         </div>
       )}
+
+      {/* Sync from Stripe */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={syncStripe}
+          disabled={syncing}
+          className="btn text-[11.5px] py-1.5 px-4 flex items-center gap-1.5 disabled:opacity-50"
+          style={{ background: '#F5F0E8', color: '#8A6E25', border: '1px solid rgba(184,151,58,0.35)' }}>
+          {syncing ? 'Syncing…' : '↓ Sync past payments from Stripe'}
+        </button>
+        {syncResult && (
+          <span className="text-[12px]" style={{ color: '#4A4640' }}>
+            ✓ {syncResult.synced} synced · {syncResult.unmatched} unmatched
+          </span>
+        )}
+      </div>
 
       {/* Unmatched Stripe payments */}
       {unmatched.length > 0 && (
