@@ -1,14 +1,30 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardHeader, CardBody } from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import type { PaymentRecord, PaymentStatus } from '@/types'
 
+interface UnmatchedPayment {
+  id: string
+  child_name_entered: string
+  customer_email: string
+  customer_name: string
+  amount_cents: number
+  plan_name: string
+  paid_at: string
+}
+
+interface StudentOption {
+  id: string
+  full_name: string
+}
+
 interface Props {
   payments: PaymentRecord[]
   summary: { collected: number; outstanding: number; overdue: number }
+  students?: StudentOption[]
 }
 
 const STATUS_VARIANT: Record<PaymentStatus, any> = {
@@ -27,7 +43,7 @@ interface ReminderParent {
   payments: { amount_cents: number; due_date: string; status: string }[]
 }
 
-export default function PaymentsDashboard({ payments: initial, summary: initialSummary }: Props) {
+export default function PaymentsDashboard({ payments: initial, summary: initialSummary, students = [] }: Props) {
   const [payments, setPayments] = useState(initial)
   const [statusFilter, setStatusFilter] = useState<'all' | PaymentStatus>('all')
   const [marking, setMarking] = useState<string | null>(null)
@@ -37,6 +53,28 @@ export default function PaymentsDashboard({ payments: initial, summary: initialS
   const [reminderData, setReminderData] = useState<ReminderParent[]>([])
   const [loadingReminders, setLoadingReminders] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [unmatched, setUnmatched] = useState<UnmatchedPayment[]>([])
+  const [linking, setLinking] = useState<string | null>(null)
+  const [linkSelections, setLinkSelections] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    fetch('/api/payments/unmatched')
+      .then(r => r.json())
+      .then(j => setUnmatched(j.data ?? []))
+  }, [])
+
+  async function linkStudent(paymentId: string) {
+    const studentId = linkSelections[paymentId]
+    if (!studentId) return
+    setLinking(paymentId)
+    await fetch('/api/payments/unmatched', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ payment_id: paymentId, student_id: studentId }),
+    })
+    setUnmatched(prev => prev.filter(p => p.id !== paymentId))
+    setLinking(null)
+  }
 
   async function loadReminders() {
     setLoadingReminders(true)
@@ -175,6 +213,54 @@ export default function PaymentsDashboard({ payments: initial, summary: initialS
               </div>
             </>
           )}
+        </div>
+      )}
+
+      {/* Unmatched Stripe payments */}
+      {unmatched.length > 0 && (
+        <div className="card overflow-hidden" style={{ border: '1.5px solid rgba(251,188,5,0.4)' }}>
+          <div className="px-5 py-3 flex items-center justify-between" style={{ background: '#FFFBEA', borderBottom: '1px solid rgba(251,188,5,0.2)' }}>
+            <div>
+              <h3 className="font-medium text-sm" style={{ color: '#1A1814' }}>⚠ Unmatched Stripe Payments ({unmatched.length})</h3>
+              <p className="text-xs mt-0.5" style={{ color: '#8A8580' }}>These parents paid but the child name didn't match a student — link them below</p>
+            </div>
+          </div>
+          <div>
+            {unmatched.map((p, i) => (
+              <div key={p.id} className="px-5 py-4"
+                style={{ borderBottom: i < unmatched.length - 1 ? '1px solid rgba(184,151,58,0.1)' : 'none' }}>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="text-[13px] font-medium" style={{ color: '#1A1814' }}>
+                      Child entered: <span style={{ color: '#791F1F' }}>"{p.child_name_entered || '—'}"</span>
+                    </div>
+                    <div className="text-[12px] mt-0.5" style={{ color: '#8A8580' }}>
+                      {p.customer_name} · {p.customer_email} · {p.plan_name} · ${(p.amount_cents / 100).toFixed(0)} · {p.paid_at ? new Date(p.paid_at).toLocaleDateString() : '—'}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <select
+                      value={linkSelections[p.id] ?? ''}
+                      onChange={e => setLinkSelections(prev => ({ ...prev, [p.id]: e.target.value }))}
+                      className="text-xs rounded-lg px-2 py-1.5 outline-none"
+                      style={{ border: '1.5px solid rgba(184,151,58,0.3)', color: '#1A1814', minWidth: 160 }}>
+                      <option value="">Select student…</option>
+                      {students.map(s => (
+                        <option key={s.id} value={s.id}>{s.full_name}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => linkStudent(p.id)}
+                      disabled={!linkSelections[p.id] || linking === p.id}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium disabled:opacity-40"
+                      style={{ background: '#1A1814', color: '#B8973A' }}>
+                      {linking === p.id ? 'Linking…' : 'Link'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

@@ -13,7 +13,7 @@ export default async function PaymentsPage() {
   // Filter payments through students that belong to the current program
   const { data: students } = await supabase
     .from('students')
-    .select('id')
+    .select('id, full_name')
     .eq('program_id', programId ?? '')
 
   const studentIds = (students ?? []).map(s => s.id)
@@ -39,6 +39,7 @@ export default async function PaymentsPage() {
       <PaymentsDashboard
         payments={payments ?? []}
         summary={{ collected, outstanding, overdue }}
+        students={students ?? []}
       />
     </div>
   )
