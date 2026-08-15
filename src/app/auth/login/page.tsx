@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase-browser'
 export default function LoginPage() {
   const supabase = createClient()
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [mode, setMode] = useState<'magic' | 'password'>('magic')
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState('')
@@ -21,6 +23,18 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
+
+    if (mode === 'password') {
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) { setError(error.message); setLoading(false); return }
+      // Redirect handled by middleware
+      window.location.href = '/auth/callback?code=none'
+      const { data } = await supabase.auth.getUser()
+      const role = data.user?.user_metadata?.role
+      window.location.href = role === 'parent' ? '/portal' : '/dashboard'
+      return
+    }
+
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
@@ -91,6 +105,21 @@ export default function LoginPage() {
                 <span className="text-[11px]" style={{ color: '#8A8580' }}>or sign in with email</span>
                 <div className="flex-1 h-px" style={{ background: 'rgba(184,151,58,0.22)' }} />
               </div>
+              {/* Toggle */}
+              <div className="flex rounded-lg overflow-hidden mb-4"
+                style={{ border: '1.5px solid rgba(184,151,58,0.3)' }}>
+                <button onClick={() => { setMode('magic'); setError('') }}
+                  className="flex-1 py-2 text-xs font-medium transition-colors"
+                  style={{ background: mode === 'magic' ? '#1A1814' : 'transparent', color: mode === 'magic' ? '#B8973A' : '#8A8580' }}>
+                  Magic Link
+                </button>
+                <button onClick={() => { setMode('password'); setError('') }}
+                  className="flex-1 py-2 text-xs font-medium transition-colors"
+                  style={{ background: mode === 'password' ? '#1A1814' : 'transparent', color: mode === 'password' ? '#B8973A' : '#8A8580' }}>
+                  Password
+                </button>
+              </div>
+
               <form onSubmit={handleLogin} className="space-y-3">
                 <input
                   type="email"
@@ -100,11 +129,21 @@ export default function LoginPage() {
                   onChange={e => setEmail(e.target.value)}
                   required
                 />
+                {mode === 'password' && (
+                  <input
+                    type="password"
+                    className="input"
+                    placeholder="Password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    required
+                  />
+                )}
                 {error && (
                   <p className="text-[#791F1F] text-xs bg-[#FCEBEB] px-3 py-2 rounded-lg">{error}</p>
                 )}
                 <button type="submit" className="btn btn-gold w-full justify-center py-2.5" disabled={loading}>
-                  {loading ? 'Sending link…' : 'Send magic link'}
+                  {loading ? 'Signing in…' : mode === 'password' ? 'Sign in' : 'Send magic link'}
                 </button>
               </form>
             </>
