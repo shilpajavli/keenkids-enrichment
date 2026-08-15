@@ -64,7 +64,7 @@ export async function POST() {
 
     if (!studentId) unmatched++
 
-    await admin.from('payments').upsert({
+    const { error } = await admin.from('payments').upsert({
       stripe_session_id: session.id,
       student_id: studentId,
       amount_cents: amountCents,
@@ -72,13 +72,17 @@ export async function POST() {
       status: 'paid',
       customer_email: customerEmail,
       customer_name: customerName,
-      child_name_entered: childName,
+      child_name_entered: childName || null,
       paid_at: paidAt,
       due_date: paidAt,
     }, { onConflict: 'stripe_session_id' })
 
-    synced++
+    if (error) {
+      console.error(`Failed to upsert session ${session.id}:`, error.message)
+    } else {
+      synced++
+    }
   }
 
-  return NextResponse.json({ synced, unmatched })
+  return NextResponse.json({ synced, unmatched, total: sessions.length })
 }
