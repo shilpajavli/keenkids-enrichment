@@ -250,7 +250,7 @@ export default async function ParentPortalPage({
             <Card>
               <CardHeader title="Notes from your teacher" />
               <CardBody className="p-0">
-                {notes.map((note: { content: string; created_at: string }, i) => (
+                {notes.map((note: { content: string; created_at: string }, i: number) => (
                   <div key={i} className="px-5 py-4"
                     style={{ borderBottom: i < notes.length - 1 ? '1px solid rgba(184,151,58,0.14)' : 'none' }}>
                     <div className="text-[13px] leading-relaxed" style={{ color: '#1A1814' }}>{note.content}</div>
