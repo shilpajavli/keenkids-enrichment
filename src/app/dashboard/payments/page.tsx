@@ -27,7 +27,7 @@ export default async function PaymentsPage() {
   const { data: payments } = studentIds.length
     ? await supabase
         .from('payments')
-        .select('*, student:students(id, full_name)')
+        .select('*, student:students(id, full_name, grade)')
         .in('student_id', studentIds)
         .order('due_date', { ascending: false })
     : { data: [] }

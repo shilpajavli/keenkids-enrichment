@@ -30,13 +30,13 @@ export async function PATCH(req: NextRequest) {
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
   if (profile?.role === 'parent') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const { id, status, amount_cents } = await req.json()
+  const { id, status, amount_cents, payment_type, paid_at } = await req.json()
   const { error } = await supabase
     .from('payments')
     .update({
-      status,
-      paid_at: status === 'paid' ? new Date().toISOString() : null,
+      ...(status !== undefined ? { status, paid_at: paid_at ?? (status === 'paid' ? new Date().toISOString() : null) } : {}),
       ...(amount_cents !== undefined ? { amount_cents } : {}),
+      ...(payment_type !== undefined ? { payment_type } : {}),
     })
     .eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
