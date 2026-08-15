@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
       .from('students')
       .select('id, full_name')
 
-    const match = students?.find(s =>
+    const match = students?.find((s: { id: string; full_name: string }) =>
       s.full_name.toLowerCase().replace(/\s+/g, ' ').trim() ===
       childName.toLowerCase().replace(/\s+/g, ' ').trim()
     )
