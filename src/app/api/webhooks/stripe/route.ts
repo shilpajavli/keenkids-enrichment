@@ -10,6 +10,10 @@ const PLAN_MAP: Record<string, { name: string; days: number; amount_cents: numbe
 }
 
 const PLAN_BY_AMOUNT: Record<number, string> = {
+  11000: '1-Day Plan',
+  23000: '3-Day Plan',
+  10000: '5-Day Plan',
+  // Legacy / full price (no discount)
   22000: '1-Day Plan',
   45000: '3-Day Plan',
   69900: '5-Day Plan',

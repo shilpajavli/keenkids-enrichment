@@ -5,6 +5,10 @@ import { createAdminClient } from '@/lib/supabase-server'
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 const PLAN_BY_AMOUNT: Record<number, string> = {
+  11000: '1-Day Plan',
+  23000: '3-Day Plan',
+  10000: '5-Day Plan',
+  // Legacy / full price (no discount)
   22000: '1-Day Plan',
   45000: '3-Day Plan',
   69900: '5-Day Plan',
