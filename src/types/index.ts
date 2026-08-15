@@ -145,16 +145,22 @@ export interface MediaItem {
 export interface PaymentRecord {
   id: string
   parent_id: string
-  student_id: string
+  student_id: string | null
   amount_cents: number
   currency: string
   status: PaymentStatus
   due_date: string
   paid_at: string | null
   stripe_payment_intent_id: string | null
+  stripe_session_id: string | null
   invoice_url: string | null
   created_at: string
-  student?: Pick<Student, 'id' | 'full_name'>
+  plan_name: string | null
+  payment_type: string | null
+  child_name_entered: string | null
+  customer_email: string | null
+  customer_name: string | null
+  student?: Pick<Student, 'id' | 'full_name' | 'grade'>
 }
 
 // ─── Announcements ──────────────────────────────────────────────────────────
