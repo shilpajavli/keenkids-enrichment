@@ -6,7 +6,7 @@ import { cn, getInitials } from '@/lib/utils'
 import type { Profile } from '@/types'
 import {
   LayoutDashboard, Users, CalendarCheck,
-  Clock, Image, CreditCard, MessageCircle, FileText, LogOut, BookOpen
+  Clock, Image, CreditCard, MessageCircle, FileText, LogOut, BookOpen, Timer
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase-browser'
 import { useRouter } from 'next/navigation'
@@ -32,9 +32,10 @@ const NAV = [
   {
     section: 'Admin',
     items: [
-      { href: '/dashboard/payments',  label: 'Payments',   icon: CreditCard },
-      { href: '/dashboard/community', label: 'Community',  icon: MessageCircle },
-      { href: '/dashboard/reports',   label: 'Reports',    icon: FileText },
+      { href: '/dashboard/payments',   label: 'Payments',    icon: CreditCard },
+      { href: '/dashboard/community',  label: 'Community',   icon: MessageCircle },
+      { href: '/dashboard/timesheets', label: 'Timesheets',  icon: Timer },
+      { href: '/dashboard/reports',    label: 'Reports',     icon: FileText },
     ],
   },
 ]

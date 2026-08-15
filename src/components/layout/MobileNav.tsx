@@ -2,13 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, CalendarCheck, MessageCircle } from 'lucide-react'
+import { LayoutDashboard, Users, CalendarCheck, MessageCircle, Timer } from 'lucide-react'
 
 const NAV = [
-  { href: '/dashboard',            label: 'Home',       icon: LayoutDashboard },
-  { href: '/dashboard/students',   label: 'Students',   icon: Users },
-  { href: '/dashboard/attendance', label: 'Attendance', icon: CalendarCheck },
-  { href: '/dashboard/community',  label: 'Community',  icon: MessageCircle },
+  { href: '/dashboard',             label: 'Home',       icon: LayoutDashboard },
+  { href: '/dashboard/students',    label: 'Students',   icon: Users },
+  { href: '/dashboard/attendance',  label: 'Attendance', icon: CalendarCheck },
+  { href: '/dashboard/timesheets',  label: 'Timesheet',  icon: Timer },
+  { href: '/dashboard/community',   label: 'Community',  icon: MessageCircle },
 ]
 
 export default function MobileNav() {
