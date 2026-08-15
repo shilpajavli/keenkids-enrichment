@@ -6,13 +6,13 @@ import { cn, getInitials } from '@/lib/utils'
 import type { Profile } from '@/types'
 import {
   LayoutDashboard, Users, CalendarCheck,
-  Clock, Image, CreditCard, MessageCircle, FileText, LogOut, BookOpen, Timer
+  Clock, Image, CreditCard, MessageCircle, FileText, LogOut, BookOpen, Timer, UserPlus
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase-browser'
 import { useRouter } from 'next/navigation'
 import ProgramSwitcher from './ProgramSwitcher'
 
-const NAV = [
+const NAV_ADMIN = [
   {
     section: 'Overview',
     items: [
@@ -35,7 +35,33 @@ const NAV = [
       { href: '/dashboard/payments',   label: 'Payments',    icon: CreditCard },
       { href: '/dashboard/community',  label: 'Community',   icon: MessageCircle },
       { href: '/dashboard/timesheets', label: 'Timesheets',  icon: Timer },
+      { href: '/dashboard/team',       label: 'Team',        icon: UserPlus },
       { href: '/dashboard/reports',    label: 'Reports',     icon: FileText },
+    ],
+  },
+]
+
+const NAV_TEACHER = [
+  {
+    section: 'Overview',
+    items: [
+      { href: '/dashboard',            label: 'Home',          icon: LayoutDashboard },
+      { href: '/dashboard/students',   label: 'Students',      icon: Users },
+      { href: '/dashboard/attendance', label: 'Attendance',    icon: CalendarCheck },
+    ],
+  },
+  {
+    section: 'Learning',
+    items: [
+      { href: '/dashboard/curriculum', label: 'Curriculum',    icon: BookOpen },
+      { href: '/dashboard/schedule',   label: 'Schedule',      icon: Clock },
+      { href: '/dashboard/media',      label: 'Media gallery', icon: Image },
+    ],
+  },
+  {
+    section: 'My Work',
+    items: [
+      { href: '/dashboard/timesheets', label: 'Timesheet',     icon: Timer },
     ],
   },
 ]
@@ -47,6 +73,7 @@ export default function Sidebar({ profile, programs, currentProgramId }: Props) 
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
+  const NAV = profile?.role === 'teacher' ? NAV_TEACHER : NAV_ADMIN
 
   async function signOut() {
     await supabase.auth.signOut()

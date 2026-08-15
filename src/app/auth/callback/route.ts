@@ -22,11 +22,13 @@ export async function GET(request: NextRequest) {
         .single()
 
       if (!existing) {
+        // Use role from invite metadata if present, otherwise default to parent
+        const invitedRole = user.user_metadata?.role ?? 'parent'
         await admin.from('profiles').insert({
           id: user.id,
           email: user.email,
           full_name: user.user_metadata?.full_name ?? user.user_metadata?.name ?? '',
-          role: 'parent',
+          role: invitedRole,
         })
       }
 
@@ -52,7 +54,9 @@ export async function GET(request: NextRequest) {
         await admin.from('parent_invites').delete().ilike('email', email)
       }
 
-      return NextResponse.redirect(`${origin}/`)
+      const role = existing?.role ?? 'parent'
+      const dest = role === 'parent' ? `${origin}/portal` : `${origin}/dashboard`
+      return NextResponse.redirect(dest)
     }
 
     console.error('Auth callback error:', error?.message)
