@@ -256,7 +256,7 @@ export default function PaymentsDashboard({ payments: initial, students = [] }: 
                     </div>
                     {group.payments
                       .slice()
-                      .sort((a, b) => new Date(b.paid_at ?? b.due_date).getTime() - new Date(a.paid_at ?? a.due_date).getTime())
+                      .sort((a, b) => new Date(b.paid_at ?? b.due_date ?? b.created_at).getTime() - new Date(a.paid_at ?? a.due_date ?? a.created_at).getTime())
                       .map((p, pi) => {
                         const ptype = (p as any).payment_type ?? 'tuition'
                         const typeStyle = TYPE_COLORS[ptype] ?? TYPE_COLORS.other
@@ -268,7 +268,7 @@ export default function PaymentsDashboard({ payments: initial, students = [] }: 
                               borderTop: pi > 0 ? '1px solid rgba(184,151,58,0.08)' : 'none',
                             }}>
                             <span style={{ color: '#4A4640' }}>
-                              {formatDate(p.paid_at ?? p.due_date, 'MMM d, yyyy')}
+                              {formatDate(p.paid_at ?? p.due_date ?? p.created_at, 'MMM d, yyyy')}
                             </span>
                             <span style={{ color: '#1A1814' }}>{formatCurrency(p.amount_cents)}</span>
                             {/* Payment type — click to cycle */}
