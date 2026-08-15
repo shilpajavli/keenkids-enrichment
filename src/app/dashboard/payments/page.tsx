@@ -2,12 +2,18 @@ export const dynamic = 'force-dynamic'
 
 import { createServerClient } from '@/lib/supabase-server'
 import { getCurrentProgramId } from '@/lib/program'
+import { redirect } from 'next/navigation'
 import PaymentsDashboard from '@/components/payments/PaymentsDashboard'
 
 export const metadata = { title: 'Payments — KeenKids Enrichment' }
 
 export default async function PaymentsPage() {
   const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/auth/login')
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  if (profile?.role === 'teacher') redirect('/dashboard')
+
   const programId = await getCurrentProgramId()
 
   // Filter payments through students that belong to the current program
