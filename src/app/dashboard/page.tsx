@@ -56,8 +56,9 @@ export default async function DashboardPage() {
   const programId = await getCurrentProgramId()
 
   const { data: { user } } = await supabase.auth.getUser()
-  const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user?.id ?? '').single()
+  const { data: profile } = await supabase.from('profiles').select('full_name, role').eq('id', user?.id ?? '').single()
   const firstName = profile?.full_name?.split(' ')[0] ?? 'there'
+  const isTeacher = profile?.role === 'teacher'
 
   const [studentsRes, programRes] = await Promise.all([
     supabase.from('students').select('id, full_name, grade').eq('program_id', programId ?? '').order('full_name'),
@@ -84,7 +85,7 @@ export default async function DashboardPage() {
   const [attendanceRes, announcementsRes, paymentsRes, curriculumRes] = await Promise.all([
     supabase.from('attendance').select('student_id, status').eq('date', today),
     supabase.from('announcements').select('id, title, body, pinned').order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(3),
-    studentIds.length
+    !isTeacher && studentIds.length
       ? supabase
           .from('payments')
           .select('id, amount_cents, status, due_date, student:students(id, full_name, grade)')
@@ -146,14 +147,16 @@ export default async function DashboardPage() {
           <div className="font-serif text-3xl font-light mb-1" style={{ color: '#633806' }}>{absent.length}</div>
           <div className="text-[12px]" style={{ color: '#8A8580' }}>Not yet arrived</div>
         </Link>
-        <Link href="/dashboard/payments" className="card p-5 hover:opacity-80 transition-opacity">
-          <div className="font-serif text-3xl font-light mb-1" style={{ color: totalOutstandingCents > 0 ? '#791F1F' : '#27500A' }}>
-            {totalOutstandingCents > 0 ? formatCurrency(totalOutstandingCents) : '✓'}
-          </div>
-          <div className="text-[12px]" style={{ color: '#8A8580' }}>
-            {totalOutstandingCents > 0 ? `Outstanding · ${unpaidStudents.length} student${unpaidStudents.length !== 1 ? 's' : ''}` : 'All payments collected'}
-          </div>
-        </Link>
+        {!isTeacher && (
+          <Link href="/dashboard/payments" className="card p-5 hover:opacity-80 transition-opacity">
+            <div className="font-serif text-3xl font-light mb-1" style={{ color: totalOutstandingCents > 0 ? '#791F1F' : '#27500A' }}>
+              {totalOutstandingCents > 0 ? formatCurrency(totalOutstandingCents) : '✓'}
+            </div>
+            <div className="text-[12px]" style={{ color: '#8A8580' }}>
+              {totalOutstandingCents > 0 ? `Outstanding · ${unpaidStudents.length} student${unpaidStudents.length !== 1 ? 's' : ''}` : 'All payments collected'}
+            </div>
+          </Link>
+        )}
       </div>
 
       {/* This week */}
@@ -256,8 +259,8 @@ export default async function DashboardPage() {
           </CardBody>
         </Card>
 
-        {/* Outstanding payments */}
-        <Card>
+        {/* Outstanding payments — admin only */}
+        {!isTeacher && <Card>
           <CardHeader
             title="Outstanding payments"
             action={
@@ -305,7 +308,7 @@ export default async function DashboardPage() {
               </>
             )}
           </CardBody>
-        </Card>
+        </Card>}
       </div>
 
       {/* Announcements */}
