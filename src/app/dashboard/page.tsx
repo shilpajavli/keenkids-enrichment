@@ -134,7 +134,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className={`grid gap-4 ${isTeacher ? 'grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'}`}>
         <Link href="/dashboard/students" className="card p-5 hover:opacity-80 transition-opacity">
           <div className="font-serif text-3xl font-light mb-1" style={{ color: '#8A6E25' }}>{students?.length ?? 0}</div>
           <div className="text-[12px]" style={{ color: '#8A8580' }}>Enrolled</div>
@@ -237,7 +237,7 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className={`grid gap-5 ${isTeacher ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
         {/* Not yet arrived */}
         <Card>
           <CardHeader title="Not yet arrived" action={
