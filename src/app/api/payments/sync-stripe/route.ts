@@ -1,60 +1,46 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createAdminClient } from '@/lib/supabase-server'
+import { extractFields, resolveStudent, PLAN_BY_AMOUNT } from '@/lib/stripe-student-sync'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
-const PLAN_BY_AMOUNT: Record<number, string> = {
-  11000: '1-Day Plan',
-  23000: '3-Day Plan',
-  10000: '5-Day Plan',
-  22000: '1-Day Plan',
-  45000: '3-Day Plan',
-  69900: '5-Day Plan',
-}
-
-function matchStudent(childName: string, students: { id: string; full_name: string }[]): string | null {
-  if (!childName) return null
-  const normalized = childName.toLowerCase().replace(/\s+/g, ' ').trim()
-  return students.find(s =>
-    s.full_name.toLowerCase().replace(/\s+/g, ' ').trim() === normalized
-  )?.id ?? null
-}
-
 export async function POST() {
   const admin = createAdminClient()
-  const { data: students } = await admin.from('students').select('id, full_name')
-  const studentList = students ?? []
 
   // ── 1. Sync completed checkout sessions ──────────────────────────────────
   const sessions: Stripe.Checkout.Session[] = []
   let hasMore = true
-  let startingAfter: string | undefined
+  let cursor: string | undefined
 
   while (hasMore) {
     const page = await stripe.checkout.sessions.list({
       limit: 100,
-      ...(startingAfter ? { starting_after: startingAfter } : {}),
+      ...(cursor ? { starting_after: cursor } : {}),
     })
     sessions.push(...page.data.filter(s => s.payment_status === 'paid'))
     hasMore = page.has_more
-    if (page.data.length > 0) startingAfter = page.data[page.data.length - 1].id
+    if (page.data.length > 0) cursor = page.data[page.data.length - 1].id
   }
 
-  let synced = 0, unmatched = 0
+  let synced = 0, unmatched = 0, created = 0
 
   for (const session of sessions) {
-    const childNameField = session.custom_fields?.find(
-      f => f.label?.custom?.toLowerCase().includes('child') ||
-           f.label?.custom?.toLowerCase().includes('student') ||
-           f.key?.toLowerCase().includes('child') ||
-           f.key?.toLowerCase().includes('student')
-    )
-    const childName = (childNameField?.text?.value ?? '').trim()
+    const { childName, schoolName } = extractFields(session)
     const amountCents = session.amount_total ?? 0
     const planName = PLAN_BY_AMOUNT[amountCents] ?? `Payment ($${(amountCents / 100).toFixed(2)})`
-    const studentId = matchStudent(childName, studentList)
+
+    // Check if student existed before resolving (to count new ones)
+    const { data: existing } = await admin
+      .from('students')
+      .select('id')
+      .ilike('full_name', childName)
+      .limit(1)
+    const wasExisting = (existing?.length ?? 0) > 0
+
+    const studentId = await resolveStudent(admin, childName, schoolName, amountCents)
     if (!studentId) unmatched++
+    else if (!wasExisting) created++
 
     const { error } = await admin.from('payments').upsert({
       stripe_session_id: session.id,
@@ -76,7 +62,7 @@ export async function POST() {
   // ── 2. Sync refunds ───────────────────────────────────────────────────────
   const refunds: Stripe.Refund[] = []
   let refundHasMore = true
-  let refundCursor: string | undefined = undefined
+  let refundCursor: string | undefined
 
   while (refundHasMore) {
     const refundPage: Stripe.ApiList<Stripe.Refund> = await stripe.refunds.list({
@@ -92,12 +78,10 @@ export async function POST() {
 
   for (const refund of refunds) {
     try {
-      // Expand the charge to get payment_intent
       const charge = await stripe.charges.retrieve(refund.charge as string)
       const paymentIntentId = charge.payment_intent as string
       if (!paymentIntentId) continue
 
-      // Find checkout session via payment_intent
       const sessionList = await stripe.checkout.sessions.list({
         payment_intent: paymentIntentId,
         limit: 1,
@@ -121,5 +105,5 @@ export async function POST() {
     }
   }
 
-  return NextResponse.json({ synced, unmatched, refunds: refundsSynced, total: sessions.length })
+  return NextResponse.json({ synced, unmatched, created, refunds: refundsSynced, total: sessions.length })
 }

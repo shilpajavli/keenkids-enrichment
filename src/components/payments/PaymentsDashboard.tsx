@@ -77,7 +77,7 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [updating, setUpdating] = useState<string | null>(null)
   const [syncing, setSyncing] = useState(false)
-  const [syncResult, setSyncResult] = useState<{ synced: number; unmatched: number; refunds: number; total: number } | null>(null)
+  const [syncResult, setSyncResult] = useState<{ synced: number; unmatched: number; created: number; refunds: number; total: number } | null>(null)
   const [cancelling, setCancelling] = useState<string | null>(null)
   const [cancelNotes, setCancelNotes] = useState<Record<string, string>>({})
   const [unmatched, setUnmatched] = useState<UnmatchedPayment[]>([])
@@ -198,7 +198,7 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
         </button>
         {syncResult && (
           <span className="text-[12px]" style={{ color: '#4A4640' }}>
-            ✓ {syncResult.synced} synced · {syncResult.unmatched} unmatched · {syncResult.refunds ?? 0} refunds
+            ✓ {syncResult.synced} synced · {syncResult.created ?? 0} new students · {syncResult.unmatched} unmatched · {syncResult.refunds ?? 0} refunds
           </span>
         )}
       </div>
