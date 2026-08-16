@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase-server'
+import { createServerClient, createAdminClient } from '@/lib/supabase-server'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(req: NextRequest) {
@@ -47,13 +47,17 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const supabase = await createServerClient()
   const { searchParams } = new URL(req.url)
   const id = searchParams.get('id')
 
   if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
 
-  const { error } = await supabase.from('students').delete().eq('id', id)
+  const admin = createAdminClient()
+
+  // Unlink any payments referencing this student before deleting
+  await admin.from('payments').update({ student_id: null }).eq('student_id', id)
+
+  const { error } = await admin.from('students').delete().eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
   return NextResponse.json({ success: true })
 }
