@@ -91,34 +91,34 @@ export async function POST() {
   let refundsSynced = 0
 
   for (const refund of refunds) {
-    // Find the payment this refund belongs to via the charge → payment intent → session
-    let sessionId: string | null = null
     try {
-      if (refund.payment_intent) {
-        const sessions2 = await stripe.checkout.sessions.list({
-          payment_intent: refund.payment_intent as string,
-          limit: 1,
-        })
-        sessionId = sessions2.data[0]?.id ?? null
-      }
-    } catch { /* ignore */ }
+      // Expand the charge to get payment_intent
+      const charge = await stripe.charges.retrieve(refund.charge as string)
+      const paymentIntentId = charge.payment_intent as string
+      if (!paymentIntentId) continue
 
-    if (!sessionId) continue
-
-    const refundedAt = new Date(refund.created * 1000).toISOString()
-    const isFullRefund = refund.amount === (refund as any).charge?.amount
-
-    const { error } = await admin.from('payments')
-      .update({
-        status: 'refunded',
-        refund_amount_cents: refund.amount,
-        refunded_at: refundedAt,
-        stripe_refund_id: refund.id,
+      // Find checkout session via payment_intent
+      const sessionList = await stripe.checkout.sessions.list({
+        payment_intent: paymentIntentId,
+        limit: 1,
       })
-      .eq('stripe_session_id', sessionId)
+      const sessionId = sessionList.data[0]?.id
+      if (!sessionId) continue
 
-    if (error) console.error(`Failed refund ${refund.id}:`, error.message)
-    else refundsSynced++
+      const { error } = await admin.from('payments')
+        .update({
+          status: 'refunded',
+          refund_amount_cents: refund.amount,
+          refunded_at: new Date(refund.created * 1000).toISOString(),
+          stripe_refund_id: refund.id,
+        })
+        .eq('stripe_session_id', sessionId)
+
+      if (error) console.error(`Failed refund ${refund.id}:`, error.message)
+      else refundsSynced++
+    } catch (e) {
+      console.error(`Error processing refund ${refund.id}:`, e)
+    }
   }
 
   return NextResponse.json({ synced, unmatched, refunds: refundsSynced, total: sessions.length })
