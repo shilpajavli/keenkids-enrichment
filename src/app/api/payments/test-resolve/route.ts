@@ -1,0 +1,34 @@
+import { NextResponse } from 'next/server'
+import { createAdminClient } from '@/lib/supabase-server'
+import { resolveStudent } from '@/lib/stripe-student-sync'
+
+export async function GET() {
+  const admin = createAdminClient()
+
+  // Test with known unmatched students
+  const tests = [
+    { name: 'Ayush Matturi', school: 'Mabel Mattos Elementary School', amount: 10000 },
+    { name: 'Nithilla Renganathan', school: 'John Sinnott Elementary school ( 3rd Grade )', amount: 10000 },
+    { name: 'Viyan Raghunathan', school: 'Mabel Mattos Elementary', amount: 10000 },
+  ]
+
+  // Also fetch raw data to debug
+  const { data: schools, error: schoolsError } = await admin.from('schools').select('id, name')
+  const { data: programs, error: programsError } = await admin.from('programs').select('id, school_id, start_date, name').order('start_date', { ascending: false })
+  const { data: students } = await admin.from('students').select('id, full_name, status').limit(5)
+
+  const results = []
+  for (const t of tests) {
+    const studentId = await resolveStudent(admin, t.name, t.school, t.amount)
+    results.push({ ...t, resolved: studentId })
+  }
+
+  return NextResponse.json({
+    schools,
+    schoolsError,
+    programs,
+    programsError,
+    sampleStudents: students,
+    results,
+  })
+}

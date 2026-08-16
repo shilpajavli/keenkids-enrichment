@@ -30,15 +30,27 @@ export async function POST() {
     const amountCents = session.amount_total ?? 0
     const planName = PLAN_BY_AMOUNT[amountCents] ?? `Payment ($${(amountCents / 100).toFixed(2)})`
 
-    const studentId = await resolveStudent(admin, childName, schoolName, amountCents)
+    // Check if payment already exists
+    const { data: existing } = await admin
+      .from('payments')
+      .select('id, student_id')
+      .eq('stripe_session_id', session.id)
+      .single()
+
+    let studentId: string | null = existing?.student_id ?? null
+
+    // Only resolve student if not already linked
     if (!studentId) {
-      unmatched++
-      console.log(`Unmatched: "${childName}" (${session.customer_details?.email})`)
-    } else {
-      created++
+      studentId = await resolveStudent(admin, childName, schoolName, amountCents)
+      if (!studentId) {
+        unmatched++
+        console.log(`Still unmatched: "${childName}" school="${schoolName}"`)
+      } else {
+        created++
+      }
     }
 
-    const { error } = await admin.from('payments').upsert({
+    const record = {
       stripe_session_id: session.id,
       student_id: studentId,
       amount_cents: amountCents,
@@ -50,7 +62,11 @@ export async function POST() {
       school_name_entered: schoolName || null,
       paid_at: new Date(session.created * 1000).toISOString(),
       due_date: new Date(session.created * 1000).toISOString(),
-    }, { onConflict: 'stripe_session_id' })
+    }
+
+    const { error } = existing
+      ? await admin.from('payments').update(record).eq('id', existing.id)
+      : await admin.from('payments').insert(record)
 
     if (error) console.error(`Failed session ${session.id}:`, error.message)
     else synced++
