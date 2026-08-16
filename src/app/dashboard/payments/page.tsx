@@ -37,17 +37,6 @@ export default async function PaymentsPage() {
   const outstanding = payments?.filter(p => p.status === 'pending').reduce((s, p) => s + p.amount_cents, 0) ?? 0
   const overdue = payments?.filter(p => p.status === 'overdue').reduce((s, p) => s + p.amount_cents, 0) ?? 0
 
-  // Find students who haven't paid tuition this month
-  const now = new Date()
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString()
-  const paidThisMonth = new Set(
-    (payments ?? [])
-      .filter(p => p.status === 'paid' && p.paid_at >= monthStart && p.paid_at < monthEnd)
-      .map(p => p.student_id)
-  )
-  const unpaidThisMonth = (students ?? []).filter(s => !paidThisMonth.has(s.id))
-
   return (
     <div className="space-y-6">
       <div>
@@ -59,7 +48,6 @@ export default async function PaymentsPage() {
         summary={{ collected, outstanding, overdue }}
         students={students ?? []}
         enrolledCount={students?.length ?? 0}
-        unpaidThisMonth={unpaidThisMonth}
       />
     </div>
   )
