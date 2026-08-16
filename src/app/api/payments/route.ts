@@ -45,6 +45,17 @@ export async function PATCH(req: NextRequest) {
   return NextResponse.json({ success: true })
 }
 
+// DELETE — permanently remove a payment record
+export async function DELETE(req: NextRequest) {
+  const admin = createAdminClient()
+  const { searchParams } = new URL(req.url)
+  const id = searchParams.get('id')
+  if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+  const { error } = await admin.from('payments').delete().eq('id', id)
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+  return NextResponse.json({ success: true })
+}
+
 // POST — create Stripe payment link for a student
 export async function POST(req: NextRequest) {
   const supabase = await createServerClient()

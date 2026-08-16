@@ -127,11 +127,7 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
   }
 
   async function deleteUnmatched(paymentId: string) {
-    await fetch('/api/payments', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: paymentId, status: 'cancelled' }),
-    })
+    await fetch(`/api/payments?id=${paymentId}`, { method: 'DELETE' })
     setUnmatched(prev => prev.filter(p => p.id !== paymentId))
   }
 
@@ -305,7 +301,7 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
                     {group.studentId && (
                       <div className="px-8 pt-3 flex justify-end">
                         <a
-                          href={`/dashboard/payments/receipt/${group.studentId}`}
+                          href={`/portal/receipt/${group.studentId}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-[11px] px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors"
