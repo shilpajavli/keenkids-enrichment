@@ -326,9 +326,18 @@ export default async function ParentPortalPage({
             <Card>
               <CardHeader
                 title="Payments"
-                action={pendingPayments.length > 0
-                  ? <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background: '#FEF3C7', color: '#92400E' }}>{pendingPayments.length} pending</span>
-                  : <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background: '#F0FAF4', color: '#27500A' }}>All paid ✓</span>
+                action={
+                  <div className="flex items-center gap-2">
+                    {pendingPayments.length > 0
+                      ? <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background: '#FEF3C7', color: '#92400E' }}>{pendingPayments.length} pending</span>
+                      : <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background: '#F0FAF4', color: '#27500A' }}>All paid ✓</span>
+                    }
+                    <a href={`/dashboard/payments/receipt/${student.id}`} target="_blank" rel="noopener noreferrer"
+                      className="text-[11px] px-2.5 py-1 rounded-lg"
+                      style={{ background: '#F5F0E8', color: '#4A4640', border: '1px solid rgba(184,151,58,0.3)', textDecoration: 'none' }}>
+                      🖨 Receipt
+                    </a>
+                  </div>
                 }
               />
               <CardBody className="p-0">
