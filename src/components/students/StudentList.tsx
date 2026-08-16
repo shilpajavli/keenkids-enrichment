@@ -46,6 +46,7 @@ export default function StudentList({ students: initial, programId, schools = []
   const [search, setSearch] = useState('')
   const [gradeFilter, setGradeFilter] = useState('all')
   const [schoolFilter, setSchoolFilter] = useState('all')
+  const [planFilter, setPlanFilter] = useState('all')
   const [showAdd, setShowAdd] = useState(false)
   const [form, setForm] = useState({ 
     first_name: '', 
@@ -137,9 +138,19 @@ export default function StudentList({ students: initial, programId, schools = []
       const matchSearch = s.full_name.toLowerCase().includes(search.toLowerCase())
       const matchGrade = gradeFilter === 'all' || s.grade === Number(gradeFilter)
       const matchSchool = schoolFilter === 'all' || s.school_id === schoolFilter
-      return matchSearch && matchGrade && matchSchool
+      const matchPlan = planFilter === 'all' || s.enrollment_type === planFilter
+      return matchSearch && matchGrade && matchSchool && matchPlan
     }),
-    [students, search, gradeFilter, schoolFilter]
+    [students, search, gradeFilter, schoolFilter, planFilter]
+  )
+
+  const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
+  const dayCounts = useMemo(() =>
+    [1, 2, 3, 4, 5].map(d => ({
+      day: DAY_NAMES[d - 1],
+      count: filtered.filter(s => (s.enrolled_days ?? []).includes(d)).length,
+    })),
+    [filtered]
   )
 
   return (
@@ -269,6 +280,15 @@ export default function StudentList({ students: initial, programId, schools = []
           <option value="all">All grades</option>
           {grades.map(g => <option key={g} value={g}>{g === 0 ? 'K' : `Grade ${g}`}</option>)}
         </select>
+        <select
+          className="input w-auto text-[12.5px]"
+          value={planFilter}
+          onChange={e => setPlanFilter(e.target.value)}>
+          <option value="all">All plans</option>
+          <option value="5_day">5-Day</option>
+          <option value="3_day">3-Day</option>
+          <option value="1_day">1-Day</option>
+        </select>
         <div className="ml-auto flex items-center gap-3">
           <span className="text-[12px]" style={{ color: '#8A8580' }}>{filtered.length} student{filtered.length !== 1 ? 's' : ''}</span>
           {inviteStatus && <span className="text-[12px]" style={{ color: '#27500A' }}>{inviteStatus}</span>}
@@ -281,6 +301,16 @@ export default function StudentList({ students: initial, programId, schools = []
             <UserPlus size={13} /> Add student
           </button>
         </div>
+      </div>
+
+      {/* Day breakdown */}
+      <div className="flex gap-3">
+        {dayCounts.map(({ day, count }) => (
+          <div key={day} className="flex-1 card p-3 text-center">
+            <div className="font-serif text-xl font-light" style={{ color: '#1A1814' }}>{count}</div>
+            <div className="text-[11px] mt-0.5" style={{ color: '#8A8580' }}>{day}</div>
+          </div>
+        ))}
       </div>
 
       {/* List */}
