@@ -26,6 +26,7 @@ interface Props {
   summary: { collected: number; outstanding: number; overdue: number }
   students?: StudentOption[]
   enrolledCount?: number
+  unpaidThisMonth?: StudentOption[]
 }
 
 const STATUS_VARIANT: Record<PaymentStatus, any> = {
@@ -71,7 +72,7 @@ function groupByStudent(payments: PaymentRecord[]) {
   return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name))
 }
 
-export default function PaymentsDashboard({ payments: initial, students = [], enrolledCount }: Props) {
+export default function PaymentsDashboard({ payments: initial, students = [], enrolledCount, unpaidThisMonth = [] }: Props) {
   const [payments, setPayments] = useState(initial)
   const [page, setPage] = useState(0)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
@@ -202,6 +203,30 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
           </span>
         )}
       </div>
+
+      {/* Unpaid this month */}
+      {unpaidThisMonth.length > 0 && (
+        <div className="card overflow-hidden" style={{ border: '1.5px solid rgba(239,68,68,0.25)' }}>
+          <div className="px-5 py-3 flex items-center justify-between" style={{ background: '#FFF5F5', borderBottom: '1px solid rgba(239,68,68,0.15)' }}>
+            <div>
+              <h3 className="font-medium text-sm" style={{ color: '#1A1814' }}>
+                ⚠ Not paid this month ({unpaidThisMonth.length})
+              </h3>
+              <p className="text-xs mt-0.5" style={{ color: '#8A8580' }}>
+                {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })} — no payment recorded
+              </p>
+            </div>
+          </div>
+          <div className="divide-y" style={{ borderColor: 'rgba(239,68,68,0.08)' }}>
+            {unpaidThisMonth.map(s => (
+              <div key={s.id} className="px-5 py-3 flex items-center justify-between">
+                <span className="text-[13px] font-medium" style={{ color: '#1A1814' }}>{s.full_name}</span>
+                <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: '#FEE2E2', color: '#991B1B' }}>Unpaid</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Unmatched Stripe payments */}
       {unmatched.length > 0 && (
