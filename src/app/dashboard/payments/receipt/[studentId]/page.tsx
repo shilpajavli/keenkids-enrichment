@@ -21,8 +21,8 @@ export default async function ReceiptPage({ params }: { params: { studentId: str
     .in('status', ['paid', 'refunded'])
     .order('paid_at', { ascending: true })
 
-  const totalPaid = (payments ?? []).reduce((s, p) => s + (p.status === 'paid' ? p.amount_cents : 0), 0)
-  const totalRefunded = (payments ?? []).reduce((s, p) => s + (p.status === 'refunded' ? (p.refund_amount_cents ?? p.amount_cents) : 0), 0)
+  const totalPaid = (payments ?? []).reduce((s: number, p: any) => s + (p.status === 'paid' ? p.amount_cents : 0), 0)
+  const totalRefunded = (payments ?? []).reduce((s: number, p: any) => s + (p.status === 'refunded' ? (p.refund_amount_cents ?? p.amount_cents) : 0), 0)
 
   const gradeLabel = (g: number) => g === 0 ? 'Kindergarten' : `Grade ${g}`
   const fmt = (cents: number) => `$${(cents / 100).toFixed(2)}`
