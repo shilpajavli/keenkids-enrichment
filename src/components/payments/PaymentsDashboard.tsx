@@ -127,7 +127,11 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
   }
 
   async function deleteUnmatched(paymentId: string) {
-    await fetch(`/api/payments?id=${paymentId}`, { method: 'DELETE' })
+    await fetch('/api/payments', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: paymentId, status: 'cancelled' }),
+    })
     setUnmatched(prev => prev.filter(p => p.id !== paymentId))
   }
 

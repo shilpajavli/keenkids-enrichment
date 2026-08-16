@@ -8,6 +8,7 @@ export async function GET() {
     .select('*')
     .is('student_id', null)
     .not('stripe_session_id', 'is', null)
+    .neq('status', 'cancelled')
     .order('paid_at', { ascending: false })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
