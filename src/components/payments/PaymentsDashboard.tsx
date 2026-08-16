@@ -101,6 +101,8 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
   async function cancelPayment(id: string, studentId: string | null) {
     const note = window.prompt('Cancellation reason (optional):') ?? ''
     setCancelling(id)
+
+    // Mark payment cancelled
     await fetch('/api/payments', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -113,8 +115,8 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
     })
     setPayments(prev => prev.map(p => p.id === id ? { ...p, status: 'cancelled' as PaymentStatus } : p))
 
-    // Offer to mark student as inactive
-    if (studentId && window.confirm('Mark this student as inactive? They will be removed from enrolled counts and attendance.')) {
+    // Automatically mark student inactive
+    if (studentId) {
       await fetch(`/api/students?id=${studentId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
