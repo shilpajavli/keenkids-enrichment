@@ -95,11 +95,13 @@ export async function resolveStudent(
   const planName = PLAN_BY_AMOUNT[amountCents] ?? ''
   const sessionDays = planName.includes('5') ? 5 : planName.includes('3') ? 3 : 1
 
+  console.log(`Auto-creating student: "${childName}", school: "${schoolName}", programId: ${programId}, days: ${sessionDays}`)
+
   const { data: newStudent, error } = await admin
     .from('students')
     .insert({
       full_name: childName,
-      grade: 0, // unknown — admin can update
+      grade: 0,
       program_id: programId,
       status: 'active',
       session_day: sessionDays,
@@ -108,10 +110,10 @@ export async function resolveStudent(
     .single()
 
   if (error) {
-    console.error('Failed to auto-create student:', error.message)
+    console.error(`Failed to auto-create student "${childName}":`, error.message, error.details, error.hint)
     return null
   }
 
-  console.log(`Auto-created student: ${childName} (program: ${programId})`)
+  console.log(`✓ Auto-created student: ${childName} → ${newStudent.id}`)
   return newStudent.id
 }
