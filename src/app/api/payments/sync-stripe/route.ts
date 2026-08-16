@@ -30,17 +30,13 @@ export async function POST() {
     const amountCents = session.amount_total ?? 0
     const planName = PLAN_BY_AMOUNT[amountCents] ?? `Payment ($${(amountCents / 100).toFixed(2)})`
 
-    // Check if student existed before resolving (to count new ones)
-    const { data: existing } = await admin
-      .from('students')
-      .select('id')
-      .ilike('full_name', childName)
-      .limit(1)
-    const wasExisting = (existing?.length ?? 0) > 0
-
     const studentId = await resolveStudent(admin, childName, schoolName, amountCents)
-    if (!studentId) unmatched++
-    else if (!wasExisting) created++
+    if (!studentId) {
+      unmatched++
+      console.log(`Unmatched: "${childName}" (${session.customer_details?.email})`)
+    } else {
+      created++
+    }
 
     const { error } = await admin.from('payments').upsert({
       stripe_session_id: session.id,

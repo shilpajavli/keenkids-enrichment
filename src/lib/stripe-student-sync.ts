@@ -48,9 +48,9 @@ export async function resolveStudent(
     .select('id, full_name, status, program_id')
 
   const match = allStudents?.find(s => normalized(s.full_name) === normalized(childName))
+  console.log(`Matching "${childName}" → ${match ? `found: ${match.full_name}` : 'no match'} (total students: ${allStudents?.length})`)
 
   if (match) {
-    // Re-activate if inactive
     if (match.status === 'inactive') {
       await admin.from('students').update({ status: 'active' }).eq('id', match.id)
     }
