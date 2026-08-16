@@ -23,7 +23,7 @@ export default function ProgramSwitcher({ programs, currentId }: { programs: Pro
       body: JSON.stringify({ program_id: id }),
     })
     setOpen(false)
-    router.refresh()
+    window.location.reload()
   }
 
   async function createProgram() {
