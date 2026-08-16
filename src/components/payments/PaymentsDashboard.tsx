@@ -305,7 +305,7 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
                     {group.studentId && (
                       <div className="px-8 pt-3 flex justify-end">
                         <a
-                          href={`/portal/receipt/${group.studentId}`}
+                          href={`/receipt/${group.studentId}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-[11px] px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors"
