@@ -32,6 +32,8 @@ const STATUS_VARIANT: Record<PaymentStatus, any> = {
   paid: 'green',
   pending: 'amber',
   overdue: 'red',
+  refunded: 'gray',
+  cancelled: 'gray',
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -73,7 +75,9 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [updating, setUpdating] = useState<string | null>(null)
   const [syncing, setSyncing] = useState(false)
-  const [syncResult, setSyncResult] = useState<{ synced: number; unmatched: number; total: number } | null>(null)
+  const [syncResult, setSyncResult] = useState<{ synced: number; unmatched: number; refunds: number; total: number } | null>(null)
+  const [cancelling, setCancelling] = useState<string | null>(null)
+  const [cancelNotes, setCancelNotes] = useState<Record<string, string>>({})
   const [unmatched, setUnmatched] = useState<UnmatchedPayment[]>([])
   const [linking, setLinking] = useState<string | null>(null)
   const [linkSelections, setLinkSelections] = useState<Record<string, string>>({})
@@ -90,6 +94,22 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
     setSyncResult(await res.json())
     loadUnmatched()
     setSyncing(false)
+  }
+
+  async function cancelPayment(id: string) {
+    setCancelling(id)
+    await fetch('/api/payments', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id,
+        status: 'cancelled',
+        cancellation_notes: cancelNotes[id] ?? '',
+        cancelled_at: new Date().toISOString(),
+      }),
+    })
+    setPayments(prev => prev.map(p => p.id === id ? { ...p, status: 'cancelled' as PaymentStatus } : p))
+    setCancelling(null)
   }
 
   async function linkStudent(paymentId: string) {
@@ -162,7 +182,7 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
         </button>
         {syncResult && (
           <span className="text-[12px]" style={{ color: '#4A4640' }}>
-            ✓ {syncResult.synced} synced · {syncResult.unmatched} unmatched
+            ✓ {syncResult.synced} synced · {syncResult.unmatched} unmatched · {syncResult.refunds ?? 0} refunds
           </span>
         )}
       </div>
@@ -291,8 +311,26 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
                             </button>
                             <span className="text-[11px]" style={{ color: '#8A8580' }}>{(p as any).plan_name ?? '—'}</span>
                             <Badge variant={STATUS_VARIANT[p.status]}>{p.status}</Badge>
-                            <div className="flex justify-end">
-                              {p.status !== 'paid' && (
+                            <div className="flex justify-end gap-1.5">
+                              {p.status === 'refunded' && p.refund_amount_cents && (
+                                <span className="text-[10px]" style={{ color: '#8A8580' }}>
+                                  −{formatCurrency(p.refund_amount_cents)}
+                                </span>
+                              )}
+                              {p.status === 'paid' && (
+                                <button
+                                  onClick={() => {
+                                    const note = window.prompt('Cancellation reason (optional):') ?? ''
+                                    setCancelNotes(prev => ({ ...prev, [p.id]: note }))
+                                    cancelPayment(p.id)
+                                  }}
+                                  disabled={cancelling === p.id}
+                                  className="text-[10px] px-2 py-0.5 rounded disabled:opacity-50"
+                                  style={{ background: '#FDECEA', color: '#791F1F' }}>
+                                  {cancelling === p.id ? '…' : 'Cancel'}
+                                </button>
+                              )}
+                              {(p.status === 'pending' || p.status === 'overdue') && (
                                 <button onClick={() => updatePayment(p.id, { status: 'paid', paid_at: new Date().toISOString() } as any)}
                                   disabled={updating === p.id}
                                   className="btn btn-gold text-[10px] py-0.5 px-2 disabled:opacity-50">

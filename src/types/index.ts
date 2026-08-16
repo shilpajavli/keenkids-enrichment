@@ -2,7 +2,7 @@
 
 export type AttendanceStatus = 'present' | 'late' | 'absent'
 export type SkillStatus = 'mastered' | 'in_progress' | 'not_started'
-export type PaymentStatus = 'paid' | 'pending' | 'overdue'
+export type PaymentStatus = 'paid' | 'pending' | 'overdue' | 'refunded' | 'cancelled'
 export type MediaType = 'photo' | 'video'
 export type UserRole = 'admin' | 'teacher' | 'parent'
 export type EnrollmentType = '5_day' | '3_day' | '1_day'
@@ -160,6 +160,11 @@ export interface PaymentRecord {
   child_name_entered: string | null
   customer_email: string | null
   customer_name: string | null
+  refund_amount_cents: number | null
+  refunded_at: string | null
+  cancellation_notes: string | null
+  cancelled_at: string | null
+  stripe_refund_id: string | null
   student?: Pick<Student, 'id' | 'full_name' | 'grade'>
 }
 

@@ -8,19 +8,25 @@ const PLAN_BY_AMOUNT: Record<number, string> = {
   11000: '1-Day Plan',
   23000: '3-Day Plan',
   10000: '5-Day Plan',
-  // Legacy / full price (no discount)
   22000: '1-Day Plan',
   45000: '3-Day Plan',
   69900: '5-Day Plan',
 }
 
+function matchStudent(childName: string, students: { id: string; full_name: string }[]): string | null {
+  if (!childName) return null
+  const normalized = childName.toLowerCase().replace(/\s+/g, ' ').trim()
+  return students.find(s =>
+    s.full_name.toLowerCase().replace(/\s+/g, ' ').trim() === normalized
+  )?.id ?? null
+}
+
 export async function POST() {
   const admin = createAdminClient()
-
-  // Fetch all students for matching
   const { data: students } = await admin.from('students').select('id, full_name')
+  const studentList = students ?? []
 
-  // Pull all completed checkout sessions from Stripe (paginate through all)
+  // ── 1. Sync completed checkout sessions ──────────────────────────────────
   const sessions: Stripe.Checkout.Session[] = []
   let hasMore = true
   let startingAfter: string | undefined
@@ -30,14 +36,12 @@ export async function POST() {
       limit: 100,
       ...(startingAfter ? { starting_after: startingAfter } : {}),
     })
-    const completed = page.data.filter(s => s.payment_status === 'paid')
-    sessions.push(...completed)
+    sessions.push(...page.data.filter(s => s.payment_status === 'paid'))
     hasMore = page.has_more
     if (page.data.length > 0) startingAfter = page.data[page.data.length - 1].id
   }
 
-  let synced = 0
-  let unmatched = 0
+  let synced = 0, unmatched = 0
 
   for (const session of sessions) {
     const childNameField = session.custom_fields?.find(
@@ -49,19 +53,7 @@ export async function POST() {
     const childName = (childNameField?.text?.value ?? '').trim()
     const amountCents = session.amount_total ?? 0
     const planName = PLAN_BY_AMOUNT[amountCents] ?? `Payment ($${(amountCents / 100).toFixed(2)})`
-    const customerEmail = session.customer_details?.email ?? ''
-    const customerName = session.customer_details?.name ?? ''
-    const paidAt = new Date(session.created * 1000).toISOString()
-
-    let studentId: string | null = null
-    if (childName && students) {
-      const match = students.find((s: { id: string; full_name: string }) =>
-        s.full_name.toLowerCase().replace(/\s+/g, ' ').trim() ===
-        childName.toLowerCase().replace(/\s+/g, ' ').trim()
-      )
-      studentId = match?.id ?? null
-    }
-
+    const studentId = matchStudent(childName, studentList)
     if (!studentId) unmatched++
 
     const { error } = await admin.from('payments').upsert({
@@ -70,19 +62,64 @@ export async function POST() {
       amount_cents: amountCents,
       plan_name: planName,
       status: 'paid',
-      customer_email: customerEmail,
-      customer_name: customerName,
+      customer_email: session.customer_details?.email ?? '',
+      customer_name: session.customer_details?.name ?? '',
       child_name_entered: childName || null,
-      paid_at: paidAt,
-      due_date: paidAt,
+      paid_at: new Date(session.created * 1000).toISOString(),
+      due_date: new Date(session.created * 1000).toISOString(),
     }, { onConflict: 'stripe_session_id' })
 
-    if (error) {
-      console.error(`Failed to upsert session ${session.id}:`, error.message)
-    } else {
-      synced++
-    }
+    if (error) console.error(`Failed session ${session.id}:`, error.message)
+    else synced++
   }
 
-  return NextResponse.json({ synced, unmatched, total: sessions.length })
+  // ── 2. Sync refunds ───────────────────────────────────────────────────────
+  const refunds: Stripe.Refund[] = []
+  hasMore = true
+  startingAfter = undefined
+
+  while (hasMore) {
+    const page = await stripe.refunds.list({
+      limit: 100,
+      ...(startingAfter ? { starting_after: startingAfter } : {}),
+    })
+    refunds.push(...page.data)
+    hasMore = page.has_more
+    if (page.data.length > 0) startingAfter = page.data[page.data.length - 1].id
+  }
+
+  let refundsSynced = 0
+
+  for (const refund of refunds) {
+    // Find the payment this refund belongs to via the charge → payment intent → session
+    let sessionId: string | null = null
+    try {
+      if (refund.payment_intent) {
+        const sessions2 = await stripe.checkout.sessions.list({
+          payment_intent: refund.payment_intent as string,
+          limit: 1,
+        })
+        sessionId = sessions2.data[0]?.id ?? null
+      }
+    } catch { /* ignore */ }
+
+    if (!sessionId) continue
+
+    const refundedAt = new Date(refund.created * 1000).toISOString()
+    const isFullRefund = refund.amount === (refund as any).charge?.amount
+
+    const { error } = await admin.from('payments')
+      .update({
+        status: 'refunded',
+        refund_amount_cents: refund.amount,
+        refunded_at: refundedAt,
+        stripe_refund_id: refund.id,
+      })
+      .eq('stripe_session_id', sessionId)
+
+    if (error) console.error(`Failed refund ${refund.id}:`, error.message)
+    else refundsSynced++
+  }
+
+  return NextResponse.json({ synced, unmatched, refunds: refundsSynced, total: sessions.length })
 }
