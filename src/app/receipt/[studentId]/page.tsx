@@ -11,13 +11,13 @@ export default async function ReceiptPage({ params }: { params: { studentId: str
 
   const admin = createAdminClient()
 
-  const { data: student } = await admin
+  const { data: student, error: studentError } = await admin
     .from('students')
     .select('id, full_name, grade, school:schools(name), program:programs(name)')
     .eq('id', params.studentId)
     .single()
 
-  if (!student) notFound()
+  if (!student) return <div style={{ padding: 40, fontFamily: 'Arial' }}>Student not found. ID: {params.studentId} Error: {studentError?.message}</div>
 
   const { data: payments } = await admin
     .from('payments')
