@@ -126,6 +126,15 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
     setCancelling(null)
   }
 
+  async function deleteUnmatched(paymentId: string) {
+    await fetch('/api/payments', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: paymentId, status: 'cancelled' }),
+    })
+    setUnmatched(prev => prev.filter(p => p.id !== paymentId))
+  }
+
   async function linkStudent(paymentId: string) {
     const studentId = linkSelections[paymentId]
     if (!studentId) return
@@ -236,6 +245,11 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
                     className="px-3 py-1.5 rounded-lg text-xs font-medium disabled:opacity-40"
                     style={{ background: '#1A1814', color: '#B8973A' }}>
                     {linking === p.id ? 'Linking…' : 'Link'}
+                  </button>
+                  <button onClick={() => deleteUnmatched(p.id)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                    style={{ background: '#FEE2E2', color: '#991B1B' }}>
+                    Delete
                   </button>
                 </div>
               </div>
