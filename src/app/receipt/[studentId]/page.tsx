@@ -1,10 +1,14 @@
 export const dynamic = 'force-dynamic'
 
-import { createAdminClient } from '@/lib/supabase-server'
-import { notFound } from 'next/navigation'
+import { createAdminClient, createServerClient } from '@/lib/supabase-server'
+import { notFound, redirect } from 'next/navigation'
 import PrintTrigger from './PrintTrigger'
 
 export default async function ReceiptPage({ params }: { params: { studentId: string } }) {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/auth/login')
+
   const admin = createAdminClient()
 
   const { data: student } = await admin
