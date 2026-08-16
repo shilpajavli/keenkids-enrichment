@@ -75,17 +75,17 @@ export async function POST() {
 
   // ── 2. Sync refunds ───────────────────────────────────────────────────────
   const refunds: Stripe.Refund[] = []
-  hasMore = true
-  startingAfter = undefined
+  let refundHasMore = true
+  let refundCursor: string | undefined = undefined
 
-  while (hasMore) {
-    const refundPage = await stripe.refunds.list({
+  while (refundHasMore) {
+    const refundPage: Stripe.ApiList<Stripe.Refund> = await stripe.refunds.list({
       limit: 100,
-      ...(startingAfter ? { starting_after: startingAfter } : {}),
+      ...(refundCursor ? { starting_after: refundCursor } : {}),
     })
     refunds.push(...refundPage.data)
-    hasMore = refundPage.has_more
-    if (refundPage.data.length > 0) startingAfter = refundPage.data[refundPage.data.length - 1].id
+    refundHasMore = refundPage.has_more
+    if (refundPage.data.length > 0) refundCursor = refundPage.data[refundPage.data.length - 1].id
   }
 
   let refundsSynced = 0
