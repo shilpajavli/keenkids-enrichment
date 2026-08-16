@@ -38,14 +38,16 @@ export async function POST() {
       .single()
 
     if (existing) {
-      // Only update student_id if still unlinked — never touch status or other fields
+      // Payment already in DB — never overwrite status or re-create deleted students
+      // Only link if student_id is null AND we find an existing student by name (no auto-create)
       if (!existing.student_id) {
-        const studentId = await resolveStudent(admin, childName, schoolName, amountCents)
-        if (!studentId) {
-          unmatched++
+        const { data: allStudents } = await admin.from('students').select('id, full_name')
+        const normalized = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim()
+        const match = allStudents?.find((s: { id: string; full_name: string }) => normalized(s.full_name) === normalized(childName))
+        if (match) {
+          await admin.from('payments').update({ student_id: match.id }).eq('id', existing.id)
         } else {
-          created++
-          await admin.from('payments').update({ student_id: studentId }).eq('id', existing.id)
+          unmatched++
         }
       }
       synced++
