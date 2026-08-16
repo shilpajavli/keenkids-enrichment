@@ -67,6 +67,7 @@ export default function StudentProfile({ student, skills, notes, attendance, med
   const [schoolId, setSchoolId] = useState(student.school_id ?? '')
   const [enrollmentType, setEnrollmentType] = useState<EnrollmentType>(student.enrollment_type ?? '5_day')
   const [enrolledDays, setEnrolledDays] = useState<number[]>(student.enrolled_days ?? [1,2,3,4,5])
+  const [grade, setGrade] = useState(student.grade ?? 0)
   const [savingEnrollment, setSavingEnrollment] = useState(false)
 
   const expectedSessions = enrolledDays.length
@@ -87,10 +88,11 @@ export default function StudentProfile({ student, skills, notes, attendance, med
     await fetch(`/api/students?id=${student.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        school_id: schoolId || null, 
+      body: JSON.stringify({
+        school_id: schoolId || null,
         enrollment_type: enrollmentType,
         enrolled_days: enrolledDays,
+        grade: Number(grade),
       }),
     })
     setSavingEnrollment(false)
@@ -322,6 +324,16 @@ export default function StudentProfile({ student, skills, notes, attendance, med
                   onChange={e => setSchoolId(e.target.value)}>
                   <option value="">Select…</option>
                   {schools.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-[12.5px]" style={{ color: '#4A4640' }}>Grade</label>
+                <select
+                  className="input text-[13px] w-24"
+                  value={grade}
+                  onChange={e => setGrade(Number(e.target.value))}>
+                  <option value={0}>K</option>
+                  {[1,2,3,4,5,6,7,8].map(g => <option key={g} value={g}>Grade {g}</option>)}
                 </select>
               </div>
               <div className="flex items-center gap-2">
