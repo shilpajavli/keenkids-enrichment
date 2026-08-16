@@ -47,6 +47,7 @@ export async function POST() {
       customer_email: session.customer_details?.email ?? '',
       customer_name: session.customer_details?.name ?? '',
       child_name_entered: childName || null,
+      school_name_entered: schoolName || null,
       paid_at: new Date(session.created * 1000).toISOString(),
       due_date: new Date(session.created * 1000).toISOString(),
     }, { onConflict: 'stripe_session_id' })
