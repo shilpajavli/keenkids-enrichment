@@ -17,18 +17,29 @@ export async function GET() {
   const { data: programs, error: programsError } = await admin.from('programs').select('id, school_id, start_date, name').order('start_date', { ascending: false })
   const { data: students } = await admin.from('students').select('id, full_name, status').limit(5)
 
-  const results = []
-  for (const t of tests) {
-    const studentId = await resolveStudent(admin, t.name, t.school, t.amount)
-    results.push({ ...t, resolved: studentId })
+  // Try a direct insert to see the exact error
+  const { data: insertTest, error: insertError } = await admin
+    .from('students')
+    .insert({
+      full_name: 'TEST_DELETE_ME',
+      grade: 0,
+      program_id: '467bceae-eb8d-4e08-b124-57c41a4fbaca',
+      status: 'active',
+      session_day: 5,
+    })
+    .select('id')
+    .single()
+
+  // Clean up test record if it was created
+  if (insertTest?.id) {
+    await admin.from('students').delete().eq('id', insertTest.id)
   }
 
   return NextResponse.json({
     schools,
-    schoolsError,
     programs,
-    programsError,
     sampleStudents: students,
-    results,
+    insertTest: insertTest ?? null,
+    insertError: insertError ?? null,
   })
 }
