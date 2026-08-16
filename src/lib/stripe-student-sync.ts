@@ -99,12 +99,18 @@ export async function resolveStudent(
   const planName = PLAN_BY_AMOUNT[amountCents] ?? ''
   const sessionDays = planName.includes('5') ? 5 : planName.includes('3') ? 3 : 1
 
+  // Split name into first/last (full_name is a generated column)
+  const nameParts = childName.trim().split(/\s+/)
+  const firstName = nameParts[0] ?? childName
+  const lastName = nameParts.slice(1).join(' ') || ''
+
   console.log(`Auto-creating student: "${childName}", school: "${schoolName}", programId: ${programId}, days: ${sessionDays}`)
 
   const { data: newStudent, error } = await admin
     .from('students')
     .insert({
-      full_name: childName,
+      first_name: firstName,
+      last_name: lastName,
       grade: 0,
       program_id: programId,
       status: 'active',

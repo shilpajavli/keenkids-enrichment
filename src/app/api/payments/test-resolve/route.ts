@@ -21,7 +21,8 @@ export async function GET() {
   const { data: insertTest, error: insertError } = await admin
     .from('students')
     .insert({
-      full_name: 'TEST_DELETE_ME',
+      first_name: 'TEST',
+      last_name: 'DELETE_ME',
       grade: 0,
       program_id: '467bceae-eb8d-4e08-b124-57c41a4fbaca',
       status: 'active',
