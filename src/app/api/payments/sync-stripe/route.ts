@@ -33,24 +33,34 @@ export async function POST() {
     // Check if payment already exists
     const { data: existing } = await admin
       .from('payments')
-      .select('id, student_id')
+      .select('id, student_id, status')
       .eq('stripe_session_id', session.id)
       .single()
 
-    let studentId: string | null = existing?.student_id ?? null
-
-    // Only resolve student if not already linked
-    if (!studentId) {
-      studentId = await resolveStudent(admin, childName, schoolName, amountCents)
-      if (!studentId) {
-        unmatched++
-        console.log(`Still unmatched: "${childName}" school="${schoolName}"`)
-      } else {
-        created++
+    if (existing) {
+      // Only update student_id if still unlinked — never touch status or other fields
+      if (!existing.student_id) {
+        const studentId = await resolveStudent(admin, childName, schoolName, amountCents)
+        if (!studentId) {
+          unmatched++
+        } else {
+          created++
+          await admin.from('payments').update({ student_id: studentId }).eq('id', existing.id)
+        }
       }
+      synced++
+      continue
     }
 
-    const record = {
+    // New session — resolve student and insert
+    const studentId = await resolveStudent(admin, childName, schoolName, amountCents)
+    if (!studentId) {
+      unmatched++
+    } else {
+      created++
+    }
+
+    const { error } = await admin.from('payments').insert({
       stripe_session_id: session.id,
       student_id: studentId,
       amount_cents: amountCents,
@@ -62,11 +72,7 @@ export async function POST() {
       school_name_entered: schoolName || null,
       paid_at: new Date(session.created * 1000).toISOString(),
       due_date: new Date(session.created * 1000).toISOString(),
-    }
-
-    const { error } = existing
-      ? await admin.from('payments').update(record).eq('id', existing.id)
-      : await admin.from('payments').insert(record)
+    })
 
     if (error) console.error(`Failed session ${session.id}:`, error.message)
     else synced++
