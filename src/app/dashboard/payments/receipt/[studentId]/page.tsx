@@ -95,7 +95,7 @@ export default async function ReceiptPage({ params }: { params: { studentId: str
             </tr>
           </thead>
           <tbody>
-            {(payments ?? []).map(p => (
+            {(payments ?? []).map((p: any) => (
               <tr key={p.id}>
                 <td style={{ color: '#4A4640' }}>{fmtDate(p.paid_at ?? p.due_date)}</td>
                 <td>{p.plan_name || 'Tuition'}{p.payment_type === 'enrollment' ? ' (Enrollment Fee)' : ''}</td>
