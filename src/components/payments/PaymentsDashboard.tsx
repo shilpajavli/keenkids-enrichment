@@ -54,16 +54,18 @@ const PAGE_SIZE = 20
 
 // Group payments by student
 function groupByStudent(payments: PaymentRecord[]) {
-  const map = new Map<string, { name: string; payments: PaymentRecord[]; totalPaid: number; totalOwed: number }>()
+  const map = new Map<string, { name: string; payments: PaymentRecord[]; totalPaid: number; totalOwed: number; totalRefunded: number; hasCancelled: boolean }>()
 
   for (const p of payments) {
     const key = p.student?.id ?? `unlinked-${p.id}`
     const name = p.student?.full_name ?? p.child_name_entered ?? 'Unknown'
-    if (!map.has(key)) map.set(key, { name, payments: [], totalPaid: 0, totalOwed: 0 })
+    if (!map.has(key)) map.set(key, { name, payments: [], totalPaid: 0, totalOwed: 0, totalRefunded: 0, hasCancelled: false })
     const entry = map.get(key)!
     entry.payments.push(p)
     if (p.status === 'paid') entry.totalPaid += p.amount_cents
-    else entry.totalOwed += p.amount_cents
+    else if (p.status === 'pending' || p.status === 'overdue') entry.totalOwed += p.amount_cents
+    else if (p.status === 'refunded') entry.totalRefunded += (p.refund_amount_cents ?? p.amount_cents)
+    else if (p.status === 'cancelled') entry.hasCancelled = true
   }
 
   return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name))
@@ -164,12 +166,14 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
           <div className="text-[12px]" style={{ color: '#8A8580' }}>Outstanding</div>
         </div>
         <div className="card p-5">
-          <div className="font-serif text-2xl font-light mb-1" style={{ color: '#1A1814' }}>{enrolledCount ?? students.length}</div>
-          <div className="text-[12px]" style={{ color: '#8A8580' }}>Enrolled students</div>
+          <div className="font-serif text-2xl font-light mb-1" style={{ color: '#7C3AED' }}>
+            {formatCurrency(payments.reduce((s, p) => s + (p.status === 'refunded' ? (p.refund_amount_cents ?? p.amount_cents) : 0), 0))}
+          </div>
+          <div className="text-[12px]" style={{ color: '#8A8580' }}>Refunded · {payments.filter(p => p.status === 'refunded').length} payments</div>
         </div>
         <div className="card p-5">
-          <div className="font-serif text-2xl font-light mb-1" style={{ color: '#1A1814' }}>{payments.filter(p => p.status === 'paid').length}</div>
-          <div className="text-[12px]" style={{ color: '#8A8580' }}>Payments received</div>
+          <div className="font-serif text-2xl font-light mb-1" style={{ color: '#1A1814' }}>{enrolledCount ?? students.length}</div>
+          <div className="text-[12px]" style={{ color: '#8A8580' }}>Enrolled students</div>
         </div>
       </div>
 
@@ -255,11 +259,13 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
                 {/* Student summary row */}
                 <button onClick={() => toggleExpand(group.name)}
                   className="w-full flex items-center gap-4 px-5 py-3.5 hover:bg-[#FAF7F2] transition-colors text-left">
-                  <div className="flex-1 text-[13px] font-medium" style={{ color: '#1A1814' }}>{group.name}</div>
-                  <div className="text-[12px]" style={{ color: '#27500A' }}>{formatCurrency(group.totalPaid)} paid</div>
-                  {group.totalOwed > 0 && (
-                    <div className="text-[12px]" style={{ color: '#791F1F' }}>{formatCurrency(group.totalOwed)} owed</div>
-                  )}
+                  <div className="flex-1 text-[13px] font-medium flex items-center gap-2" style={{ color: '#1A1814' }}>
+                    {group.name}
+                    {group.hasCancelled && <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: '#F5F0E8', color: '#791F1F' }}>Cancelled</span>}
+                  </div>
+                  {group.totalPaid > 0 && <div className="text-[12px]" style={{ color: '#27500A' }}>{formatCurrency(group.totalPaid)} paid</div>}
+                  {group.totalOwed > 0 && <div className="text-[12px]" style={{ color: '#791F1F' }}>{formatCurrency(group.totalOwed)} owed</div>}
+                  {group.totalRefunded > 0 && <div className="text-[12px]" style={{ color: '#7C3AED' }}>−{formatCurrency(group.totalRefunded)} refunded</div>}
                   <div className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: '#F5F0E8', color: '#8A8580' }}>
                     {group.payments.length} record{group.payments.length !== 1 ? 's' : ''}
                   </div>
