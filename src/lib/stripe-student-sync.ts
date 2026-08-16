@@ -65,8 +65,12 @@ export async function resolveStudent(
       .from('schools')
       .select('id, name')
 
-    const school = schools?.find(s => normalized(s.name).includes(normalized(schoolName)) ||
-      normalized(schoolName).includes(normalized(s.name)))
+    // Match school by key words — handle variations like "Mabel Mattos Elementary School", "John Sinnott ( 3rd Grade )" etc.
+    const schoolKeywords = (s: string) => normalized(s).replace(/elementary|school|grade|\d+|[()]/g, '').trim()
+    const school = schools?.find(s =>
+      schoolKeywords(s.name).split(' ').some(w => w.length > 3 && schoolKeywords(schoolName).includes(w)) ||
+      schoolKeywords(schoolName).split(' ').some(w => w.length > 3 && schoolKeywords(s.name).includes(w))
+    )
 
     if (school) {
       // Find the active/latest program for this school
