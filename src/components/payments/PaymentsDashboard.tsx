@@ -25,6 +25,7 @@ interface Props {
   payments: PaymentRecord[]
   summary: { collected: number; outstanding: number; overdue: number }
   students?: StudentOption[]
+  enrolledCount?: number
 }
 
 const STATUS_VARIANT: Record<PaymentStatus, any> = {
@@ -66,7 +67,7 @@ function groupByStudent(payments: PaymentRecord[]) {
   return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name))
 }
 
-export default function PaymentsDashboard({ payments: initial, students = [] }: Props) {
+export default function PaymentsDashboard({ payments: initial, students = [], enrolledCount }: Props) {
   const [payments, setPayments] = useState(initial)
   const [page, setPage] = useState(0)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
@@ -120,7 +121,7 @@ export default function PaymentsDashboard({ payments: initial, students = [] }: 
   const pageItems = grouped.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 
   const totalPaid = payments.filter(p => p.status === 'paid').reduce((s, p) => s + p.amount_cents, 0)
-  const totalOwed = payments.filter(p => p.status !== 'paid').reduce((s, p) => s + p.amount_cents, 0)
+  const totalOwed = payments.filter(p => p.status === 'pending' || p.status === 'overdue').reduce((s, p) => s + p.amount_cents, 0)
 
   function toggleExpand(name: string) {
     setExpanded(prev => {
@@ -133,7 +134,7 @@ export default function PaymentsDashboard({ payments: initial, students = [] }: 
   return (
     <div className="space-y-5">
       {/* Summary KPIs */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         <div className="card p-5">
           <div className="font-serif text-2xl font-light mb-1" style={{ color: '#27500A' }}>{formatCurrency(totalPaid)}</div>
           <div className="text-[12px]" style={{ color: '#8A8580' }}>Collected</div>
@@ -143,8 +144,12 @@ export default function PaymentsDashboard({ payments: initial, students = [] }: 
           <div className="text-[12px]" style={{ color: '#8A8580' }}>Outstanding</div>
         </div>
         <div className="card p-5">
-          <div className="font-serif text-2xl font-light mb-1" style={{ color: '#1A1814' }}>{grouped.length}</div>
-          <div className="text-[12px]" style={{ color: '#8A8580' }}>Students</div>
+          <div className="font-serif text-2xl font-light mb-1" style={{ color: '#1A1814' }}>{enrolledCount ?? students.length}</div>
+          <div className="text-[12px]" style={{ color: '#8A8580' }}>Enrolled students</div>
+        </div>
+        <div className="card p-5">
+          <div className="font-serif text-2xl font-light mb-1" style={{ color: '#1A1814' }}>{payments.filter(p => p.status === 'paid').length}</div>
+          <div className="text-[12px]" style={{ color: '#8A8580' }}>Payments received</div>
         </div>
       </div>
 

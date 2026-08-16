@@ -46,6 +46,7 @@ export default async function PaymentsPage() {
         payments={payments ?? []}
         summary={{ collected, outstanding, overdue }}
         students={students ?? []}
+        enrolledCount={students?.length ?? 0}
       />
     </div>
   )
