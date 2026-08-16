@@ -19,6 +19,7 @@ export default async function StudentsPage() {
       school:schools(*)
     `)
     .eq('program_id', programId ?? '')
+    .eq('status', 'active')
     .order('full_name')
 
   // Fetch schools

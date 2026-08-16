@@ -98,7 +98,8 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
     setSyncing(false)
   }
 
-  async function cancelPayment(id: string) {
+  async function cancelPayment(id: string, studentId: string | null) {
+    const note = window.prompt('Cancellation reason (optional):') ?? ''
     setCancelling(id)
     await fetch('/api/payments', {
       method: 'PATCH',
@@ -106,11 +107,20 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
       body: JSON.stringify({
         id,
         status: 'cancelled',
-        cancellation_notes: cancelNotes[id] ?? '',
+        cancellation_notes: note,
         cancelled_at: new Date().toISOString(),
       }),
     })
     setPayments(prev => prev.map(p => p.id === id ? { ...p, status: 'cancelled' as PaymentStatus } : p))
+
+    // Offer to mark student as inactive
+    if (studentId && window.confirm('Mark this student as inactive? They will be removed from enrolled counts and attendance.')) {
+      await fetch(`/api/students?id=${studentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'inactive' }),
+      })
+    }
     setCancelling(null)
   }
 
@@ -325,11 +335,7 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
                               )}
                               {p.status === 'paid' && (
                                 <button
-                                  onClick={() => {
-                                    const note = window.prompt('Cancellation reason (optional):') ?? ''
-                                    setCancelNotes(prev => ({ ...prev, [p.id]: note }))
-                                    cancelPayment(p.id)
-                                  }}
+                                  onClick={() => cancelPayment(p.id, p.student_id)}
                                   disabled={cancelling === p.id}
                                   className="text-[10px] px-2 py-0.5 rounded disabled:opacity-50"
                                   style={{ background: '#FDECEA', color: '#791F1F' }}>

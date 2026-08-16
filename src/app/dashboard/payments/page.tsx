@@ -21,6 +21,7 @@ export default async function PaymentsPage() {
     .from('students')
     .select('id, full_name')
     .eq('program_id', programId ?? '')
+    .eq('status', 'active')
 
   const studentIds = (students ?? []).map(s => s.id)
 

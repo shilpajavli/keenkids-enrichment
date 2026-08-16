@@ -61,7 +61,7 @@ export default async function DashboardPage() {
   const isTeacher = profile?.role === 'teacher'
 
   const [studentsRes, programRes] = await Promise.all([
-    supabase.from('students').select('id, full_name, grade').eq('program_id', programId ?? '').order('full_name'),
+    supabase.from('students').select('id, full_name, grade').eq('program_id', programId ?? '').eq('status', 'active').order('full_name'),
     programId
       ? supabase.from('programs').select('name, school:schools(id, name)').eq('id', programId).single()
       : Promise.resolve({ data: null }),
