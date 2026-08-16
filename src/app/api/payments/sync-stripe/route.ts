@@ -79,13 +79,13 @@ export async function POST() {
   startingAfter = undefined
 
   while (hasMore) {
-    const page = await stripe.refunds.list({
+    const refundPage = await stripe.refunds.list({
       limit: 100,
       ...(startingAfter ? { starting_after: startingAfter } : {}),
     })
-    refunds.push(...page.data)
-    hasMore = page.has_more
-    if (page.data.length > 0) startingAfter = page.data[page.data.length - 1].id
+    refunds.push(...refundPage.data)
+    hasMore = refundPage.has_more
+    if (refundPage.data.length > 0) startingAfter = refundPage.data[refundPage.data.length - 1].id
   }
 
   let refundsSynced = 0
