@@ -54,12 +54,12 @@ const PAGE_SIZE = 20
 
 // Group payments by student
 function groupByStudent(payments: PaymentRecord[]) {
-  const map = new Map<string, { name: string; payments: PaymentRecord[]; totalPaid: number; totalOwed: number; totalRefunded: number; hasCancelled: boolean }>()
+  const map = new Map<string, { studentId: string | null; name: string; payments: PaymentRecord[]; totalPaid: number; totalOwed: number; totalRefunded: number; hasCancelled: boolean }>()
 
   for (const p of payments) {
     const key = p.student?.id ?? `unlinked-${p.id}`
     const name = p.student?.full_name ?? p.child_name_entered ?? 'Unknown'
-    if (!map.has(key)) map.set(key, { name, payments: [], totalPaid: 0, totalOwed: 0, totalRefunded: 0, hasCancelled: false })
+    if (!map.has(key)) map.set(key, { studentId: p.student?.id ?? null, name, payments: [], totalPaid: 0, totalOwed: 0, totalRefunded: 0, hasCancelled: false })
     const entry = map.get(key)!
     entry.payments.push(p)
     if (p.status === 'paid') entry.totalPaid += p.amount_cents
@@ -287,6 +287,20 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
                 {/* Expanded payment history */}
                 {isOpen && (
                   <div style={{ background: '#FAF7F2', borderTop: '1px solid rgba(184,151,58,0.1)' }}>
+                    {/* Print receipt button */}
+                    {group.studentId && (
+                      <div className="px-8 pt-3 flex justify-end">
+                        <a
+                          href={`/dashboard/payments/receipt/${group.studentId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[11px] px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors"
+                          style={{ background: '#F5F0E8', color: '#4A4640', border: '1px solid rgba(184,151,58,0.3)' }}
+                        >
+                          🖨 Print Receipt
+                        </a>
+                      </div>
+                    )}
                     {/* Header */}
                     <div className="grid px-8 py-2 text-[10px] font-medium tracking-wide uppercase"
                       style={{ color: '#8A8580', gridTemplateColumns: '1fr 80px 90px 100px 110px 100px' }}>
