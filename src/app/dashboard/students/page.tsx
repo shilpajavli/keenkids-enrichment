@@ -22,6 +22,33 @@ export default async function StudentsPage() {
     .eq('status', 'active')
     .order('full_name')
 
+  // Fetch inactive (past) students with their last payment info
+  const { data: inactiveStudents } = await supabase
+    .from('students')
+    .select('id, full_name, grade')
+    .eq('program_id', programId ?? '')
+    .eq('status', 'inactive')
+    .order('full_name')
+
+  // Get cancellation info for inactive students
+  const inactiveIds = (inactiveStudents ?? []).map(s => s.id)
+  const { data: cancelledPayments } = inactiveIds.length
+    ? await supabase
+        .from('payments')
+        .select('student_id, cancellation_notes, cancelled_at, refund_amount_cents, status')
+        .in('student_id', inactiveIds)
+        .eq('status', 'cancelled')
+    : { data: [] }
+
+  const cancelMap: Record<string, { notes: string | null; date: string | null; refund: number | null }> = {}
+  for (const p of cancelledPayments ?? []) {
+    if (p.student_id) cancelMap[p.student_id] = {
+      notes: p.cancellation_notes,
+      date: p.cancelled_at,
+      refund: p.refund_amount_cents,
+    }
+  }
+
   // Fetch schools
   const { data: schools } = await supabase
     .from('schools')
@@ -47,6 +74,8 @@ export default async function StudentsPage() {
     parent_email: s.parent_id ? (parentMap[s.parent_id] ?? null) : null,
   }))
 
+  const gradeLabel = (g: number) => g === 0 ? 'K' : `Grade ${g}`
+
   return (
     <div className="space-y-6">
       <div>
@@ -54,6 +83,36 @@ export default async function StudentsPage() {
         <p className="text-ink-tertiary text-sm mt-1">{enriched.length} enrolled</p>
       </div>
       <StudentList students={enriched} programId={programId} schools={schools ?? []} />
+
+      {/* Past / Inactive Students */}
+      {(inactiveStudents ?? []).length > 0 && (
+        <div className="card overflow-hidden">
+          <div className="px-5 py-3 border-b" style={{ borderColor: 'rgba(184,151,58,0.14)', background: '#FAF7F2' }}>
+            <h2 className="font-medium text-sm" style={{ color: '#1A1814' }}>
+              Past Students ({inactiveStudents?.length})
+            </h2>
+            <p className="text-xs mt-0.5" style={{ color: '#8A8580' }}>Cancelled or inactive enrollments</p>
+          </div>
+          {(inactiveStudents ?? []).map((s, i) => {
+            const cancel = cancelMap[s.id]
+            return (
+              <div key={s.id} className="px-5 py-3.5 flex items-center justify-between"
+                style={{ borderBottom: i < (inactiveStudents?.length ?? 0) - 1 ? '1px solid rgba(184,151,58,0.08)' : 'none' }}>
+                <div>
+                  <div className="text-[13px] font-medium" style={{ color: '#1A1814' }}>{s.full_name}</div>
+                  <div className="text-[11px] mt-0.5 flex items-center gap-2" style={{ color: '#8A8580' }}>
+                    <span>{gradeLabel(s.grade)}</span>
+                    {cancel?.date && <span>· Cancelled {new Date(cancel.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
+                    {cancel?.notes && <span>· {cancel.notes}</span>}
+                    {cancel?.refund && <span style={{ color: '#7C3AED' }}>· −${(cancel.refund / 100).toFixed(0)} refunded</span>}
+                  </div>
+                </div>
+                <span className="text-[11px] px-2 py-1 rounded-full" style={{ background: '#F5F0E8', color: '#8A8580' }}>Inactive</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
