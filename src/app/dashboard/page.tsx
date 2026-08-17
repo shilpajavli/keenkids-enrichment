@@ -82,7 +82,7 @@ export default async function DashboardPage() {
   const todayActivity = schoolKey ? (SCHEDULE[schoolKey][todayDow] ?? null) : null
   const monthTheme = MONTHLY_THEMES[monthKey] ?? null
 
-  const [attendanceRes, announcementsRes, paymentsRes, curriculumRes] = await Promise.all([
+  const [attendanceRes, announcementsRes, paymentsRes, curriculumRes, revenueRes] = await Promise.all([
     supabase.from('attendance').select('student_id, status').eq('date', today),
     supabase.from('announcements').select('id, title, body, pinned').order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(3),
     !isTeacher && studentIds.length
@@ -96,12 +96,40 @@ export default async function DashboardPage() {
     schoolId
       ? supabase.from('curriculum').select('title, description, week_of').eq('school_id', schoolId).eq('week_of', weekOf).single()
       : Promise.resolve({ data: null }),
+    !isTeacher
+      ? supabase
+          .from('payments')
+          .select('amount_cents, status, refund_amount_cents, student_id, student:students(program:programs(school:schools(name)))')
+          .in('status', ['paid', 'refunded'])
+      : Promise.resolve({ data: [] }),
   ])
 
   const attendance     = attendanceRes.data ?? []
   const announcements  = announcementsRes.data ?? []
   const unpaidPayments = (paymentsRes.data ?? []) as any[]
   const curriculum     = curriculumRes.data as any
+  const allRevPayments = (revenueRes.data ?? []) as any[]
+
+  // Revenue by school
+  type SchoolRev = { paid: number; refunded: number; studentIds: Set<string> }
+  const revBySchool: Record<string, SchoolRev> = {}
+  let totalRefundedCents = 0
+  for (const p of allRevPayments) {
+    const sname: string = (p.student as any)?.program?.school?.name ?? 'Unknown'
+    const key = sname.toLowerCase().includes('sinnott') ? 'Sinnott' : sname.toLowerCase().includes('mattos') ? 'Mattos' : sname
+    if (!revBySchool[key]) revBySchool[key] = { paid: 0, refunded: 0, studentIds: new Set() }
+    if (p.status === 'paid') {
+      revBySchool[key].paid += p.amount_cents
+      if (p.student_id) revBySchool[key].studentIds.add(p.student_id)
+    } else if (p.status === 'refunded') {
+      const ref = p.refund_amount_cents ?? p.amount_cents
+      revBySchool[key].refunded += ref
+      totalRefundedCents += ref
+    }
+  }
+  const revSchools = Object.entries(revBySchool).sort(([a], [b]) => a.localeCompare(b))
+  const totalCollectedCents = revSchools.reduce((s, [, v]) => s + v.paid, 0)
+  const netRevenueCents = totalCollectedCents - totalRefundedCents
 
   const checkedInIds = new Set(attendance.filter(a => a.status === 'present' || a.status === 'late').map(a => a.student_id))
   const present = (students ?? []).filter(s => checkedInIds.has(s.id))
@@ -149,15 +177,48 @@ export default async function DashboardPage() {
         </Link>
         {!isTeacher && (
           <Link href="/dashboard/payments" className="card p-5 hover:opacity-80 transition-opacity">
-            <div className="font-serif text-3xl font-light mb-1" style={{ color: totalOutstandingCents > 0 ? '#791F1F' : '#27500A' }}>
-              {totalOutstandingCents > 0 ? formatCurrency(totalOutstandingCents) : '✓'}
+            <div className="font-serif text-3xl font-light mb-1" style={{ color: '#27500A' }}>
+              {formatCurrency(netRevenueCents)}
             </div>
-            <div className="text-[12px]" style={{ color: '#8A8580' }}>
-              {totalOutstandingCents > 0 ? `Outstanding · ${unpaidStudents.length} student${unpaidStudents.length !== 1 ? 's' : ''}` : 'All payments collected'}
-            </div>
+            <div className="text-[12px]" style={{ color: '#8A8580' }}>Net revenue collected</div>
           </Link>
         )}
       </div>
+
+      {/* Revenue breakdown — admin only */}
+      {!isTeacher && revSchools.length > 0 && (
+        <div className="card p-5">
+          <div className="text-[11px] font-semibold tracking-[0.1em] uppercase mb-4" style={{ color: '#8A8580' }}>Revenue Breakdown</div>
+          <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${revSchools.length + (totalRefundedCents > 0 ? 1 : 0) + 1}, 1fr)` }}>
+            {/* Total */}
+            <div className="rounded-lg p-3" style={{ background: '#1A1814' }}>
+              <div className="text-[10px] font-semibold tracking-[0.1em] uppercase mb-1" style={{ color: 'rgba(184,151,58,0.7)' }}>Total collected</div>
+              <div className="font-serif text-xl font-light" style={{ color: '#B8973A' }}>{formatCurrency(totalCollectedCents)}</div>
+              <div className="text-[11px] mt-0.5" style={{ color: 'rgba(184,151,58,0.5)' }}>
+                {allRevPayments.filter(p => p.status === 'paid').length} payments
+              </div>
+            </div>
+            {/* Per school */}
+            {revSchools.map(([name, rev]) => (
+              <div key={name} className="rounded-lg p-3" style={{ background: '#F5F0E8' }}>
+                <div className="text-[10px] font-semibold tracking-[0.1em] uppercase mb-1" style={{ color: '#8A6E25' }}>{name}</div>
+                <div className="font-serif text-xl font-light" style={{ color: '#1A1814' }}>{formatCurrency(rev.paid)}</div>
+                <div className="text-[11px] mt-0.5" style={{ color: '#8A8580' }}>{rev.studentIds.size} student{rev.studentIds.size !== 1 ? 's' : ''}</div>
+              </div>
+            ))}
+            {/* Refunds */}
+            {totalRefundedCents > 0 && (
+              <div className="rounded-lg p-3" style={{ background: '#FDF2F2' }}>
+                <div className="text-[10px] font-semibold tracking-[0.1em] uppercase mb-1" style={{ color: '#791F1F' }}>Refunds</div>
+                <div className="font-serif text-xl font-light" style={{ color: '#791F1F' }}>−{formatCurrency(totalRefundedCents)}</div>
+                <div className="text-[11px] mt-0.5" style={{ color: '#B05C5C' }}>
+                  {allRevPayments.filter(p => p.status === 'refunded').length} refund{allRevPayments.filter(p => p.status === 'refunded').length !== 1 ? 's' : ''}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* This week */}
       {(todayActivity || curriculum || monthTheme) && (
