@@ -81,9 +81,9 @@ export default async function DashboardPage() {
   const studentIds = students.map(s => s.id)
   const allStudents = (allStudentsRes.data ?? []) as any[]
 
-  const totalCancelled = allStudents.filter(s => s.status === 'cancelled').length
+  const totalCancelled = allStudents.filter(s => s.status !== 'active').length
   const newThisWeek = allStudents.filter(s => s.status === 'active' && s.created_at >= weekStart).length
-  const cancelledThisWeek = allStudents.filter(s => s.status === 'cancelled' && s.updated_at >= weekStart).length
+  const cancelledThisWeek = allStudents.filter(s => s.status !== 'active' && s.updated_at >= weekStart).length
 
   const weekOf = getMonday(new Date())
   const nowDate = new Date()
