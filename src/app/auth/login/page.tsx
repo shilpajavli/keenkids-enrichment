@@ -39,7 +39,7 @@ export default function LoginPage() {
       email,
       options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     })
-    if (error) { setError(error.message); setLoading(false); return }
+    if (error) { setError(error.message + ' (code: ' + (error as any)?.status + ')'); setLoading(false); return }
     setSent(true)
     setLoading(false)
   }
