@@ -82,9 +82,15 @@ export default function AttendanceManager({ students, classes, todayRecords, his
 
   const grades = ['all', ...Array.from(new Set(students.map(s => String(s.grade)))).sort((a, b) => Number(a) - Number(b))]
 
+  const [page, setPage] = useState(0)
+  const PAGE_SIZE = 15
+
   const filteredStudents = students
     .filter(s => dayFilter === 'all' || !s.session_day || s.session_day === dayFilter)
     .filter(s => s.full_name.toLowerCase().includes(search.toLowerCase()))
+
+  const totalPages = Math.ceil(filteredStudents.length / PAGE_SIZE)
+  const pagedStudents = filteredStudents.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
     .filter(s => gradeFilter === 'all' || String(s.grade) === gradeFilter)
     .sort((a, b) => a.full_name.localeCompare(b.full_name))
 
@@ -212,13 +218,13 @@ export default function AttendanceManager({ students, classes, todayRecords, his
     <div className="px-4 py-3 flex flex-wrap gap-2" style={{ borderBottom: '1px solid rgba(184,151,58,0.14)' }}>
       {sessionDays.length > 1 && (
         <select className="input w-auto text-[13px]" value={dayFilter}
-          onChange={e => setDayFilter(e.target.value)} style={{ minHeight: '40px' }}>
+          onChange={e => { setDayFilter(e.target.value); setPage(0) }} style={{ minHeight: '40px' }}>
           <option value="all">All days</option>
           {sessionDays.map(d => <option key={d} value={d}>{d}</option>)}
         </select>
       )}
       <input className="input flex-1 text-[13px]" placeholder="Search…" value={search}
-        onChange={e => setSearch(e.target.value)} style={{ minHeight: '40px', minWidth: 120 }} />
+        onChange={e => { setSearch(e.target.value); setPage(0) }} style={{ minHeight: '40px', minWidth: 120 }} />
       <select className="input w-auto text-[13px]" value={gradeFilter}
         onChange={e => setGradeFilter(e.target.value)} style={{ minHeight: '40px' }}>
         {grades.map(g => <option key={g} value={g}>{g === 'all' ? 'All grades' : gradeLabel(Number(g))}</option>)}
@@ -281,7 +287,7 @@ export default function AttendanceManager({ students, classes, todayRecords, his
                 </tr>
               </thead>
               <tbody>
-                {filteredStudents.map((student, i) => {
+                {pagedStudents.map((student, i) => {
                   const rec = rosterRecords[student.id]
                   const signedIn = !!rec?.sign_in_time
                   const signedOut = !!rec?.sign_out_time
@@ -357,6 +363,22 @@ export default function AttendanceManager({ students, classes, todayRecords, his
               </tbody>
             </table>
           </div>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-5 py-3 border-t" style={{ borderColor: 'rgba(184,151,58,0.14)' }}>
+              <span className="text-[12px]" style={{ color: '#8A8580' }}>
+                Page {page + 1} of {totalPages} · {filteredStudents.length} students
+              </span>
+              <div className="flex gap-2">
+                <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
+                  className="px-3 py-1.5 rounded-lg text-[12px] disabled:opacity-40"
+                  style={{ background: '#F5F0E8', color: '#4A4640' }}>← Prev</button>
+                <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}
+                  className="px-3 py-1.5 rounded-lg text-[12px] disabled:opacity-40"
+                  style={{ background: '#F5F0E8', color: '#4A4640' }}>Next →</button>
+              </div>
+            </div>
+          )}
         </Card>
       )}
 
