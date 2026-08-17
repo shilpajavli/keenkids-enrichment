@@ -62,13 +62,6 @@ export default function AttendanceManager({ students, classes, todayRecords, his
   const [tab, setTab] = useState<Tab>('roster')
   const classId = classes[0]?.id ?? ''
 
-  // Session day filter — default to today's weekday
-  const todayDay = new Date().toLocaleDateString('en-US', { weekday: 'long' })
-  const sessionDays = [...new Set(students.map(s => s.session_day).filter(Boolean))] as string[]
-  const [dayFilter, setDayFilter] = useState<string>(
-    sessionDays.includes(todayDay) ? todayDay : (sessionDays[0] ?? 'all')
-  )
-
   const [rosterRecords, setRosterRecords] = useState<Record<string, AttRecord>>(() => {
     const init: Record<string, AttRecord> = {}
     todayRecords.forEach(r => { init[r.student_id] = r })
@@ -86,7 +79,6 @@ export default function AttendanceManager({ students, classes, todayRecords, his
   const PAGE_SIZE = 15
 
   const filteredStudents = students
-    .filter(s => dayFilter === 'all' || !s.session_day || s.session_day === dayFilter)
     .filter(s => s.full_name.toLowerCase().includes(search.toLowerCase()))
 
   const totalPages = Math.ceil(filteredStudents.length / PAGE_SIZE)
@@ -216,13 +208,6 @@ export default function AttendanceManager({ students, classes, todayRecords, his
   // Filters bar
   const FiltersBar = () => (
     <div className="px-4 py-3 flex flex-wrap gap-2" style={{ borderBottom: '1px solid rgba(184,151,58,0.14)' }}>
-      {sessionDays.length > 1 && (
-        <select className="input w-auto text-[13px]" value={dayFilter}
-          onChange={e => { setDayFilter(e.target.value); setPage(0) }} style={{ minHeight: '40px' }}>
-          <option value="all">All days</option>
-          {sessionDays.map(d => <option key={d} value={d}>{d}</option>)}
-        </select>
-      )}
       <input className="input flex-1 text-[13px]" placeholder="Search…" value={search}
         onChange={e => { setSearch(e.target.value); setPage(0) }} style={{ minHeight: '40px', minWidth: 120 }} />
       <select className="input w-auto text-[13px]" value={gradeFilter}
