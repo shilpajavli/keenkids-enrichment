@@ -60,11 +60,16 @@ export default async function DashboardPage() {
   const firstName = profile?.full_name?.split(' ')[0] ?? 'there'
   const isTeacher = profile?.role === 'teacher'
 
-  const [studentsRes, programRes] = await Promise.all([
+  const weekStart = getMonday(new Date())
+
+  const [studentsRes, programRes, allStudentsRes] = await Promise.all([
     supabase.from('students').select('id, full_name, grade').eq('program_id', programId ?? '').eq('status', 'active').order('full_name'),
     programId
       ? supabase.from('programs').select('name, school:schools(id, name)').eq('id', programId).single()
       : Promise.resolve({ data: null }),
+    programId
+      ? supabase.from('students').select('id, status, created_at, updated_at').eq('program_id', programId)
+      : Promise.resolve({ data: [] }),
   ])
 
   const students  = studentsRes.data ?? []
@@ -74,6 +79,11 @@ export default async function DashboardPage() {
   const schoolKey = schoolName.includes('sinnott') ? 'sinnott' : schoolName.includes('mattos') ? 'mattos' : null
 
   const studentIds = students.map(s => s.id)
+  const allStudents = (allStudentsRes.data ?? []) as any[]
+
+  const totalCancelled = allStudents.filter(s => s.status === 'cancelled').length
+  const newThisWeek = allStudents.filter(s => s.status === 'active' && s.created_at >= weekStart).length
+  const cancelledThisWeek = allStudents.filter(s => s.status === 'cancelled' && s.updated_at >= weekStart).length
 
   const weekOf = getMonday(new Date())
   const nowDate = new Date()
@@ -162,27 +172,27 @@ export default async function DashboardPage() {
       </div>
 
       {/* KPIs */}
-      <div className={`grid gap-4 ${isTeacher ? 'grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'}`}>
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <Link href="/dashboard/students" className="card p-5 hover:opacity-80 transition-opacity">
           <div className="font-serif text-3xl font-light mb-1" style={{ color: '#8A6E25' }}>{students?.length ?? 0}</div>
-          <div className="text-[12px]" style={{ color: '#8A8580' }}>Enrolled</div>
+          <div className="text-[12px]" style={{ color: '#8A8580' }}>Total enrolled</div>
         </Link>
-        <Link href="/dashboard/attendance" className="card p-5 hover:opacity-80 transition-opacity">
-          <div className="font-serif text-3xl font-light mb-1" style={{ color: '#27500A' }}>{present.length}</div>
-          <div className="text-[12px]" style={{ color: '#8A8580' }}>Checked in today</div>
+        <Link href="/dashboard/students" className="card p-5 hover:opacity-80 transition-opacity">
+          <div className="font-serif text-3xl font-light mb-1" style={{ color: totalCancelled > 0 ? '#791F1F' : '#8A8580' }}>{totalCancelled}</div>
+          <div className="text-[12px]" style={{ color: '#8A8580' }}>Total cancelled</div>
         </Link>
-        <Link href="/dashboard/attendance" className="card p-5 hover:opacity-80 transition-opacity">
-          <div className="font-serif text-3xl font-light mb-1" style={{ color: '#633806' }}>{absent.length}</div>
-          <div className="text-[12px]" style={{ color: '#8A8580' }}>Not yet arrived</div>
+        <Link href="/dashboard/students" className="card p-5 hover:opacity-80 transition-opacity">
+          <div className="font-serif text-3xl font-light mb-1" style={{ color: newThisWeek > 0 ? '#27500A' : '#8A8580' }}>
+            {newThisWeek > 0 ? `+${newThisWeek}` : '—'}
+          </div>
+          <div className="text-[12px]" style={{ color: '#8A8580' }}>New this week</div>
         </Link>
-        {!isTeacher && (
-          <Link href="/dashboard/payments" className="card p-5 hover:opacity-80 transition-opacity">
-            <div className="font-serif text-3xl font-light mb-1" style={{ color: '#27500A' }}>
-              {formatCurrency(netRevenueCents)}
-            </div>
-            <div className="text-[12px]" style={{ color: '#8A8580' }}>Net revenue collected</div>
-          </Link>
-        )}
+        <Link href="/dashboard/students" className="card p-5 hover:opacity-80 transition-opacity">
+          <div className="font-serif text-3xl font-light mb-1" style={{ color: cancelledThisWeek > 0 ? '#791F1F' : '#8A8580' }}>
+            {cancelledThisWeek > 0 ? `−${cancelledThisWeek}` : '—'}
+          </div>
+          <div className="text-[12px]" style={{ color: '#8A8580' }}>Cancelled this week</div>
+        </Link>
       </div>
 
       {/* Revenue breakdown — admin only */}
