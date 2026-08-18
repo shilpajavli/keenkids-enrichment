@@ -7,23 +7,34 @@ interface Member {
   email: string
   full_name: string
   role: 'teacher' | 'parent'
+  school_id: string | null
   created_at: string
+}
+
+interface School {
+  id: string
+  name: string
 }
 
 export default function TeamManager() {
   const [members, setMembers] = useState<Member[]>([])
+  const [schools, setSchools] = useState<School[]>([])
   const [loading, setLoading] = useState(true)
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
   const [role, setRole] = useState<'teacher' | 'parent'>('teacher')
   const [sending, setSending] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [savingSchool, setSavingSchool] = useState<string | null>(null)
 
   const fetchMembers = useCallback(async () => {
     setLoading(true)
-    const res = await fetch('/api/invites')
-    const { data } = await res.json()
-    setMembers(data ?? [])
+    const [membersRes, schoolsRes] = await Promise.all([
+      fetch('/api/invites').then(r => r.json()),
+      fetch('/api/schools').then(r => r.json()),
+    ])
+    setMembers(membersRes.data ?? [])
+    setSchools(schoolsRes.data ?? [])
     setLoading(false)
   }, [])
 
@@ -46,6 +57,17 @@ export default function TeamManager() {
       await fetchMembers()
     }
     setSending(false)
+  }
+
+  async function assignSchool(memberId: string, schoolId: string) {
+    setSavingSchool(memberId)
+    await fetch('/api/invites', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: memberId, school_id: schoolId || null }),
+    })
+    setMembers(prev => prev.map(m => m.id === memberId ? { ...m, school_id: schoolId || null } : m))
+    setSavingSchool(null)
   }
 
   const teachers = members.filter(m => m.role === 'teacher')
@@ -121,13 +143,24 @@ export default function TeamManager() {
           <div className="px-5 py-6 text-sm" style={{ color: '#8A8580' }}>No teachers yet — invite one above.</div>
         ) : (
           teachers.map((m, i) => (
-            <div key={m.id} className="px-5 py-3 flex items-center justify-between"
+            <div key={m.id} className="px-5 py-3 flex items-center justify-between gap-4"
               style={{ borderBottom: i < teachers.length - 1 ? '1px solid rgba(184,151,58,0.08)' : 'none' }}>
-              <div>
+              <div className="min-w-0">
                 <div className="text-sm font-medium" style={{ color: '#1A1814' }}>{m.full_name || '—'}</div>
                 <div className="text-xs mt-0.5" style={{ color: '#8A8580' }}>{m.email}</div>
               </div>
-              <span className="text-xs px-2 py-1 rounded-full" style={{ background: '#EFE6CC', color: '#8A6E25' }}>Teacher</span>
+              <div className="flex items-center gap-2 shrink-0">
+                <select
+                  value={m.school_id ?? ''}
+                  onChange={e => assignSchool(m.id, e.target.value)}
+                  disabled={savingSchool === m.id}
+                  className="text-xs rounded-lg px-2 py-1.5 outline-none"
+                  style={{ border: '1.5px solid rgba(184,151,58,0.3)', color: m.school_id ? '#1A1814' : '#8A8580', minWidth: 130 }}>
+                  <option value="">No school assigned</option>
+                  {schools.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+                {savingSchool === m.id && <span className="text-xs" style={{ color: '#8A8580' }}>Saving…</span>}
+              </div>
             </div>
           ))
         )}
