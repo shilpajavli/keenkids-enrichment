@@ -52,7 +52,7 @@ const MONTHLY_THEMES: Record<string, { theme: string; emoji: string }> = {
 
 export default async function DashboardPage() {
   const supabase = await createServerClient()
-  const today = new Date().toISOString().slice(0, 10)
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' })
   const programId = await getCurrentProgramId()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -172,7 +172,7 @@ export default async function DashboardPage() {
       <div>
         <h1 className="font-serif text-3xl font-light text-ink">Welcome, <em>{firstName}</em></h1>
         <p className="text-ink-tertiary text-sm mt-1">
-          {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+          {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' })}
         </p>
       </div>
 
