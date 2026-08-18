@@ -12,7 +12,8 @@ export default async function StudentsPage() {
 
   const { data: { user } } = await supabase.auth.getUser()
   const { data: profile } = await supabase.from('profiles').select('role, school_id').eq('id', user?.id ?? '').single()
-  const teacherSchoolId = profile?.role === 'teacher' ? (profile?.school_id ?? null) : null
+  const isTeacher = profile?.role === 'teacher'
+  const teacherSchoolId = isTeacher ? (profile?.school_id ?? null) : null
 
   // Fetch students with school info
   const { data: allStudentsData } = await supabase
@@ -96,7 +97,7 @@ export default async function StudentsPage() {
         <h1 className="font-serif text-3xl font-light text-ink">Students</h1>
         <p className="text-ink-tertiary text-sm mt-1">{enriched.length} enrolled</p>
       </div>
-      <StudentList students={enriched} programId={programId} schools={schools ?? []} />
+      <StudentList students={enriched} programId={programId} schools={schools ?? []} isTeacher={isTeacher} />
 
       {/* Past / Inactive Students */}
       {(inactiveStudents ?? []).length > 0 && (

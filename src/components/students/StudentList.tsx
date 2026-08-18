@@ -41,7 +41,7 @@ const ENROLLMENT_PRESETS: Record<EnrollmentType, number[]> = {
   '1_day': [1],
 }
 
-export default function StudentList({ students: initial, programId, schools = [] }: { students: StudentRow[]; programId: string | null; schools?: School[] }) {
+export default function StudentList({ students: initial, programId, schools = [], isTeacher = false }: { students: StudentRow[]; programId: string | null; schools?: School[]; isTeacher?: boolean }) {
   const [students, setStudents] = useState(initial)
   const [search, setSearch] = useState('')
   const [gradeFilter, setGradeFilter] = useState('all')
@@ -325,9 +325,11 @@ export default function StudentList({ students: initial, programId, schools = []
           <button className="btn text-[12px] flex items-center gap-1.5" onClick={exportCSV}>
             <Download size={13} /> Export CSV
           </button>
-          <button className="btn btn-gold text-[12px] flex items-center gap-1.5" onClick={() => setShowAdd(true)}>
-            <UserPlus size={13} /> Add student
-          </button>
+          {!isTeacher && (
+            <button className="btn btn-gold text-[12px] flex items-center gap-1.5" onClick={() => setShowAdd(true)}>
+              <UserPlus size={13} /> Add student
+            </button>
+          )}
         </div>
       </div>
 
