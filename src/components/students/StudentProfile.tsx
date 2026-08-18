@@ -68,6 +68,7 @@ export default function StudentProfile({ student, skills, notes, attendance, med
   const [enrollmentType, setEnrollmentType] = useState<EnrollmentType>(student.enrollment_type ?? '5_day')
   const [enrolledDays, setEnrolledDays] = useState<number[]>(student.enrolled_days ?? [1,2,3,4,5])
   const [grade, setGrade] = useState(student.grade ?? 0)
+  const [enrolledAt, setEnrolledAt] = useState<string>(student.enrolled_at ? new Date(student.enrolled_at).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10))
   const [savingEnrollment, setSavingEnrollment] = useState(false)
 
   const expectedSessions = enrolledDays.length
@@ -93,6 +94,7 @@ export default function StudentProfile({ student, skills, notes, attendance, med
         enrollment_type: enrollmentType,
         enrolled_days: enrolledDays,
         grade: Number(grade),
+        enrolled_at: enrolledAt,
       }),
     })
     setSavingEnrollment(false)
@@ -335,6 +337,16 @@ export default function StudentProfile({ student, skills, notes, attendance, med
                   <option value={0}>K</option>
                   {[1,2,3,4,5,6,7,8].map(g => <option key={g} value={g}>Grade {g}</option>)}
                 </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-[12.5px]" style={{ color: '#4A4640' }}>Enrolled</label>
+                <input
+                  type="date"
+                  className="input text-[13px]"
+                  value={enrolledAt}
+                  onChange={e => setEnrolledAt(e.target.value)}
+                  style={{ width: 148 }}
+                />
               </div>
               <div className="flex items-center gap-2">
                 <label className="text-[12.5px]" style={{ color: '#4A4640' }}>Program</label>
