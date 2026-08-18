@@ -160,9 +160,9 @@ export default function StudentProfile({ student, skills, notes, attendance, med
   }
 
   async function handleDelete() {
-    if (!confirm(`Remove ${student.full_name} from enrollment? This cannot be undone.`)) return
+    if (!confirm(`Mark ${student.full_name} as cancelled? They will be removed from the active roster but kept in records.`)) return
     setDeleting(true)
-    await fetch(`/api/students?id=${student.id}`, { method: 'DELETE' })
+    await fetch(`/api/students?id=${student.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'inactive' }) })
     router.push('/dashboard/students')
   }
 
@@ -249,7 +249,7 @@ export default function StudentProfile({ student, skills, notes, attendance, med
               className="btn text-[12px] flex items-center gap-1.5"
               style={{ color: '#791F1F', borderColor: 'rgba(121,31,31,0.3)' }}>
               <Trash2 size={13} />
-              {deleting ? 'Removing…' : 'Remove student'}
+              {deleting ? 'Cancelling…' : 'Cancel enrollment'}
             </button>
           </div>
         </div>
