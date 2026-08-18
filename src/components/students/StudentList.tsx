@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { Search, UserPlus, X, Mail } from 'lucide-react'
+import { Search, UserPlus, X, Mail, Download } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import StudentAvatar from '@/components/ui/StudentAvatar'
 import Badge from '@/components/ui/Badge'
@@ -72,6 +72,31 @@ export default function StudentList({ students: initial, programId, schools = []
         : [...f.enrolled_days, day].sort()
       return { ...f, enrolled_days: days }
     })
+  }
+
+  function exportCSV() {
+    const gradeLabel = (g: number) => g === 0 ? 'Kindergarten' : `Grade ${g}`
+    const dayLabel = (d: number) => ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'][d] ?? d
+    const rows = [
+      ['Name', 'Grade', 'School', 'Plan', 'Days', 'Enrolled Date', 'Parent Email'],
+      ...filtered.map(s => [
+        s.full_name,
+        gradeLabel(s.grade),
+        s.school?.name ?? '',
+        s.enrollment_type?.replace('_', '-') ?? '',
+        (s.enrolled_days ?? []).map(dayLabel).join('/'),
+        s.enrolled_at ? new Date(s.enrolled_at).toLocaleDateString('en-US') : '',
+        s.parent_email ?? '',
+      ]),
+    ]
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `students-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   async function inviteAllParents() {
@@ -297,6 +322,9 @@ export default function StudentList({ students: initial, programId, schools = []
               <Mail size={13} /> {inviting ? 'Sending…' : 'Invite parents'}
             </button>
           )}
+          <button className="btn text-[12px] flex items-center gap-1.5" onClick={exportCSV}>
+            <Download size={13} /> Export CSV
+          </button>
           <button className="btn btn-gold text-[12px] flex items-center gap-1.5" onClick={() => setShowAdd(true)}>
             <UserPlus size={13} /> Add student
           </button>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { Download } from 'lucide-react'
 import { Card, CardHeader, CardBody } from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -89,6 +90,29 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
   }, [])
 
   useEffect(() => { loadUnmatched() }, [loadUnmatched])
+
+  function exportPaymentsCSV() {
+    const rows = [
+      ['Student', 'Status', 'Amount', 'Refund', 'Plan', 'Paid Date', 'Due Date'],
+      ...payments.map(p => [
+        p.student?.full_name ?? p.child_name_entered ?? '',
+        p.status,
+        p.amount_cents ? `$${(p.amount_cents / 100).toFixed(2)}` : '',
+        p.refund_amount_cents ? `$${(p.refund_amount_cents / 100).toFixed(2)}` : '',
+        p.plan_name ?? '',
+        p.paid_at ? new Date(p.paid_at).toLocaleDateString('en-US') : '',
+        p.due_date ? new Date(p.due_date).toLocaleDateString('en-US') : '',
+      ]),
+    ]
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `payments-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   async function syncStripe() {
     setSyncing(true); setSyncResult(null)
@@ -198,8 +222,13 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
         </div>
       </div>
 
-      {/* Sync button */}
+      {/* Sync + Export buttons */}
       <div className="flex items-center gap-3">
+        <button onClick={exportPaymentsCSV}
+          className="btn text-[11.5px] py-1.5 px-4 flex items-center gap-1.5"
+          style={{ background: '#F5F0E8', color: '#8A6E25', border: '1px solid rgba(184,151,58,0.35)' }}>
+          <Download size={13} /> Export CSV
+        </button>
         <button onClick={syncStripe} disabled={syncing}
           className="btn text-[11.5px] py-1.5 px-4 flex items-center gap-1.5 disabled:opacity-50"
           style={{ background: '#F5F0E8', color: '#8A6E25', border: '1px solid rgba(184,151,58,0.35)' }}>
