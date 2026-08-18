@@ -68,7 +68,7 @@ export default async function DashboardPage() {
       ? supabase.from('programs').select('name, school:schools(id, name)').eq('id', programId).single()
       : Promise.resolve({ data: null }),
     programId
-      ? supabase.from('students').select('id, status, created_at, updated_at').eq('program_id', programId)
+      ? createAdminClient().from('students').select('id, status, created_at, updated_at').eq('program_id', programId)
       : Promise.resolve({ data: [] }),
   ])
 
@@ -107,7 +107,7 @@ export default async function DashboardPage() {
       ? supabase.from('curriculum').select('title, description, week_of').eq('school_id', schoolId).eq('week_of', weekOf).single()
       : Promise.resolve({ data: null }),
     !isTeacher
-      ? supabase
+      ? createAdminClient()
           .from('payments')
           .select('amount_cents, status, refund_amount_cents, student_id, student:students(program:programs(school:schools(name)))')
           .in('status', ['paid', 'refunded'])
