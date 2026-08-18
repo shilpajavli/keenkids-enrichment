@@ -34,9 +34,9 @@ export default async function PaymentsPage() {
         .order('due_date', { ascending: false })
     : { data: [] }
 
-  const collected = payments?.filter(p => p.status === 'paid').reduce((s, p) => s + p.amount_cents, 0) ?? 0
-  const outstanding = payments?.filter(p => p.status === 'pending').reduce((s, p) => s + p.amount_cents, 0) ?? 0
-  const overdue = payments?.filter(p => p.status === 'overdue').reduce((s, p) => s + p.amount_cents, 0) ?? 0
+  const collected = payments?.filter((p: any) => p.status === 'paid').reduce((s: number, p: any) => s + p.amount_cents, 0) ?? 0
+  const outstanding = payments?.filter((p: any) => p.status === 'pending').reduce((s: number, p: any) => s + p.amount_cents, 0) ?? 0
+  const overdue = payments?.filter((p: any) => p.status === 'overdue').reduce((s: number, p: any) => s + p.amount_cents, 0) ?? 0
 
   return (
     <div className="space-y-6">
