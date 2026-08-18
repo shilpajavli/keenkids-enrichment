@@ -189,7 +189,7 @@ export default async function DashboardPage() {
         </Link>
         <Link href="/dashboard/students" className="card p-5 hover:opacity-80 transition-opacity">
           <div className="font-serif text-3xl font-light mb-1" style={{ color: cancelledThisWeek > 0 ? '#791F1F' : '#8A8580' }}>
-            {cancelledThisWeek > 0 ? `−${cancelledThisWeek}` : '—'}
+            {cancelledThisWeek > 0 ? cancelledThisWeek : '—'}
           </div>
           <div className="text-[12px]" style={{ color: '#8A8580' }}>Cancelled this week</div>
         </Link>
