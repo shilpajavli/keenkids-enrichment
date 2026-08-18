@@ -4,7 +4,9 @@ import { createAdminClient, createServerClient } from '@/lib/supabase-server'
 import { notFound, redirect } from 'next/navigation'
 import PrintTrigger from './PrintTrigger'
 
-export default async function ReceiptPage({ params }: { params: { studentId: string } }) {
+export default async function ReceiptPage({ params }: { params: Promise<{ studentId: string }> }) {
+  const { studentId } = await params
+
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
@@ -14,15 +16,15 @@ export default async function ReceiptPage({ params }: { params: { studentId: str
   const { data: student, error: studentError } = await admin
     .from('students')
     .select('id, full_name, grade, school:schools(name), program:programs(name)')
-    .eq('id', params.studentId)
+    .eq('id', studentId)
     .single()
 
-  if (!student) return <div style={{ padding: 40, fontFamily: 'Arial' }}>Student not found. ID: {params.studentId} Error: {studentError?.message}</div>
+  if (!student) return <div style={{ padding: 40, fontFamily: 'Arial' }}>Student not found. ID: {studentId} Error: {studentError?.message}</div>
 
   const { data: payments } = await admin
     .from('payments')
     .select('*')
-    .eq('student_id', params.studentId)
+    .eq('student_id', studentId)
     .in('status', ['paid', 'refunded'])
     .order('paid_at', { ascending: true })
 
