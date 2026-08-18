@@ -74,12 +74,12 @@ export default async function DashboardPage() {
   ])
 
   const allFetchedStudents = studentsRes.data ?? []
+  const program   = programRes.data as any
+  const schoolId  = program?.school?.id ?? null
   // For teachers: only show students if this program belongs to their school
   const students = teacherSchoolId
     ? (schoolId === teacherSchoolId ? allFetchedStudents : [])
     : allFetchedStudents
-  const program   = programRes.data as any
-  const schoolId  = program?.school?.id ?? null
   const schoolName = (program?.school?.name ?? program?.name ?? '').toLowerCase()
   const schoolKey = schoolName.includes('sinnott') ? 'sinnott' : schoolName.includes('mattos') ? 'mattos' : null
 
