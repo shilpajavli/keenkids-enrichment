@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'
 
-import { createServerClient } from '@/lib/supabase-server'
+import { createServerClient, createAdminClient } from '@/lib/supabase-server'
 import { getCurrentProgramId } from '@/lib/program'
 import { redirect } from 'next/navigation'
 import PaymentsDashboard from '@/components/payments/PaymentsDashboard'
@@ -15,18 +15,19 @@ export default async function PaymentsPage() {
   if (profile?.role === 'teacher') redirect('/dashboard')
 
   const programId = await getCurrentProgramId()
+  const admin = createAdminClient()
 
-  // Filter payments through students that belong to the current program
-  const { data: students } = await supabase
+  // Include all students (active + inactive) so cancelled students' payments still show
+  const { data: students } = await admin
     .from('students')
     .select('id, full_name')
     .eq('program_id', programId ?? '')
-    .eq('status', 'active')
+    .in('status', ['active', 'inactive'])
 
   const studentIds = (students ?? []).map(s => s.id)
 
   const { data: payments } = studentIds.length
-    ? await supabase
+    ? await admin
         .from('payments')
         .select('*, student:students(id, full_name, grade)')
         .in('student_id', studentIds)
