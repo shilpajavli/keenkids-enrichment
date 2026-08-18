@@ -217,8 +217,8 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
           <div className="text-[12px]" style={{ color: '#8A8580' }}>Refunded · {payments.filter(p => p.status === 'refunded').length} payments</div>
         </div>
         <div className="card p-5">
-          <div className="font-serif text-2xl font-light mb-1" style={{ color: '#1A1814' }}>{enrolledCount ?? students.length}</div>
-          <div className="text-[12px]" style={{ color: '#8A8580' }}>Enrolled students</div>
+          <div className="font-serif text-2xl font-light mb-1" style={{ color: '#1A1814' }}>{groupByStudent(payments.filter(p => p.student?.id)).length}</div>
+          <div className="text-[12px]" style={{ color: '#8A8580' }}>Students with payments</div>
         </div>
       </div>
 
