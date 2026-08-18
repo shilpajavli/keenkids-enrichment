@@ -10,8 +10,12 @@ export default async function StudentsPage() {
   const supabase = await createServerClient()
   const programId = await getCurrentProgramId()
 
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: profile } = await supabase.from('profiles').select('role, school_id').eq('id', user?.id ?? '').single()
+  const teacherSchoolId = profile?.role === 'teacher' ? (profile?.school_id ?? null) : null
+
   // Fetch students with school info
-  const { data: students } = await supabase
+  const { data: allStudentsData } = await supabase
     .from('students')
     .select(`
       *,
@@ -21,6 +25,10 @@ export default async function StudentsPage() {
     .eq('program_id', programId ?? '')
     .eq('status', 'active')
     .order('full_name')
+
+  const students = teacherSchoolId
+    ? (allStudentsData ?? []).filter((s: any) => s.school_id === teacherSchoolId)
+    : (allStudentsData ?? [])
 
   // Fetch inactive (past) students with their last payment info
   const { data: inactiveStudents } = await supabase

@@ -12,13 +12,20 @@ export default async function AttendancePage() {
   const today = format(new Date(), 'yyyy-MM-dd')
   const programId = await getCurrentProgramId()
 
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: profile } = await supabase.from('profiles').select('role, school_id').eq('id', user?.id ?? '').single()
+  const teacherSchoolId = profile?.role === 'teacher' ? (profile?.school_id ?? null) : null
+
   const [studentsRes, classesRes, todayRes] = await Promise.all([
-    supabase.from('students').select('id, full_name, last_name, grade, avatar_url, room_number, needs_escort, teacher_name, alerts, session_day').eq('program_id', programId ?? '').eq('status', 'active').order('last_name'),
+    supabase.from('students').select('id, full_name, last_name, grade, avatar_url, room_number, needs_escort, teacher_name, alerts, session_day, school_id').eq('program_id', programId ?? '').eq('status', 'active').order('last_name'),
     supabase.from('classes').select('*').eq('program_id', programId ?? '').order('day_of_week').order('start_time'),
     supabase.from('attendance').select('id, student_id, class_id, status, sign_in_time, sign_out_time').eq('date', today),
   ])
 
-  const students = studentsRes.data ?? []
+  const allStudents = studentsRes.data ?? []
+  const students = teacherSchoolId
+    ? allStudents.filter((s: any) => s.school_id === teacherSchoolId)
+    : allStudents
   const studentIds = students.map(s => s.id)
 
   const { data: history } = studentIds.length

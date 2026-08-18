@@ -56,14 +56,15 @@ export default async function DashboardPage() {
   const programId = await getCurrentProgramId()
 
   const { data: { user } } = await supabase.auth.getUser()
-  const { data: profile } = await supabase.from('profiles').select('full_name, role').eq('id', user?.id ?? '').single()
+  const { data: profile } = await supabase.from('profiles').select('full_name, role, school_id').eq('id', user?.id ?? '').single()
   const firstName = profile?.full_name?.split(' ')[0] ?? 'there'
   const isTeacher = profile?.role === 'teacher'
+  const teacherSchoolId = isTeacher ? (profile?.school_id ?? null) : null
 
   const weekStart = getMonday(new Date())
 
   const [studentsRes, programRes, allStudentsRes] = await Promise.all([
-    supabase.from('students').select('id, full_name, grade').eq('program_id', programId ?? '').eq('status', 'active').order('full_name'),
+    supabase.from('students').select('id, full_name, grade, school_id').eq('program_id', programId ?? '').eq('status', 'active').order('full_name'),
     programId
       ? supabase.from('programs').select('name, school:schools(id, name)').eq('id', programId).single()
       : Promise.resolve({ data: null }),
@@ -72,7 +73,10 @@ export default async function DashboardPage() {
       : Promise.resolve({ data: [] }),
   ])
 
-  const students  = studentsRes.data ?? []
+  const allFetchedStudents = studentsRes.data ?? []
+  const students = teacherSchoolId
+    ? allFetchedStudents.filter((s: any) => s.school_id === teacherSchoolId)
+    : allFetchedStudents
   const program   = programRes.data as any
   const schoolId  = program?.school?.id ?? null
   const schoolName = (program?.school?.name ?? program?.name ?? '').toLowerCase()
