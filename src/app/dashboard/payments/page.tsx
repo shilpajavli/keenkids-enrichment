@@ -24,7 +24,7 @@ export default async function PaymentsPage() {
     .eq('program_id', programId ?? '')
     .in('status', ['active', 'inactive'])
 
-  const studentIds = (students ?? []).map(s => s.id)
+  const studentIds = (students ?? []).map((s: any) => s.id)
 
   const { data: payments } = studentIds.length
     ? await admin
