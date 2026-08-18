@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'
 
-import { createServerClient } from '@/lib/supabase-server'
+import { createServerClient, createAdminClient } from '@/lib/supabase-server'
 import { getCurrentProgramId } from '@/lib/program'
 import { Card, CardHeader, CardBody } from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
