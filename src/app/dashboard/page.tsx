@@ -176,6 +176,24 @@ export default async function DashboardPage() {
         </p>
       </div>
 
+      {/* KPIs — teacher */}
+      {isTeacher && (
+        <div className="grid gap-4 grid-cols-3">
+          <Link href="/dashboard/attendance" className="card p-5 hover:opacity-80 transition-opacity">
+            <div className="font-serif text-3xl font-light mb-1" style={{ color: '#8A6E25' }}>{students.length}</div>
+            <div className="text-[12px]" style={{ color: '#8A8580' }}>Total students</div>
+          </Link>
+          <Link href="/dashboard/attendance" className="card p-5 hover:opacity-80 transition-opacity">
+            <div className="font-serif text-3xl font-light mb-1" style={{ color: '#27500A' }}>{present.length}</div>
+            <div className="text-[12px]" style={{ color: '#8A8580' }}>Checked in today</div>
+          </Link>
+          <Link href="/dashboard/attendance" className="card p-5 hover:opacity-80 transition-opacity">
+            <div className="font-serif text-3xl font-light mb-1" style={{ color: absent.length > 0 ? '#633806' : '#8A8580' }}>{absent.length}</div>
+            <div className="text-[12px]" style={{ color: '#8A8580' }}>Yet to check in</div>
+          </Link>
+        </div>
+      )}
+
       {/* KPIs — admin only */}
       {!isTeacher && <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <Link href="/dashboard/students" className="card p-5 hover:opacity-80 transition-opacity">
