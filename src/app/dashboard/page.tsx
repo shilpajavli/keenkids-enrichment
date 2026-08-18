@@ -74,8 +74,9 @@ export default async function DashboardPage() {
   ])
 
   const allFetchedStudents = studentsRes.data ?? []
+  // For teachers: only show students if this program belongs to their school
   const students = teacherSchoolId
-    ? allFetchedStudents.filter((s: any) => s.school_id === teacherSchoolId)
+    ? (schoolId === teacherSchoolId ? allFetchedStudents : [])
     : allFetchedStudents
   const program   = programRes.data as any
   const schoolId  = program?.school?.id ?? null

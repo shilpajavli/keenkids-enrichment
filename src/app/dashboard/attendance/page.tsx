@@ -23,8 +23,15 @@ export default async function AttendancePage() {
   ])
 
   const allStudents = studentsRes.data ?? []
+
+  // Resolve the program's school to compare against teacher's assigned school
+  const { data: programData } = programId
+    ? await supabase.from('programs').select('school:schools(id)').eq('id', programId).single()
+    : { data: null }
+  const programSchoolId = (programData as any)?.school?.id ?? null
+
   const students = teacherSchoolId
-    ? allStudents.filter((s: any) => s.school_id === teacherSchoolId)
+    ? (programSchoolId === teacherSchoolId ? allStudents : [])
     : allStudents
   const studentIds = students.map(s => s.id)
 

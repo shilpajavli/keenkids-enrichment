@@ -26,8 +26,14 @@ export default async function StudentsPage() {
     .eq('status', 'active')
     .order('full_name')
 
+  // Resolve the program's school to compare against teacher's assigned school
+  const { data: programData } = programId
+    ? await supabase.from('programs').select('school:schools(id)').eq('id', programId).single()
+    : { data: null }
+  const programSchoolId = (programData as any)?.school?.id ?? null
+
   const students = teacherSchoolId
-    ? (allStudentsData ?? []).filter((s: any) => s.school_id === teacherSchoolId)
+    ? (programSchoolId === teacherSchoolId ? (allStudentsData ?? []) : [])
     : (allStudentsData ?? [])
 
   // Fetch inactive (past) students with their last payment info
