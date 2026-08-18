@@ -317,14 +317,16 @@ export default function StudentList({ students: initial, programId, schools = []
         <div className="ml-auto flex items-center gap-3">
           <span className="text-[12px]" style={{ color: '#8A8580' }}>{filtered.length} student{filtered.length !== 1 ? 's' : ''}</span>
           {inviteStatus && <span className="text-[12px]" style={{ color: '#27500A' }}>{inviteStatus}</span>}
-          {students.some(s => !s.parent_id) && (
+          {!isTeacher && students.some(s => !s.parent_id) && (
             <button className="btn text-[12px] flex items-center gap-1.5" onClick={inviteAllParents} disabled={inviting}>
               <Mail size={13} /> {inviting ? 'Sending…' : 'Invite parents'}
             </button>
           )}
-          <button className="btn text-[12px] flex items-center gap-1.5" onClick={exportCSV}>
-            <Download size={13} /> Export CSV
-          </button>
+          {!isTeacher && (
+            <button className="btn text-[12px] flex items-center gap-1.5" onClick={exportCSV}>
+              <Download size={13} /> Export CSV
+            </button>
+          )}
           {!isTeacher && (
             <button className="btn btn-gold text-[12px] flex items-center gap-1.5" onClick={() => setShowAdd(true)}>
               <UserPlus size={13} /> Add student
