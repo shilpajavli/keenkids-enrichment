@@ -110,7 +110,7 @@ export async function POST() {
       const sessionId = sessionList.data[0]?.id
       if (!sessionId) continue
 
-      const { error } = await admin.from('payments')
+      const { data: payment, error } = await admin.from('payments')
         .update({
           status: 'refunded',
           refund_amount_cents: refund.amount,
@@ -118,9 +118,16 @@ export async function POST() {
           stripe_refund_id: refund.id,
         })
         .eq('stripe_session_id', sessionId)
+        .select('student_id, amount_cents')
+        .single()
 
-      if (error) console.error(`Failed refund ${refund.id}:`, error.message)
-      else refundsSynced++
+      if (error) { console.error(`Failed refund ${refund.id}:`, error.message); continue }
+      refundsSynced++
+
+      // If full refund, mark student as inactive
+      if (payment?.student_id && refund.amount >= payment.amount_cents) {
+        await admin.from('students').update({ status: 'inactive' }).eq('id', payment.student_id)
+      }
     } catch (e) {
       console.error(`Error processing refund ${refund.id}:`, e)
     }
