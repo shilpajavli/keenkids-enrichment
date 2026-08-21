@@ -82,6 +82,7 @@ export default function StudentProfile({ student, skills, notes, attendance, med
       body: JSON.stringify({ room_number: roomNumber || null, teacher_name: teacherName || null, needs_escort: needsEscort }),
     })
     setSavingInfo(false)
+    router.refresh()
   }
 
   async function saveEnrollmentInfo() {
@@ -98,6 +99,7 @@ export default function StudentProfile({ student, skills, notes, attendance, med
       }),
     })
     setSavingEnrollment(false)
+    router.refresh()
   }
 
   function toggleDay(day: number) {

@@ -41,7 +41,21 @@ export async function PATCH(req: NextRequest) {
   if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
 
   const body = await req.json()
-  const { data, error } = await supabase.from('students').update(body).eq('id', id).select().single()
+
+  // Check caller's role — parents may only update logistics fields
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user?.id ?? '').single()
+  const role = profile?.role ?? 'parent'
+
+  let allowedBody = body
+  if (role === 'parent') {
+    const { room_number, teacher_name, needs_escort } = body
+    allowedBody = { room_number, teacher_name, needs_escort }
+  }
+
+  // Use admin client to bypass RLS for the update
+  const admin = createAdminClient()
+  const { data, error } = await admin.from('students').update(allowedBody).eq('id', id).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
   return NextResponse.json({ data })
 }
