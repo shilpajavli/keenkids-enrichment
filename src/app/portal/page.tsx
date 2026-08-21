@@ -109,6 +109,34 @@ export default async function ParentPortalPage({
   const notes = notesRes.data ?? []
   const pendingPayments = payments.filter(p => p.status !== 'paid')
 
+  // Monthly payment schedule Aug 2026 – May 2027
+  const PROGRAM_MONTHS = [
+    { label: 'August 2026',    year: 2026, month: 7  },
+    { label: 'September 2026', year: 2026, month: 8  },
+    { label: 'October 2026',   year: 2026, month: 9  },
+    { label: 'November 2026',  year: 2026, month: 10 },
+    { label: 'December 2026',  year: 2026, month: 11 },
+    { label: 'January 2027',   year: 2027, month: 0  },
+    { label: 'February 2027',  year: 2027, month: 1  },
+    { label: 'March 2027',     year: 2027, month: 2  },
+    { label: 'April 2027',     year: 2027, month: 3  },
+    { label: 'May 2027',       year: 2027, month: 4  },
+  ]
+  const paidMonths = new Set(
+    payments
+      .filter((p: any) => p.status === 'paid' && p.paid_at)
+      .map((p: any) => { const d = new Date(p.paid_at); return `${d.getFullYear()}-${d.getMonth()}` })
+  )
+  const monthRows = PROGRAM_MONTHS.map(m => {
+    const isPast = m.year < localNow.getFullYear() || (m.year === localNow.getFullYear() && m.month < localNow.getMonth())
+    const isCurrent = m.year === localNow.getFullYear() && m.month === localNow.getMonth()
+    const paid = paidMonths.has(`${m.year}-${m.month}`)
+    return { ...m, isPast, isCurrent, paid }
+  })
+  const unpaidDueCount = monthRows.filter(m => !m.paid && (m.isPast || m.isCurrent)).length
+  const stripeLink = STRIPE_LINKS[student.enrollment_type]
+  const stripeLinkWithEmail = stripeLink ? `${stripeLink}?prefilled_email=${encodeURIComponent(user.email ?? '')}` : null
+
   const tabs = [
     { key: 'today', label: 'Today' },
     { key: 'payments', label: 'Payments', badge: pendingPayments.length > 0 ? pendingPayments.length : null },
@@ -321,106 +349,76 @@ export default async function ParentPortalPage({
       )}
 
       {/* ── PAYMENTS TAB ── */}
-      {tab === 'payments' && (() => {
-        // Monthly payment schedule: Aug 2026 – May 2027
-        const PROGRAM_MONTHS = [
-          { label: 'August 2026',    year: 2026, month: 7  },
-          { label: 'September 2026', year: 2026, month: 8  },
-          { label: 'October 2026',   year: 2026, month: 9  },
-          { label: 'November 2026',  year: 2026, month: 10 },
-          { label: 'December 2026',  year: 2026, month: 11 },
-          { label: 'January 2027',   year: 2027, month: 0  },
-          { label: 'February 2027',  year: 2027, month: 1  },
-          { label: 'March 2027',     year: 2027, month: 2  },
-          { label: 'April 2027',     year: 2027, month: 3  },
-          { label: 'May 2027',       year: 2027, month: 4  },
-        ]
-        const nowLocal = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }))
-        const stripeLink = STRIPE_LINKS[student.enrollment_type]
-        const paidLink = `${stripeLink}?prefilled_email=${encodeURIComponent(user.email ?? '')}`
-        const paidMonths = new Set(
-          payments
-            .filter(p => p.status === 'paid' && p.paid_at)
-            .map(p => { const d = new Date(p.paid_at); return `${d.getFullYear()}-${d.getMonth()}` })
-        )
-        const monthRows = PROGRAM_MONTHS.map(m => {
-          const isPast = m.year < nowLocal.getFullYear() || (m.year === nowLocal.getFullYear() && m.month < nowLocal.getMonth())
-          const isCurrent = m.year === nowLocal.getFullYear() && m.month === nowLocal.getMonth()
-          const paid = paidMonths.has(`${m.year}-${m.month}`)
-          return { ...m, isPast, isCurrent, paid }
-        })
-        const unpaidCount = monthRows.filter(m => !m.paid && (m.isPast || m.isCurrent)).length
-        return (
-          <div className="space-y-4">
-            <Card>
-              <CardHeader
-                title="Monthly Payments"
-                action={
-                  <div className="flex items-center gap-2">
-                    {unpaidCount > 0
-                      ? <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background: '#FEF3C7', color: '#92400E' }}>{unpaidCount} due</span>
-                      : <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background: '#F0FAF4', color: '#27500A' }}>All paid ✓</span>
-                    }
-                    <a href={`/receipt/${student.id}`} target="_blank" rel="noopener noreferrer"
-                      className="text-[11px] px-2.5 py-1 rounded-lg"
-                      style={{ background: '#F5F0E8', color: '#4A4640', border: '1px solid rgba(184,151,58,0.3)', textDecoration: 'none' }}>
-                      🖨 Receipt
-                    </a>
-                  </div>
-                }
-              />
-              <CardBody className="p-0">
-                {monthRows.map((m, i) => {
-                  const isFuture = !m.isPast && !m.isCurrent
-                  return (
-                    <div key={m.label}
-                      className="flex items-center justify-between px-5 py-3.5"
-                      style={{
-                        borderBottom: i < monthRows.length - 1 ? '1px solid rgba(184,151,58,0.1)' : 'none',
-                        background: m.isCurrent && !m.paid ? 'rgba(254,243,199,0.3)' : 'transparent',
-                        opacity: isFuture ? 0.5 : 1,
-                      }}>
-                      <div>
-                        <div className="text-[13px] font-medium" style={{ color: '#1A1814' }}>{m.label}</div>
-                        {m.isCurrent && <div className="text-[10px] mt-0.5" style={{ color: '#B8973A' }}>Current month</div>}
-                        {m.isPast && !m.paid && <div className="text-[10px] mt-0.5" style={{ color: '#791F1F' }}>Overdue</div>}
-                        {isFuture && <div className="text-[10px] mt-0.5" style={{ color: '#8A8580' }}>Upcoming</div>}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {m.paid ? (
-                          <span className="text-[11px] px-2.5 py-1 rounded-full font-medium" style={{ background: '#EAF3DE', color: '#27500A' }}>✓ Paid</span>
-                        ) : isFuture ? (
-                          <span className="text-[11px]" style={{ color: '#C4B89A' }}>Not yet due</span>
-                        ) : stripeLink ? (
-                          <a href={paidLink} target="_blank" rel="noopener noreferrer"
-                            className="btn btn-gold text-[11px] py-1 px-3" style={{ textDecoration: 'none' }}>
-                            Pay →
-                          </a>
-                        ) : null}
-                      </div>
-                    </div>
-                  )
-                })}
-                {(student.enrolled_days ?? []).includes(2) && (
-                  <div className="px-5 py-4 flex items-center justify-between"
-                    style={{ borderTop: '1px solid rgba(184,151,58,0.14)', background: '#FAF7F2' }}>
+      {tab === 'payments' && (
+        <div className="space-y-4">
+          <Card>
+            <CardHeader
+              title="Monthly Payments"
+              action={
+                <div className="flex items-center gap-2">
+                  {unpaidDueCount > 0
+                    ? <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background: '#FEF3C7', color: '#92400E' }}>{unpaidDueCount} due</span>
+                    : <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background: '#F0FAF4', color: '#27500A' }}>All paid ✓</span>
+                  }
+                  <a href={`/receipt/${student.id}`} target="_blank" rel="noopener noreferrer"
+                    className="text-[11px] px-2.5 py-1 rounded-lg"
+                    style={{ background: '#F5F0E8', color: '#4A4640', border: '1px solid rgba(184,151,58,0.3)', textDecoration: 'none' }}>
+                    🖨 Receipt
+                  </a>
+                </div>
+              }
+            />
+            <CardBody className="p-0">
+              {monthRows.map((m, i) => {
+                const isFuture = !m.isPast && !m.isCurrent
+                return (
+                  <div key={m.label}
+                    className="flex items-center justify-between px-5 py-3.5"
+                    style={{
+                      borderBottom: i < monthRows.length - 1 ? '1px solid rgba(184,151,58,0.1)' : 'none',
+                      background: m.isCurrent && !m.paid ? 'rgba(254,243,199,0.3)' : 'transparent',
+                      opacity: isFuture ? 0.5 : 1,
+                    }}>
                     <div>
-                      <div className="text-[13px] font-medium">Tuesday Material Fee</div>
-                      <div className="text-[11px] mt-0.5" style={{ color: '#8A8580' }}>$100 · one-time supply kit</div>
+                      <div className="text-[13px] font-medium" style={{ color: '#1A1814' }}>{m.label}</div>
+                      {m.isCurrent && <div className="text-[10px] mt-0.5" style={{ color: '#B8973A' }}>Current month</div>}
+                      {m.isPast && !m.paid && <div className="text-[10px] mt-0.5" style={{ color: '#791F1F' }}>Overdue</div>}
+                      {isFuture && <div className="text-[10px] mt-0.5" style={{ color: '#8A8580' }}>Upcoming</div>}
                     </div>
-                    <a href={`${MATERIAL_FEE_LINK}?prefilled_email=${encodeURIComponent(user.email ?? '')}`}
-                      target="_blank" rel="noopener noreferrer"
-                      className="btn text-[11px] py-1 px-3"
-                      style={{ textDecoration: 'none', background: '#F5F0E8', color: '#8A6E25', border: '1px solid rgba(184,151,58,0.35)' }}>
-                      Pay fee →
-                    </a>
+                    <div className="flex items-center gap-2">
+                      {m.paid ? (
+                        <span className="text-[11px] px-2.5 py-1 rounded-full font-medium" style={{ background: '#EAF3DE', color: '#27500A' }}>✓ Paid</span>
+                      ) : isFuture ? (
+                        <span className="text-[11px]" style={{ color: '#C4B89A' }}>Not yet due</span>
+                      ) : stripeLinkWithEmail ? (
+                        <a href={stripeLinkWithEmail} target="_blank" rel="noopener noreferrer"
+                          className="btn btn-gold text-[11px] py-1 px-3" style={{ textDecoration: 'none' }}>
+                          Pay →
+                        </a>
+                      ) : null}
+                    </div>
                   </div>
-                )}
-              </CardBody>
-            </Card>
-          </div>
-        )
-      })()}
+                )
+              })}
+              {(student.enrolled_days ?? []).includes(2) && (
+                <div className="px-5 py-4 flex items-center justify-between"
+                  style={{ borderTop: '1px solid rgba(184,151,58,0.14)', background: '#FAF7F2' }}>
+                  <div>
+                    <div className="text-[13px] font-medium">Tuesday Material Fee</div>
+                    <div className="text-[11px] mt-0.5" style={{ color: '#8A8580' }}>$100 · one-time supply kit</div>
+                  </div>
+                  <a href={`${MATERIAL_FEE_LINK}?prefilled_email=${encodeURIComponent(user.email ?? '')}`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="btn text-[11px] py-1 px-3"
+                    style={{ textDecoration: 'none', background: '#F5F0E8', color: '#8A6E25', border: '1px solid rgba(184,151,58,0.35)' }}>
+                    Pay fee →
+                  </a>
+                </div>
+              )}
+            </CardBody>
+          </Card>
+        </div>
+      )}
         </div>
       )}
 
