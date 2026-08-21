@@ -65,7 +65,7 @@ export default async function ParentPortalPage({
 
   const { data: student } = await supabase
     .from('students')
-    .select('*, school:schools(*)')
+    .select('*, school:schools(*), needs_escort, teacher_name, room_number')
     .eq('parent_id', user.id)
     .single()
 
@@ -164,6 +164,7 @@ export default async function ParentPortalPage({
             studentId={student.id}
             teacherName={student.teacher_name ?? null}
             roomNumber={student.room_number ?? null}
+            needsEscort={student.needs_escort ?? false}
           />
 
           {/* Today's status */}
