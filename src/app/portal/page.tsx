@@ -10,6 +10,7 @@ import type { CurriculumItem } from '@/types'
 import Link from 'next/link'
 import LocalDate from '@/components/ui/LocalDate'
 import StudentInfoCard from '@/components/portal/StudentInfoCard'
+import AutoRefresh from '@/components/ui/AutoRefresh'
 
 const STRIPE_LINKS: Record<string, string> = {
   '5_day': 'https://buy.stripe.com/fZu3co3pf6zT1MHg1me3e02',
@@ -116,6 +117,7 @@ export default async function ParentPortalPage({
 
   return (
     <div className="space-y-5">
+      <AutoRefresh intervalMs={30_000} />
 
       {/* Student header */}
       <div className="flex items-center gap-3">

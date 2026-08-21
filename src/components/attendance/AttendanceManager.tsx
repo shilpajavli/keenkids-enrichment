@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardHeader, CardBody } from '@/components/ui/Card'
 import StudentAvatar from '@/components/ui/StudentAvatar'
 import { formatDate } from '@/lib/utils'
@@ -63,6 +64,7 @@ export default function AttendanceManager({ students, classes, todayRecords, his
   const today = getLocalDate()
   const [tab, setTab] = useState<Tab>('roster')
   const classId = classes[0]?.id ?? ''
+  const router = useRouter()
 
   const [rosterRecords, setRosterRecords] = useState<Record<string, AttRecord>>(() => {
     const init: Record<string, AttRecord> = {}
@@ -74,6 +76,12 @@ export default function AttendanceManager({ students, classes, todayRecords, his
   const [bulkSaving, setBulkSaving] = useState(false)
   const [search, setSearch] = useState('')
   const [gradeFilter, setGradeFilter] = useState<string>('all')
+
+  // Auto-refresh every 30s so cross-user changes (parent pickup info, other staff sign-ins) appear without manual reload
+  useEffect(() => {
+    const id = setInterval(() => router.refresh(), 30_000)
+    return () => clearInterval(id)
+  }, [router])
 
   const grades = ['all', ...Array.from(new Set(students.map(s => String(s.grade)))).sort((a, b) => Number(a) - Number(b))]
 

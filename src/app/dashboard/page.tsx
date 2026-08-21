@@ -5,6 +5,7 @@ import { getCurrentProgramId } from '@/lib/program'
 import { Card, CardHeader, CardBody } from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
 import Link from 'next/link'
+import AutoRefresh from '@/components/ui/AutoRefresh'
 
 const gradeLabel = (g: number) => g === 0 ? 'K' : `Grade ${g}`
 
@@ -169,6 +170,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <AutoRefresh intervalMs={30_000} />
       <div>
         <h1 className="font-serif text-3xl font-light text-ink">Welcome, <em>{firstName}</em></h1>
         <p className="text-ink-tertiary text-sm mt-1">

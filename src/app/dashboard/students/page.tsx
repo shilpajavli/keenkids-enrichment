@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { createServerClient, createAdminClient } from '@/lib/supabase-server'
 import { getCurrentProgramId } from '@/lib/program'
 import StudentList from '@/components/students/StudentList'
+import AutoRefresh from '@/components/ui/AutoRefresh'
 
 export const metadata = { title: 'Students — KeenKids Enrichment' }
 
@@ -93,6 +94,7 @@ export default async function StudentsPage() {
 
   return (
     <div className="space-y-6">
+      <AutoRefresh intervalMs={30_000} />
       <div>
         <h1 className="font-serif text-3xl font-light text-ink">Students</h1>
         <p className="text-ink-tertiary text-sm mt-1">{enriched.length} enrolled</p>
