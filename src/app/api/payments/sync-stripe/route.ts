@@ -74,6 +74,7 @@ export async function POST() {
       school_name_entered: schoolName || null,
       paid_at: new Date(session.created * 1000).toISOString(),
       due_date: new Date(session.created * 1000).toISOString(),
+      stripe_payment_link: (session as any).payment_link ?? null,
     })
 
     if (error) console.error(`Failed session ${session.id}:`, error.message)
@@ -131,6 +132,23 @@ export async function POST() {
     } catch (e) {
       console.error(`Error processing refund ${refund.id}:`, e)
     }
+  }
+
+  // ── 3. Backfill stripe_payment_link for existing records missing it ─────────
+  const { data: missingLink } = await admin
+    .from('payments')
+    .select('id, stripe_session_id')
+    .is('stripe_payment_link', null)
+    .not('stripe_session_id', 'is', null)
+
+  for (const row of missingLink ?? []) {
+    try {
+      const s = await stripe.checkout.sessions.retrieve(row.stripe_session_id)
+      const plink = (s as any).payment_link ?? null
+      if (plink) {
+        await admin.from('payments').update({ stripe_payment_link: plink }).eq('id', row.id)
+      }
+    } catch {}
   }
 
   return NextResponse.json({ synced, unmatched, created, refunds: refundsSynced, total: sessions.length })
