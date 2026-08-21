@@ -65,8 +65,7 @@ const WEEKLY_MATTOS = [
 ]
 
 const MONTHLY_THEMES = [
-  { month: 'August',    year: 2026, theme: 'Motion & Transportation',  emoji: '🚗', color: '#2563EB' },
-  { month: 'September', year: 2026, theme: 'Air & Flight',             emoji: '✈️',  color: '#16A34A' },
+  { month: 'September', year: 2026, theme: 'Motion & Transportation',  emoji: '🚗', color: '#2563EB' },
   { month: 'October',   year: 2026, theme: 'Spooky Science',           emoji: '🧙',  color: '#7C3AED' },
   { month: 'November',  year: 2026, theme: 'Engineering Machines',     emoji: '⚙️',  color: '#EA580C' },
   { month: 'December',  year: 2026, theme: 'Winter Builders',          emoji: '🏔️',  color: '#0891B2' },

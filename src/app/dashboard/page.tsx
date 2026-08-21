@@ -39,8 +39,7 @@ const SCHEDULE: Record<string, Record<number, { emoji: string; title: string; co
 }
 
 const MONTHLY_THEMES: Record<string, { theme: string; emoji: string }> = {
-  'August-2026':    { theme: 'Motion & Transportation',  emoji: '🚗' },
-  'September-2026': { theme: 'Air & Flight',             emoji: '✈️' },
+  'September-2026': { theme: 'Motion & Transportation',  emoji: '🚗' },
   'October-2026':   { theme: 'Spooky Science',           emoji: '🧙' },
   'November-2026':  { theme: 'Engineering Machines',     emoji: '⚙️' },
   'December-2026':  { theme: 'Winter Builders',          emoji: '🏔️' },
