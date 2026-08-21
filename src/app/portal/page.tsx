@@ -132,8 +132,13 @@ export default async function ParentPortalPage({
     const paid = paidMonths.has(`${m.year}-${m.month}`)
     return { ...m, isPast, isCurrent, paid }
   })
-  // Only show past + current months (hide future unless already paid)
-  const visibleMonthRows = monthRows.filter(m => m.isPast || m.isCurrent || m.paid)
+  // Show past + current + next upcoming month (so parents can pay ahead); hide further future unless already paid
+  let nextShown = false
+  const visibleMonthRows = monthRows.filter(m => {
+    if (m.isPast || m.isCurrent || m.paid) return true
+    if (!nextShown) { nextShown = true; return true } // show first upcoming month
+    return false
+  })
   const unpaidDueCount = visibleMonthRows.filter(m => !m.paid).length
   const stripeLink = STRIPE_LINKS[student.enrollment_type]
   const stripeLinkWithEmail = stripeLink ? `${stripeLink}?prefilled_email=${encodeURIComponent(user.email ?? '')}` : null
@@ -382,30 +387,34 @@ export default async function ParentPortalPage({
               }
             />
             <CardBody className="p-0">
-              {visibleMonthRows.map((m, i) => (
-                <div key={m.label}
-                  className="flex items-center justify-between px-5 py-3.5"
-                  style={{
-                    borderBottom: i < visibleMonthRows.length - 1 ? '1px solid rgba(184,151,58,0.1)' : 'none',
-                    background: m.isCurrent && !m.paid ? 'rgba(254,243,199,0.3)' : 'transparent',
-                  }}>
-                  <div>
-                    <div className="text-[13px] font-medium" style={{ color: '#1A1814' }}>{m.label}</div>
-                    {m.isCurrent && <div className="text-[10px] mt-0.5" style={{ color: '#B8973A' }}>Current month</div>}
-                    {m.isPast && !m.paid && <div className="text-[10px] mt-0.5" style={{ color: '#791F1F' }}>Overdue</div>}
+              {visibleMonthRows.map((m, i) => {
+                const isUpcoming = !m.isPast && !m.isCurrent
+                return (
+                  <div key={m.label}
+                    className="flex items-center justify-between px-5 py-3.5"
+                    style={{
+                      borderBottom: i < visibleMonthRows.length - 1 ? '1px solid rgba(184,151,58,0.1)' : 'none',
+                      background: m.isCurrent && !m.paid ? 'rgba(254,243,199,0.3)' : 'transparent',
+                    }}>
+                    <div>
+                      <div className="text-[13px] font-medium" style={{ color: '#1A1814' }}>{m.label}</div>
+                      {m.isCurrent && <div className="text-[10px] mt-0.5" style={{ color: '#B8973A' }}>Current month</div>}
+                      {m.isPast && !m.paid && <div className="text-[10px] mt-0.5" style={{ color: '#791F1F' }}>Overdue</div>}
+                      {isUpcoming && !m.paid && <div className="text-[10px] mt-0.5" style={{ color: '#8A8580' }}>Upcoming — pay early</div>}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {m.paid ? (
+                        <span className="text-[11px] px-2.5 py-1 rounded-full font-medium" style={{ background: '#EAF3DE', color: '#27500A' }}>✓ Paid</span>
+                      ) : stripeLinkWithEmail ? (
+                        <a href={stripeLinkWithEmail} target="_blank" rel="noopener noreferrer"
+                          className="btn btn-gold text-[11px] py-1 px-3" style={{ textDecoration: 'none' }}>
+                          Pay →
+                        </a>
+                      ) : null}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {m.paid ? (
-                      <span className="text-[11px] px-2.5 py-1 rounded-full font-medium" style={{ background: '#EAF3DE', color: '#27500A' }}>✓ Paid</span>
-                    ) : stripeLinkWithEmail ? (
-                      <a href={stripeLinkWithEmail} target="_blank" rel="noopener noreferrer"
-                        className="btn btn-gold text-[11px] py-1 px-3" style={{ textDecoration: 'none' }}>
-                        Pay →
-                      </a>
-                    ) : null}
-                  </div>
-                </div>
-              ))}
+                )
+              })}
               {(student.enrolled_days ?? []).includes(2) && (
                 <div className="px-5 py-4 flex items-center justify-between"
                   style={{ borderTop: '1px solid rgba(184,151,58,0.14)', background: '#FAF7F2' }}>
