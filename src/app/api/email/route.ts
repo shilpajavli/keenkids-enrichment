@@ -42,21 +42,6 @@ export async function POST(req: NextRequest) {
           <div style="padding: 32px; background: #FAF7F2;">
             <p style="font-size: 15px; line-height: 1.7; white-space: pre-wrap;">${message}</p>
             <hr style="border: none; border-top: 1px solid rgba(184,151,58,0.3); margin: 24px 0;" />
-            <div style="background: #FFF8E7; border: 1px solid rgba(184,151,58,0.3); border-radius: 8px; padding: 20px; margin-bottom: 24px;">
-              <p style="font-size: 14px; font-weight: 600; color: #8A6E25; margin: 0 0 8px 0;">📋 Action needed — complete your child's profile</p>
-              <p style="font-size: 13px; color: #4A4640; line-height: 1.6; margin: 0 0 12px 0;">
-                When you log in to the parent portal, please take a moment to fill in your child's pickup details:
-              </p>
-              <ul style="font-size: 13px; color: #4A4640; line-height: 1.8; margin: 0 0 12px 0; padding-left: 20px;">
-                <li><strong>Teacher name</strong> — your child's assigned teacher</li>
-                <li><strong>Classroom / room number</strong></li>
-                <li><strong>Pickup person</strong> — who will pick up your child each day</li>
-                <li><strong>Any pickup notes</strong> — e.g. "my neighbor may pick up on Tuesdays"</li>
-              </ul>
-              <p style="font-size: 13px; color: #4A4640; margin: 0;">
-                This helps us ensure a safe and smooth dismissal every day. Thank you!
-              </p>
-            </div>
             <p style="font-size: 12px; color: #8A8580;">
               View your child's portal at
               <a href="${process.env.NEXT_PUBLIC_APP_URL}/portal" style="color: #B8973A;">
