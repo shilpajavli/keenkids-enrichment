@@ -28,8 +28,7 @@ const DAILY_SCHEDULE = [
 ]
 
 const MONTHLY_THEMES = [
-  { month: 'August 2026',    emoji: '🚗', theme: 'Motion & Transportation' },
-  { month: 'September 2026', emoji: '✈️', theme: 'Air & Flight' },
+  { month: 'September 2026', emoji: '🚗', theme: 'Motion & Transportation' },
   { month: 'October 2026',   emoji: '🧙', theme: 'Spooky Science' },
   { month: 'November 2026',  emoji: '⚙️', theme: 'Engineering Machines' },
   { month: 'December 2026',  emoji: '🏔️', theme: 'Winter Builders' },
