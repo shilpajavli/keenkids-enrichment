@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardBody } from '@/components/ui/Card'
 
 interface Props {
@@ -27,6 +28,7 @@ export default function StudentInfoCard({
   const [pickupNotes, setPickupNotes] = useState(initial_pickup_notes ?? '')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const router = useRouter()
 
   const hasNeither = !initial_teacher && !initial_room && !initial_pickup_person
 
@@ -46,6 +48,7 @@ export default function StudentInfoCard({
     setSaving(false)
     setSaved(true)
     setEditing(false)
+    router.refresh()
     setTimeout(() => setSaved(false), 3000)
   }
 
