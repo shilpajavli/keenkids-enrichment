@@ -427,9 +427,6 @@ export default async function ParentPortalPage({
           </Card>
         </div>
       )}
-        </div>
-      )}
-
       {/* ── SCHEDULE TAB ── */}
       {tab === 'schedule' && (
         <div className="space-y-4">
