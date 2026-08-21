@@ -143,9 +143,11 @@ export default async function ParentPortalPage({
   const stripeLink = STRIPE_LINKS[student.enrollment_type]
   const stripeLinkWithEmail = stripeLink ? `${stripeLink}?prefilled_email=${encodeURIComponent(user.email ?? '')}` : null
 
-  // Material fee: paid if there are more paid Stripe records than monthly slots paid
-  const totalPaidCount = payments.filter((p: any) => p.status === 'paid').length
-  const materialFeePaid = totalPaidCount > paidMonths.size
+  // Material fee: paid if any Stripe record for this student has a plan that isn't a monthly plan
+  const MONTHLY_PLAN_NAMES = ['1-Day Plan', '3-Day Plan', '5-Day Plan']
+  const materialFeePaid = payments.some((p: any) =>
+    p.status === 'paid' && !MONTHLY_PLAN_NAMES.includes(p.plan_name)
+  )
 
   // Upcoming monthly themes (current + next 2)
   const currentThemeIdx = MONTHLY_THEMES.findIndex(m => {
