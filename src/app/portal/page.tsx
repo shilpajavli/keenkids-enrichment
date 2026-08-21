@@ -212,6 +212,7 @@ export default async function ParentPortalPage({
             needsEscort={student.needs_escort ?? false}
             pickupPerson={student.pickup_person ?? null}
             pickupNotes={student.pickup_notes ?? null}
+            grade={student.grade ?? 0}
           />
 
           {/* Today's status */}

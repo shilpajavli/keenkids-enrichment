@@ -11,7 +11,18 @@ interface Props {
   needsEscort?: boolean
   pickupPerson?: string | null
   pickupNotes?: string | null
+  grade?: number
 }
+
+const GRADE_OPTIONS = [
+  { value: 0, label: 'Kindergarten' },
+  { value: 1, label: 'Grade 1' },
+  { value: 2, label: 'Grade 2' },
+  { value: 3, label: 'Grade 3' },
+  { value: 4, label: 'Grade 4' },
+  { value: 5, label: 'Grade 5' },
+  { value: 6, label: 'Grade 6' },
+]
 
 export default function StudentInfoCard({
   teacherName: initial_teacher,
@@ -19,6 +30,7 @@ export default function StudentInfoCard({
   needsEscort: initial_escort = false,
   pickupPerson: initial_pickup_person = null,
   pickupNotes: initial_pickup_notes = null,
+  grade: initial_grade,
 }: Props) {
   const [editing, setEditing] = useState(false)
   const [teacher, setTeacher] = useState(initial_teacher ?? '')
@@ -26,6 +38,7 @@ export default function StudentInfoCard({
   const [escort, setEscort] = useState(initial_escort)
   const [pickupPerson, setPickupPerson] = useState(initial_pickup_person ?? '')
   const [pickupNotes, setPickupNotes] = useState(initial_pickup_notes ?? '')
+  const [grade, setGrade] = useState<number>(initial_grade ?? 0)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const router = useRouter()
@@ -43,6 +56,7 @@ export default function StudentInfoCard({
         needs_escort: escort,
         pickup_person: pickupPerson.trim() || null,
         pickup_notes: pickupNotes.trim() || null,
+        grade,
       }),
     })
     setSaving(false)
@@ -57,6 +71,12 @@ export default function StudentInfoCard({
       <Card>
         <CardBody className="space-y-3">
           <div className="font-serif text-[16px] font-light" style={{ color: '#1A1814' }}>Pickup Info</div>
+          <div>
+            <label className="text-[11px] uppercase tracking-[0.08em] block mb-1" style={{ color: '#8A8580' }}>Grade</label>
+            <select className="input text-[13px]" value={grade} onChange={e => setGrade(Number(e.target.value))}>
+              {GRADE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
           <div>
             <label className="text-[11px] uppercase tracking-[0.08em] block mb-1" style={{ color: '#8A8580' }}>Teacher Name</label>
             <input className="input text-[13px]" placeholder="e.g. Ms. Johnson" value={teacher} onChange={e => setTeacher(e.target.value)} />
@@ -120,7 +140,11 @@ export default function StudentInfoCard({
           <div className="font-serif text-[15px] font-light" style={{ color: '#1A1814' }}>Pickup Info</div>
           <button className="text-[11px]" style={{ color: '#8A6E25' }} onClick={() => setEditing(true)}>Edit</button>
         </div>
-        <div className="grid grid-cols-2 gap-3 mb-3">
+        <div className="grid grid-cols-3 gap-3 mb-3">
+          <div className="rounded-xl p-3" style={{ background: '#F5F0E8', border: '1px solid rgba(184,151,58,0.2)' }}>
+            <div className="text-[10px] uppercase tracking-[0.1em] mb-1" style={{ color: '#8A8580' }}>Grade</div>
+            <div className="text-[13px] font-medium" style={{ color: '#1A1814' }}>{GRADE_OPTIONS.find(o => o.value === initial_grade)?.label ?? '—'}</div>
+          </div>
           <div className="rounded-xl p-3" style={{ background: '#F5F0E8', border: '1px solid rgba(184,151,58,0.2)' }}>
             <div className="text-[10px] uppercase tracking-[0.1em] mb-1" style={{ color: '#8A8580' }}>Teacher</div>
             <div className="text-[13px] font-medium" style={{ color: '#1A1814' }}>{initial_teacher || '—'}</div>
