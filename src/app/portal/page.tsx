@@ -109,9 +109,8 @@ export default async function ParentPortalPage({
   const notes = notesRes.data ?? []
   const pendingPayments = payments.filter(p => p.status !== 'paid')
 
-  // Monthly payment schedule Aug 2026 – May 2027
+  // Monthly payment schedule Sep 2026 – May 2027
   const PROGRAM_MONTHS = [
-    { label: 'August 2026',    year: 2026, month: 7  },
     { label: 'September 2026', year: 2026, month: 8  },
     { label: 'October 2026',   year: 2026, month: 9  },
     { label: 'November 2026',  year: 2026, month: 10 },
