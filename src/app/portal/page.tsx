@@ -63,7 +63,8 @@ export default async function ParentPortalPage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: student } = await supabase
+  const admin = createAdminClient()
+  const { data: student } = await admin
     .from('students')
     .select('*, school:schools(*), needs_escort, teacher_name, room_number, pickup_person, pickup_notes, material_fee_paid')
     .eq('parent_id', user.id)
@@ -84,8 +85,6 @@ export default async function ParentPortalPage({
   const currentWeek = getMonday()
   const todaySchedule = todayDayIndex >= 1 && todayDayIndex <= 5 ? DAILY_SCHEDULE[todayDayIndex - 1] : null
   const initials = student.full_name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
-
-  const admin = createAdminClient()
 
   const [todayAttendanceRes, attendanceRes, paymentsRes, announcementsRes, curriculumRes, mediaRes, notesRes] = await Promise.all([
     supabase.from('attendance').select('*').eq('student_id', student.id).eq('date', today).maybeSingle(),
