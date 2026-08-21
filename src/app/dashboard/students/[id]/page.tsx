@@ -25,7 +25,7 @@ export default async function StudentDetailPage({ params }: Props) {
   const week = getWeekBounds()
 
   const [studentRes, skillsRes, notesRes, attendanceRes, mediaRes, schoolsRes, weeklyAttendanceRes] = await Promise.all([
-    supabase.from('students').select('*, school:schools(*)').eq('id', id).single(),
+    supabase.from('students').select('*, school:schools(*), material_fee_paid').eq('id', id).single(),
     supabase.from('student_skills').select('*, skill:skills(*)').eq('student_id', id),
     supabase.from('teacher_notes').select('*').eq('student_id', id).order('created_at', { ascending: false }),
     supabase.from('attendance').select('*, class:classes(name)').eq('student_id', id).order('date', { ascending: false }).limit(20),

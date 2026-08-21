@@ -69,6 +69,7 @@ export default function StudentProfile({ student, skills, notes, attendance, med
   const [enrolledDays, setEnrolledDays] = useState<number[]>(student.enrolled_days ?? [1,2,3,4,5])
   const [grade, setGrade] = useState(student.grade ?? 0)
   const [enrolledAt, setEnrolledAt] = useState<string>(student.enrolled_at ? new Date(student.enrolled_at).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10))
+  const [materialFeePaid, setMaterialFeePaid] = useState<boolean>((student as any).material_fee_paid ?? false)
   const [savingEnrollment, setSavingEnrollment] = useState(false)
 
   const expectedSessions = enrolledDays.length
@@ -96,6 +97,7 @@ export default function StudentProfile({ student, skills, notes, attendance, med
         enrolled_days: enrolledDays,
         grade: Number(grade),
         enrolled_at: enrolledAt,
+        material_fee_paid: materialFeePaid,
       }),
     })
     setSavingEnrollment(false)
@@ -390,6 +392,17 @@ export default function StudentProfile({ student, skills, notes, attendance, med
                 ))}
               </div>
             </div>
+            {/* Material fee */}
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={materialFeePaid}
+                onChange={e => setMaterialFeePaid(e.target.checked)}
+              />
+              <span className="text-[12.5px]" style={{ color: materialFeePaid ? '#27500A' : '#4A4640' }}>
+                Tuesday material fee {materialFeePaid ? '✓ paid' : '— not paid'}
+              </span>
+            </label>
           </div>
         </CardBody>
       </Card>

@@ -66,7 +66,7 @@ export default async function ParentPortalPage({
 
   const { data: student } = await supabase
     .from('students')
-    .select('*, school:schools(*), needs_escort, teacher_name, room_number, pickup_person, pickup_notes')
+    .select('*, school:schools(*), needs_escort, teacher_name, room_number, pickup_person, pickup_notes, material_fee_paid')
     .eq('parent_id', user.id)
     .single()
 
@@ -143,11 +143,8 @@ export default async function ParentPortalPage({
   const stripeLink = STRIPE_LINKS[student.enrollment_type]
   const stripeLinkWithEmail = stripeLink ? `${stripeLink}?prefilled_email=${encodeURIComponent(user.email ?? '')}` : null
 
-  // Material fee: paid if any Stripe record for this student has a plan that isn't a monthly plan
-  const MONTHLY_PLAN_NAMES = ['1-Day Plan', '3-Day Plan', '5-Day Plan']
-  const materialFeePaid = payments.some((p: any) =>
-    p.status === 'paid' && !MONTHLY_PLAN_NAMES.includes(p.plan_name)
-  )
+  // Material fee: reconcile from admin-set flag on student record
+  const materialFeePaid = (student as any).material_fee_paid ?? false
 
   // Upcoming monthly themes (current + next 2)
   const currentThemeIdx = MONTHLY_THEMES.findIndex(m => {
