@@ -17,6 +17,8 @@ interface Student {
   teacher_name: string | null
   alerts: string | null
   session_day: string | null
+  pickup_person: string | null
+  pickup_notes: string | null
 }
 interface ClassItem { id: string; name: string }
 interface AttRecord {
@@ -299,10 +301,21 @@ export default function AttendanceManager({ students, classes, todayRecords, his
                         {student.room_number ? <span className="px-1.5 py-0.5 rounded text-[11px]" style={{ background: '#EFE6CC', color: '#8A6E25' }}>Room {student.room_number}</span> : <span style={{ color: '#C4B89A' }}>—</span>}
                       </td>
                       <td className="px-3 py-3 hidden md:table-cell" style={{ color: '#4A4640' }}>{student.teacher_name ?? <span style={{ color: '#C4B89A' }}>—</span>}</td>
-                      <td className="px-3 py-3 hidden lg:table-cell">
-                        {student.alerts
-                          ? <span className="text-[11px] px-2 py-0.5 rounded" style={{ background: '#FCEBEB', color: '#791F1F' }}>⚠ {student.alerts}</span>
-                          : <span style={{ color: '#C4B89A' }}>—</span>}
+                      <td className="px-3 py-3 hidden lg:table-cell" style={{ maxWidth: 200 }}>
+                        <div className="space-y-0.5">
+                          {student.alerts && (
+                            <div><span className="text-[11px] px-2 py-0.5 rounded" style={{ background: '#FCEBEB', color: '#791F1F' }}>⚠ {student.alerts}</span></div>
+                          )}
+                          {student.pickup_person && (
+                            <div className="text-[11.5px] font-medium" style={{ color: '#1A1814' }}>👤 {student.pickup_person}</div>
+                          )}
+                          {student.pickup_notes && (
+                            <div className="text-[11px] italic" style={{ color: '#4A4640' }}>{student.pickup_notes}</div>
+                          )}
+                          {!student.alerts && !student.pickup_person && !student.pickup_notes && (
+                            <span style={{ color: '#C4B89A' }}>—</span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-3 py-3 text-center">
                         {signedIn ? (

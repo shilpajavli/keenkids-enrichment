@@ -17,7 +17,7 @@ export default async function AttendancePage() {
   const teacherSchoolId = profile?.role === 'teacher' ? (profile?.school_id ?? null) : null
 
   const [studentsRes, classesRes, todayRes] = await Promise.all([
-    supabase.from('students').select('id, full_name, last_name, grade, avatar_url, room_number, needs_escort, teacher_name, alerts, session_day, school_id').eq('program_id', programId ?? '').eq('status', 'active').order('last_name'),
+    supabase.from('students').select('id, full_name, last_name, grade, avatar_url, room_number, needs_escort, teacher_name, alerts, session_day, school_id, pickup_person, pickup_notes').eq('program_id', programId ?? '').eq('status', 'active').order('last_name'),
     supabase.from('classes').select('*').eq('program_id', programId ?? '').order('day_of_week').order('start_time'),
     supabase.from('attendance').select('id, student_id, class_id, status, sign_in_time, sign_out_time').eq('date', today),
   ])
