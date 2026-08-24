@@ -11,7 +11,7 @@ export default function ConsentWall({ studentId, studentName }: { studentId: str
   const [error, setError] = useState('')
   const router = useRouter()
 
-  const canSubmit = photoConsent && liabilityConsent && fullName.trim().length > 2
+  const canSubmit = liabilityConsent && fullName.trim().length > 2
 
   async function submit() {
     if (!canSubmit) return
@@ -82,7 +82,10 @@ export default function ConsentWall({ studentId, studentName }: { studentId: str
 
         {/* Photo & Media Release */}
         <div style={{ background: 'white', borderRadius: 12, border: '1px solid rgba(184,151,58,0.2)', padding: 24, marginBottom: 16 }}>
-          <h2 style={{ fontSize: 15, fontWeight: 600, color: '#1A1814', margin: '0 0 12px' }}>Photo & Media Release</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <h2 style={{ fontSize: 15, fontWeight: 600, color: '#1A1814', margin: 0 }}>Photo & Media Release</h2>
+            <span style={{ fontSize: 11, color: '#8A8580', background: '#F1EFE8', padding: '2px 8px', borderRadius: 99 }}>Optional</span>
+          </div>
           <div style={{ fontSize: 13, color: '#4A4640', lineHeight: 1.7, marginBottom: 16 }}>
             <p style={{ margin: 0 }}>
               I grant KeenKids Enrichment permission to photograph and/or video record my child during program activities. These images and recordings may be used for educational, promotional, and marketing purposes, including on our website and social media channels. No names will be published without additional consent. I waive any right to compensation for the use of these materials.

@@ -7,8 +7,8 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { student_id, full_name_signed, photo_consent, liability_consent } = await req.json()
-  if (!student_id || !full_name_signed || !photo_consent || !liability_consent) {
-    return NextResponse.json({ error: 'All fields required' }, { status: 400 })
+  if (!student_id || !full_name_signed || !liability_consent) {
+    return NextResponse.json({ error: 'Student, name, and liability waiver are required' }, { status: 400 })
   }
 
   const admin = createAdminClient()
