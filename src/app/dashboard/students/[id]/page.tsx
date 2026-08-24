@@ -44,9 +44,10 @@ export default async function StudentDetailPage({ params }: Props) {
   const student = studentRes.data
   const weeklySessionsAttended = weeklyAttendanceRes.data?.length ?? 0
   
+  const admin = createAdminClient()
+
   let parentProfile: { full_name: string; email: string } | null = null
   if (student.parent_id) {
-    const admin = createAdminClient()
     const { data } = await admin
       .from('profiles')
       .select('full_name, email')
@@ -54,6 +55,12 @@ export default async function StudentDetailPage({ params }: Props) {
       .single()
     parentProfile = data
   }
+
+  const { data: consent } = await admin
+    .from('consents')
+    .select('full_name_signed, photo_consent, liability_consent, signed_at')
+    .eq('student_id', id)
+    .maybeSingle()
 
   return (
     <StudentProfile
@@ -65,6 +72,7 @@ export default async function StudentDetailPage({ params }: Props) {
       parentProfile={parentProfile}
       schools={schoolsRes.data ?? []}
       weeklySessionsAttended={weeklySessionsAttended}
+      consent={consent ?? null}
     />
   )
 }

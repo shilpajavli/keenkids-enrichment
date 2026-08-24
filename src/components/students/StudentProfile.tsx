@@ -12,6 +12,13 @@ import { formatDate, calcProgress } from '@/lib/utils'
 import type { Student, StudentSkill, TeacherNote, AttendanceRecord, MediaItem, School, EnrollmentType } from '@/types'
 import MediaGrid from '@/components/media/MediaGrid'
 
+interface Consent {
+  full_name_signed: string
+  photo_consent: boolean
+  liability_consent: boolean
+  signed_at: string
+}
+
 interface Props {
   student: Student
   skills: StudentSkill[]
@@ -21,6 +28,7 @@ interface Props {
   parentProfile: { full_name: string; email: string } | null
   schools?: School[]
   weeklySessionsAttended?: number
+  consent?: Consent | null
 }
 
 const DAYS = [
@@ -54,7 +62,7 @@ const ATTEND_BADGE: Record<string, any> = {
 const subjects = (skills: StudentSkill[]) =>
   [...new Set(skills.map(s => s.skill?.subject).filter(Boolean))]
 
-export default function StudentProfile({ student, skills, notes, attendance, media, parentProfile, schools = [], weeklySessionsAttended = 0 }: Props) {
+export default function StudentProfile({ student, skills, notes, attendance, media, parentProfile, schools = [], weeklySessionsAttended = 0, consent = null }: Props) {
   const [tab, setTab] = useState<Tab>('progress')
   const [noteText, setNoteText] = useState('')
   const [saving, setSaving] = useState(false)
@@ -458,6 +466,23 @@ export default function StudentProfile({ student, skills, notes, attendance, med
       ) : (
         <div className="flex items-center gap-2 text-[12px] px-1" style={{ color: '#8A8580' }}>
           <span>No parent linked yet</span>
+        </div>
+      )}
+
+      {/* Consent status */}
+      {consent ? (
+        <div className="rounded-xl px-4 py-3 text-[12px] flex flex-wrap gap-x-4 gap-y-1 items-center"
+          style={{ background: '#F0F7EC', border: '1px solid rgba(39,80,10,0.2)' }}>
+          <span style={{ color: '#27500A', fontWeight: 600 }}>✓ Forms signed</span>
+          <span style={{ color: '#4A4640' }}>by <strong>{consent.full_name_signed}</strong></span>
+          <span style={{ color: '#8A8580' }}>on {new Date(consent.signed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+          <span style={{ color: consent.liability_consent ? '#27500A' : '#791F1F' }}>{consent.liability_consent ? '✓' : '✗'} Liability waiver</span>
+          <span style={{ color: consent.photo_consent ? '#27500A' : '#791F1F' }}>{consent.photo_consent ? '✓' : '✗'} Photo release</span>
+        </div>
+      ) : (
+        <div className="rounded-xl px-4 py-3 text-[12px]"
+          style={{ background: '#FFF8E7', border: '1px solid rgba(184,151,58,0.3)', color: '#8A6E25' }}>
+          ⚠ Forms not yet signed — parent must log in to the portal to complete
         </div>
       )}
 
