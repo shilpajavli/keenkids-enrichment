@@ -53,15 +53,18 @@ export default function ConsentWall({ studentId, studentName }: { studentId: str
         {/* Liability Waiver */}
         <div style={{ background: 'white', borderRadius: 12, border: '1px solid rgba(184,151,58,0.2)', padding: 24, marginBottom: 16 }}>
           <h2 style={{ fontSize: 15, fontWeight: 600, color: '#1A1814', margin: '0 0 12px' }}>Liability Waiver</h2>
-          <div style={{ fontSize: 13, color: '#4A4640', lineHeight: 1.7, marginBottom: 16, maxHeight: 160, overflowY: 'auto', paddingRight: 4 }}>
+          <div style={{ fontSize: 13, color: '#4A4640', lineHeight: 1.7, marginBottom: 16 }}>
             <p style={{ margin: '0 0 10px' }}>
-              I, the parent/guardian of the above-named child, acknowledge that participation in KeenKids Enrichment activities involves certain inherent risks, including but not limited to physical injury during activities.
+              I understand that my child will participate in enrichment activities including STEM experiments, games, and group activities.
             </p>
             <p style={{ margin: '0 0 10px' }}>
-              I hereby release, waive, and discharge KeenKids Enrichment, its staff, volunteers, and representatives from any and all liability, claims, or demands arising out of or related to my child's participation in the program, including injury, illness, or loss of personal property, except where caused by gross negligence or willful misconduct.
+              While reasonable precautions will be taken to ensure safety, participation may involve minor risks associated with physical activity and group play.
+            </p>
+            <p style={{ margin: '0 0 10px' }}>
+              By registering my child, I agree that the program organizers are not liable for injuries or incidents that may occur during participation, except in cases of gross negligence.
             </p>
             <p style={{ margin: 0 }}>
-              I confirm that my child is in good health and is able to participate in program activities. I authorize KeenKids Enrichment staff to seek emergency medical care for my child if I cannot be reached.
+              I confirm that my child is healthy and able to participate in these activities.
             </p>
           </div>
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
