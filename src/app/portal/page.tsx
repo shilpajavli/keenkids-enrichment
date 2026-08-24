@@ -10,6 +10,7 @@ import type { CurriculumItem } from '@/types'
 import Link from 'next/link'
 import LocalDate from '@/components/ui/LocalDate'
 import StudentInfoCard from '@/components/portal/StudentInfoCard'
+import ConsentWall from '@/components/portal/ConsentWall'
 import AutoRefresh from '@/components/ui/AutoRefresh'
 
 const STRIPE_LINKS: Record<string, string> = {
@@ -77,6 +78,12 @@ export default async function ParentPortalPage({
         <p className="text-ink-tertiary text-sm">Please contact your program administrator to link your child's account.</p>
       </div>
     )
+  }
+
+  // Check if parent has signed consent forms
+  const { data: consent } = await admin.from('consents').select('id').eq('student_id', student.id).maybeSingle()
+  if (!consent) {
+    return <ConsentWall studentId={student.id} studentName={student.full_name} />
   }
 
   const localNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }))
