@@ -6,6 +6,7 @@ import { Card, CardHeader, CardBody } from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
 import Link from 'next/link'
 import AutoRefresh from '@/components/ui/AutoRefresh'
+import TeacherLeaveForm from '@/components/team/TeacherLeaveForm'
 
 const gradeLabel = (g: number) => g === 0 ? 'K' : `Grade ${g}`
 
@@ -97,7 +98,7 @@ export default async function DashboardPage() {
   const todayActivity = schoolKey ? (SCHEDULE[schoolKey][todayDow] ?? null) : null
   const monthTheme = MONTHLY_THEMES[monthKey] ?? null
 
-  const [attendanceRes, announcementsRes, paymentsRes, curriculumRes, revenueRes] = await Promise.all([
+  const [attendanceRes, announcementsRes, paymentsRes, curriculumRes, revenueRes, teacherLeavesRes] = await Promise.all([
     supabase.from('attendance').select('student_id, status').eq('date', today),
     supabase.from('announcements').select('id, title, body, pinned').order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(3),
     !isTeacher && studentIds.length
@@ -117,6 +118,9 @@ export default async function DashboardPage() {
           .select('amount_cents, status, refund_amount_cents, student_id, student:students(program:programs(school:schools(name)))')
           .in('status', ['paid', 'refunded'])
       : Promise.resolve({ data: [] }),
+    isTeacher && profile?.full_name
+      ? createAdminClient().from('teacher_absences').select('id, date, conflict_type, hours_affected, notes').eq('teacher_name', profile.full_name).order('date', { ascending: true })
+      : Promise.resolve({ data: [] }),
   ])
 
   const attendance     = attendanceRes.data ?? []
@@ -124,6 +128,7 @@ export default async function DashboardPage() {
   const unpaidPayments = (paymentsRes.data ?? []) as any[]
   const curriculum     = curriculumRes.data as any
   const allRevPayments = (revenueRes.data ?? []) as any[]
+  const teacherLeaves  = (teacherLeavesRes.data ?? []) as any[]
 
   // Revenue by school
   type SchoolRev = { paid: number; refunded: number; studentIds: Set<string> }
@@ -178,6 +183,8 @@ export default async function DashboardPage() {
       </div>
 
       {/* KPIs — teacher */}
+      {isTeacher && <TeacherLeaveForm teacherName={profile?.full_name ?? ''} initial={teacherLeaves} />}
+
       {isTeacher && (
         <div className="grid gap-4 grid-cols-3">
           <Link href="/dashboard/attendance" className="card p-5 hover:opacity-80 transition-opacity">
