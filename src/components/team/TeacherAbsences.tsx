@@ -34,6 +34,7 @@ function groupByMonth(absences: Absence[]) {
 
 export default function TeacherAbsences({ initial }: { initial: Absence[] }) {
   const [absences, setAbsences] = useState(initial)
+  const [collapsed, setCollapsed] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [teacher, setTeacher] = useState('')
   const [date, setDate] = useState('')
@@ -78,12 +79,18 @@ export default function TeacherAbsences({ initial }: { initial: Absence[] }) {
 
   return (
     <Card>
-      <CardHeader title="Teacher Absences" action={
-        <button className="text-[11px]" style={{ color: '#B8973A' }} onClick={() => setShowForm(v => !v)}>
+      <CardHeader title={
+        <button className="flex items-center gap-2" onClick={() => setCollapsed(v => !v)}>
+          <span>Teacher Absences</span>
+          <span className="text-[11px]" style={{ color: '#8A8580' }}>{collapsed ? '▸' : '▾'}</span>
+          <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: '#F5F0E8', color: '#8A6E25' }}>{upcoming.length} upcoming</span>
+        </button> as any
+      } action={
+        !collapsed && <button className="text-[11px]" style={{ color: '#B8973A' }} onClick={() => setShowForm(v => !v)}>
           {showForm ? 'Cancel' : '+ Add absence'}
         </button>
       } />
-      <CardBody className="space-y-4">
+      {!collapsed && <CardBody className="space-y-4">
         {/* Add form */}
         {showForm && (
           <div className="rounded-xl p-4 space-y-3" style={{ background: '#FAF7F2', border: '1px solid rgba(184,151,58,0.2)' }}>
@@ -180,7 +187,7 @@ export default function TeacherAbsences({ initial }: { initial: Absence[] }) {
             </div>
           </details>
         )}
-      </CardBody>
+      </CardBody>}
     </Card>
   )
 }
