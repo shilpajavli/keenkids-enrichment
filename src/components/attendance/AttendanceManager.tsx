@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Card, CardHeader, CardBody } from '@/components/ui/Card'
 import StudentAvatar from '@/components/ui/StudentAvatar'
 import { formatDate } from '@/lib/utils'
@@ -297,7 +298,7 @@ export default function AttendanceManager({ students, classes, todayRecords, his
                         <div className="flex items-center gap-2">
                           <StudentAvatar name={student.full_name} avatarUrl={student.avatar_url} size="sm" />
                           <div>
-                            <div className="font-medium" style={{ color: '#1A1814' }}>{student.full_name}</div>
+                            <Link href={`/dashboard/students/${student.id}`} className="font-medium hover:underline" style={{ color: '#1A1814' }}>{student.full_name}</Link>
                             {student.needs_escort && (
                               <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: '#FAEEDA', color: '#633806' }}>⚑ Escort</span>
                             )}
@@ -414,7 +415,7 @@ export default function AttendanceManager({ students, classes, todayRecords, his
                     const presentDays = dates.filter(d => cellStatus(s.id, d) === 'present' || cellStatus(s.id, d) === 'late').length
                     return (
                       <tr key={s.id} style={{ borderBottom: i < students.length - 1 ? '1px solid rgba(184,151,58,0.1)' : 'none' }}>
-                        <td className="px-5 py-3 font-medium" style={{ color: '#1A1814' }}>{s.full_name}</td>
+                        <td className="px-5 py-3 font-medium"><Link href={`/dashboard/students/${s.id}`} className="hover:underline" style={{ color: '#1A1814' }}>{s.full_name}</Link></td>
                         {dates.map(d => {
                           const st = cellStatus(s.id, d)
                           return (
