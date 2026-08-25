@@ -196,61 +196,55 @@ export default async function DashboardPage() {
       )}
 
       {/* KPIs — admin only */}
-      {!isTeacher && <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        <Link href="/dashboard/students" className="card p-5 hover:opacity-80 transition-opacity">
-          <div className="font-serif text-3xl font-light mb-1" style={{ color: '#8A6E25' }}>{students?.length ?? 0}</div>
-          <div className="text-[12px]" style={{ color: '#8A8580' }}>Total enrolled</div>
-        </Link>
-        <Link href="/dashboard/students" className="card p-5 hover:opacity-80 transition-opacity">
-          <div className="font-serif text-3xl font-light mb-1" style={{ color: totalCancelled > 0 ? '#791F1F' : '#8A8580' }}>{totalCancelled}</div>
-          <div className="text-[12px]" style={{ color: '#8A8580' }}>Total cancelled</div>
-        </Link>
-        <Link href="/dashboard/students" className="card p-5 hover:opacity-80 transition-opacity">
-          <div className="font-serif text-3xl font-light mb-1" style={{ color: newThisWeek > 0 ? '#27500A' : '#8A8580' }}>
-            {newThisWeek > 0 ? `+${newThisWeek}` : '—'}
+      {!isTeacher && (
+        <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+          {/* Enrollment card */}
+          <div className="card p-5">
+            <div className="text-[11px] font-semibold tracking-[0.1em] uppercase mb-4" style={{ color: '#8A8580' }}>Enrollment</div>
+            <div className="grid grid-cols-3 gap-3">
+              <Link href="/dashboard/students" className="rounded-xl p-3 hover:opacity-80 transition-opacity" style={{ background: '#F0F7EC', border: '1px solid rgba(39,80,10,0.15)' }}>
+                <div className="font-serif text-3xl font-light mb-1" style={{ color: '#27500A' }}>{students?.length ?? 0}</div>
+                <div className="text-[11px] font-medium" style={{ color: '#27500A' }}>Active</div>
+                <div className="text-[10px] mt-0.5" style={{ color: '#8A8580' }}>Currently enrolled</div>
+              </Link>
+              <Link href="/dashboard/students" className="rounded-xl p-3 hover:opacity-80 transition-opacity" style={{ background: '#F5F0E8', border: '1px solid rgba(184,151,58,0.2)' }}>
+                <div className="font-serif text-3xl font-light mb-1" style={{ color: '#8A6E25' }}>{(students?.length ?? 0) + totalCancelled}</div>
+                <div className="text-[11px] font-medium" style={{ color: '#8A6E25' }}>Total enrolled</div>
+                <div className="text-[10px] mt-0.5" style={{ color: '#8A8580' }}>Incl. cancellations</div>
+              </Link>
+              <Link href="/dashboard/students" className="rounded-xl p-3 hover:opacity-80 transition-opacity" style={{ background: totalCancelled > 0 ? '#FDF2F2' : '#F5F0E8', border: `1px solid ${totalCancelled > 0 ? 'rgba(121,31,31,0.15)' : 'rgba(184,151,58,0.2)'}` }}>
+                <div className="font-serif text-3xl font-light mb-1" style={{ color: totalCancelled > 0 ? '#791F1F' : '#8A8580' }}>{totalCancelled}</div>
+                <div className="text-[11px] font-medium" style={{ color: totalCancelled > 0 ? '#791F1F' : '#8A8580' }}>Cancelled</div>
+                <div className="text-[10px] mt-0.5" style={{ color: '#8A8580' }}>All time</div>
+              </Link>
+            </div>
           </div>
-          <div className="text-[12px]" style={{ color: '#8A8580' }}>New this week</div>
-        </Link>
-        <Link href="/dashboard/students" className="card p-5 hover:opacity-80 transition-opacity">
-          <div className="font-serif text-3xl font-light mb-1" style={{ color: cancelledThisWeek > 0 ? '#791F1F' : '#8A8580' }}>
-            {cancelledThisWeek > 0 ? cancelledThisWeek : '—'}
-          </div>
-          <div className="text-[12px]" style={{ color: '#8A8580' }}>Cancelled this week</div>
-        </Link>
-      </div>}
 
-      {/* Revenue breakdown — admin only */}
-      {!isTeacher && revSchools.length > 0 && (
-        <div className="card p-5">
-          <div className="text-[11px] font-semibold tracking-[0.1em] uppercase mb-4" style={{ color: '#8A8580' }}>Revenue Breakdown</div>
-          <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${revSchools.length + (totalRefundedCents > 0 ? 1 : 0) + 1}, 1fr)` }}>
-            {/* Total */}
-            <div className="rounded-lg p-3" style={{ background: '#1A1814' }}>
-              <div className="text-[10px] font-semibold tracking-[0.1em] uppercase mb-1" style={{ color: 'rgba(184,151,58,0.7)' }}>Total collected</div>
-              <div className="font-serif text-xl font-light" style={{ color: '#B8973A' }}>{formatCurrency(totalCollectedCents)}</div>
-              <div className="text-[11px] mt-0.5" style={{ color: 'rgba(184,151,58,0.5)' }}>
-                {allRevPayments.filter(p => p.status === 'paid').length} payments
+          {/* Revenue card */}
+          {revSchools.length > 0 && (
+            <div className="card p-5">
+              <div className="text-[11px] font-semibold tracking-[0.1em] uppercase mb-4" style={{ color: '#8A8580' }}>Revenue</div>
+              <div className="grid grid-cols-3 gap-3">
+                {/* Net revenue */}
+                <div className="rounded-xl p-3" style={{ background: '#1A1814' }}>
+                  <div className="font-serif text-2xl font-light mb-1" style={{ color: '#B8973A' }}>{formatCurrency(netRevenueCents)}</div>
+                  <div className="text-[11px] font-medium" style={{ color: 'rgba(184,151,58,0.8)' }}>Net revenue</div>
+                  <div className="text-[10px] mt-0.5" style={{ color: 'rgba(184,151,58,0.5)' }}>After refunds</div>
+                </div>
+                {/* Per school */}
+                {revSchools.map(([name, rev]) => (
+                  <div key={name} className="rounded-xl p-3" style={{ background: '#F5F0E8', border: '1px solid rgba(184,151,58,0.2)' }}>
+                    <div className="font-serif text-2xl font-light mb-1" style={{ color: '#1A1814' }}>{formatCurrency(rev.paid - rev.refunded)}</div>
+                    <div className="text-[11px] font-medium" style={{ color: '#8A6E25' }}>{name}</div>
+                    <div className="text-[10px] mt-0.5" style={{ color: '#8A8580' }}>
+                      {rev.studentIds.size} students
+                      {rev.refunded > 0 && <span style={{ color: '#791F1F' }}> · −{formatCurrency(rev.refunded)} refunded</span>}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-            {/* Per school */}
-            {revSchools.map(([name, rev]) => (
-              <div key={name} className="rounded-lg p-3" style={{ background: '#F5F0E8' }}>
-                <div className="text-[10px] font-semibold tracking-[0.1em] uppercase mb-1" style={{ color: '#8A6E25' }}>{name}</div>
-                <div className="font-serif text-xl font-light" style={{ color: '#1A1814' }}>{formatCurrency(rev.paid)}</div>
-                <div className="text-[11px] mt-0.5" style={{ color: '#8A8580' }}>{rev.studentIds.size} student{rev.studentIds.size !== 1 ? 's' : ''}</div>
-              </div>
-            ))}
-            {/* Refunds */}
-            {totalRefundedCents > 0 && (
-              <div className="rounded-lg p-3" style={{ background: '#FDF2F2' }}>
-                <div className="text-[10px] font-semibold tracking-[0.1em] uppercase mb-1" style={{ color: '#791F1F' }}>Refunds</div>
-                <div className="font-serif text-xl font-light" style={{ color: '#791F1F' }}>−{formatCurrency(totalRefundedCents)}</div>
-                <div className="text-[11px] mt-0.5" style={{ color: '#B05C5C' }}>
-                  {allRevPayments.filter(p => p.status === 'refunded').length} refund{allRevPayments.filter(p => p.status === 'refunded').length !== 1 ? 's' : ''}
-                </div>
-              </div>
-            )}
-          </div>
+          )}
         </div>
       )}
 
