@@ -25,7 +25,7 @@ interface Props {
   notes: TeacherNote[]
   attendance: AttendanceRecord[]
   media: MediaItem[]
-  parentProfile: { full_name: string; email: string } | null
+  parentProfile: { full_name: string; email: string; phone?: string | null } | null
   schools?: School[]
   weeklySessionsAttended?: number
   consent?: Consent | null
@@ -457,11 +457,19 @@ export default function StudentProfile({ student, skills, notes, attendance, med
 
       {/* Parent info */}
       {parentProfile ? (
-        <div className="flex items-center gap-2 text-[12.5px] px-1" style={{ color: '#4A4640' }}>
+        <div className="flex flex-wrap items-center gap-2 text-[12.5px] px-1" style={{ color: '#4A4640' }}>
           <span style={{ color: '#8A8580' }}>Parent:</span>
           <span className="font-medium">{parentProfile.full_name}</span>
           <span style={{ color: '#8A8580' }}>·</span>
           <span style={{ color: '#8A8580' }}>{parentProfile.email}</span>
+          {parentProfile.phone && (
+            <>
+              <span style={{ color: '#8A8580' }}>·</span>
+              <a href={`tel:${parentProfile.phone}`} className="font-medium" style={{ color: '#B8973A' }}>
+                📞 {parentProfile.phone}
+              </a>
+            </>
+          )}
         </div>
       ) : (
         <div className="flex items-center gap-2 text-[12px] px-1" style={{ color: '#8A8580' }}>

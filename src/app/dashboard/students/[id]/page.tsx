@@ -50,7 +50,7 @@ export default async function StudentDetailPage({ params }: Props) {
   if (student.parent_id) {
     const { data } = await admin
       .from('profiles')
-      .select('full_name, email')
+      .select('full_name, email, phone')
       .eq('id', student.parent_id)
       .single()
     parentProfile = data
