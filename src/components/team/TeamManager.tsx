@@ -26,6 +26,8 @@ export default function TeamManager() {
   const [sending, setSending] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [savingSchool, setSavingSchool] = useState<string | null>(null)
+  const [teachersOpen, setTeachersOpen] = useState(false)
+  const [parentsOpen, setParentsOpen] = useState(false)
 
   const fetchMembers = useCallback(async () => {
     setLoading(true)
@@ -134,10 +136,11 @@ export default function TeamManager() {
 
       {/* Teachers list */}
       <div className="card overflow-hidden">
-        <div className="px-5 py-3 border-b" style={{ borderColor: 'rgba(184,151,58,0.14)', background: '#FAF7F2' }}>
+        <button className="w-full px-5 py-3 flex items-center justify-between border-b" style={{ borderColor: 'rgba(184,151,58,0.14)', background: '#FAF7F2' }} onClick={() => setTeachersOpen(v => !v)}>
           <h2 className="font-medium text-sm" style={{ color: '#1A1814' }}>Teachers ({teachers.length})</h2>
-        </div>
-        {loading ? (
+          <span className="text-[11px]" style={{ color: '#8A8580' }}>{teachersOpen ? '▾' : '▸'}</span>
+        </button>
+        {teachersOpen && (loading ? (
           <div className="px-5 py-6 text-sm" style={{ color: '#8A8580' }}>Loading…</div>
         ) : teachers.length === 0 ? (
           <div className="px-5 py-6 text-sm" style={{ color: '#8A8580' }}>No teachers yet — invite one above.</div>
@@ -163,15 +166,16 @@ export default function TeamManager() {
               </div>
             </div>
           ))
-        )}
+        ))}
       </div>
 
       {/* Parents list */}
       <div className="card overflow-hidden">
-        <div className="px-5 py-3 border-b" style={{ borderColor: 'rgba(184,151,58,0.14)', background: '#FAF7F2' }}>
+        <button className="w-full px-5 py-3 flex items-center justify-between border-b" style={{ borderColor: 'rgba(184,151,58,0.14)', background: '#FAF7F2' }} onClick={() => setParentsOpen(v => !v)}>
           <h2 className="font-medium text-sm" style={{ color: '#1A1814' }}>Parents ({parents.length})</h2>
-        </div>
-        {loading ? (
+          <span className="text-[11px]" style={{ color: '#8A8580' }}>{parentsOpen ? '▾' : '▸'}</span>
+        </button>
+        {parentsOpen && (loading ? (
           <div className="px-5 py-6 text-sm" style={{ color: '#8A8580' }}>Loading…</div>
         ) : parents.length === 0 ? (
           <div className="px-5 py-6 text-sm" style={{ color: '#8A8580' }}>No parents yet — invite one above.</div>
@@ -186,7 +190,7 @@ export default function TeamManager() {
               <span className="text-xs px-2 py-1 rounded-full" style={{ background: '#DCF0FF', color: '#006FFF' }}>Parent</span>
             </div>
           ))
-        )}
+        ))}
       </div>
     </div>
   )
