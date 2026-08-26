@@ -106,6 +106,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Upsert profile as parent — never downgrade an existing admin or teacher
+  if (!parentUser) return NextResponse.json({ error: 'Failed to resolve parent user' }, { status: 500 })
   const { data: existing } = await admin.from('profiles').select('role').eq('id', parentUser.id).single()
   if (!existing || existing.role === 'parent') {
     await admin.from('profiles').upsert({
