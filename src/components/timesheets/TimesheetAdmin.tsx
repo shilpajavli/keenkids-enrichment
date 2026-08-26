@@ -39,6 +39,7 @@ export default function TimesheetAdmin() {
   const [savingRate, setSavingRate] = useState(false)
   const [editHours, setEditHours] = useState<{ id: string; clockIn: string; clockOut: string } | null>(null)
   const [savingHours, setSavingHours] = useState(false)
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
 
   const weekStart = getWeekStart(weekOffset)
   const weekEnd = new Date(weekStart)
@@ -46,14 +47,15 @@ export default function TimesheetAdmin() {
 
   const fetchEntries = useCallback(async () => {
     setLoading(true)
-    const res = await fetch(`/api/timesheets?week_start=${weekStart}`)
-    const { data } = await res.json()
-    setEntries(data ?? [])
-
-    // Build rates map
+    const [timesRes, ratesRes] = await Promise.all([
+      fetch(`/api/timesheets?week_start=${weekStart}`).then(r => r.json()),
+      fetch('/api/teacher-rates').then(r => r.json()),
+    ])
+    setEntries(timesRes.data ?? [])
+    // Build rates map from the dedicated rates table
     const r: Record<string, number> = {}
-    ;(data ?? []).forEach((e: Entry) => {
-      if (e.hourly_rate) r[e.teacher.id] = e.hourly_rate
+    ;(ratesRes.data ?? []).forEach((row: any) => {
+      if (row.hourly_rate) r[row.teacher_id] = row.hourly_rate
     })
     setRates(r)
     setLoading(false)
@@ -170,36 +172,44 @@ export default function TimesheetAdmin() {
           const rate = rates[tid]
           const totalEarned = rate ? totalHours * rate : null
           const hasPending = tEntries.some(e => e.status === 'pending' && e.clock_out)
+          const isCollapsed = collapsed.has(tid)
+          const toggleCollapse = () => setCollapsed(prev => {
+            const next = new Set(prev)
+            next.has(tid) ? next.delete(tid) : next.add(tid)
+            return next
+          })
 
           return (
             <div key={tid} className="card overflow-hidden">
               {/* Teacher header */}
               <div className="px-5 py-4 flex items-center justify-between flex-wrap gap-3"
-                style={{ background: '#FAF7F2', borderBottom: '1px solid rgba(184,151,58,0.14)' }}>
-                <div className="flex items-center gap-3">
+                style={{ background: '#FAF7F2', borderBottom: isCollapsed ? 'none' : '1px solid rgba(184,151,58,0.14)' }}>
+                {/* Left: avatar + name — click to collapse */}
+                <button onClick={toggleCollapse} className="flex items-center gap-3 text-left">
                   <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold shrink-0"
                     style={{ background: '#1A1814', color: '#B8973A' }}>
-                    {name.split(' ').map((n: string) => n[0]).join('').slice(0,2)}
+                    {name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
                   </div>
                   <div>
                     <div className="font-medium text-sm flex items-center gap-2" style={{ color: '#1A1814' }}>
                       {name}
                       {hasPending && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: '#FEF3C7', color: '#B45309' }}>Needs review</span>}
+                      <span className="text-[11px]" style={{ color: '#8A8580' }}>{isCollapsed ? '▸' : '▾'}</span>
                     </div>
                     <div className="text-[11px] mt-0.5 tabular-nums" style={{ color: '#8A8580' }}>
                       {totalHours.toFixed(1)} hrs this week
                       {totalEarned != null && <span style={{ color: '#27500A' }}> · ${totalEarned.toFixed(2)} earned</span>}
                     </div>
                   </div>
-                </div>
-                {/* Hourly rate editor */}
+                </button>
+                {/* Right: hourly rate editor */}
                 <div className="flex items-center gap-2">
                   {editRate?.teacherId === tid ? (
                     <>
                       <span className="text-[11px]" style={{ color: '#8A8580' }}>$/hr</span>
                       <input type="number" value={editRate.value}
                         onChange={e => setEditRate({ teacherId: tid, value: e.target.value })}
-                        className="w-18 text-sm rounded-lg px-2 py-1.5 outline-none tabular-nums"
+                        className="text-sm rounded-lg px-2 py-1.5 outline-none tabular-nums"
                         style={{ border: '1.5px solid rgba(184,151,58,0.4)', color: '#1A1814', width: 72 }} />
                       <button onClick={() => saveRate(tid, editRate.value)} disabled={savingRate}
                         className="text-xs px-3 py-1.5 rounded-lg"
@@ -218,6 +228,8 @@ export default function TimesheetAdmin() {
                 </div>
               </div>
 
+              {/* Column headers + entries — hidden when collapsed */}
+              {!isCollapsed && <>
               {/* Column headers */}
               <div className="grid px-5 py-2 text-[10px] font-medium tracking-[0.08em] uppercase"
                 style={{ color: '#8A8580', gridTemplateColumns: '130px 1fr 1fr 60px 90px 1fr', background: '#FDFCF9', borderBottom: '1px solid rgba(184,151,58,0.1)' }}>
@@ -308,6 +320,7 @@ export default function TimesheetAdmin() {
                   </div>
                 )
               })}
+              </>}
             </div>
           )
         })

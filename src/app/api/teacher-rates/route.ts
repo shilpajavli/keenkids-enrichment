@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   const admin = createAdminClient()
   const { data, error } = await admin
     .from('teacher_rates')
-    .upsert({ teacher_id, hourly_rate, updated_at: new Date().toISOString() })
+    .upsert({ teacher_id, hourly_rate, updated_at: new Date().toISOString() }, { onConflict: 'teacher_id' })
     .select()
     .single()
 
