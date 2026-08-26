@@ -130,6 +130,22 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ data })
   }
 
+  // Edit hours (admin only)
+  if (action === 'edit_hours') {
+    if (profile?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    const { clock_in, clock_out } = body
+    if (!clock_in || !clock_out) return NextResponse.json({ error: 'clock_in and clock_out required' }, { status: 400 })
+    const hours = Math.round(((new Date(clock_out).getTime() - new Date(clock_in).getTime()) / 3600000) * 100) / 100
+    const { data, error } = await admin
+      .from('time_entries')
+      .update({ clock_in, clock_out, hours, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ data })
+  }
+
   // Approve / reject (admin only)
   if (action === 'update_status') {
     if (profile?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })

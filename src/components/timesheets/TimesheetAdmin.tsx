@@ -37,6 +37,8 @@ export default function TimesheetAdmin() {
   const [rates, setRates] = useState<Record<string, number>>({})
   const [editRate, setEditRate] = useState<{ teacherId: string; value: string } | null>(null)
   const [savingRate, setSavingRate] = useState(false)
+  const [editHours, setEditHours] = useState<{ id: string; clockIn: string; clockOut: string } | null>(null)
+  const [savingHours, setSavingHours] = useState(false)
 
   const weekStart = getWeekStart(weekOffset)
   const weekEnd = new Date(weekStart)
@@ -80,6 +82,24 @@ export default function TimesheetAdmin() {
     setRates(r => ({ ...r, [teacherId]: parseFloat(rate) }))
     setEditRate(null)
     setSavingRate(false)
+    await fetchEntries()
+  }
+
+  async function saveHours() {
+    if (!editHours) return
+    setSavingHours(true)
+    // editHours.clockIn/clockOut are "HH:MM" — combine with the entry's date
+    const entry = entries.find(e => e.id === editHours.id)
+    if (!entry) { setSavingHours(false); return }
+    const clockIn = new Date(`${entry.date}T${editHours.clockIn}:00`).toISOString()
+    const clockOut = new Date(`${entry.date}T${editHours.clockOut}:00`).toISOString()
+    await fetch('/api/timesheets', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: editHours.id, action: 'edit_hours', clock_in: clockIn, clock_out: clockOut }),
+    })
+    setEditHours(null)
+    setSavingHours(false)
     await fetchEntries()
   }
 
@@ -192,47 +212,80 @@ export default function TimesheetAdmin() {
               </div>
 
               {/* Entries */}
-              {tEntries.map(e => (
-                <div key={e.id} className="px-5 py-3 flex items-center justify-between flex-wrap gap-2"
-                  style={{ borderBottom: '1px solid rgba(184,151,58,0.08)' }}>
-                  <div className="flex items-center gap-4">
-                    <div>
-                      <div className="text-xs font-medium" style={{ color: '#1A1814' }}>{fmtDate(e.date)}</div>
-                      <div className="text-xs mt-0.5" style={{ color: '#8A8580' }}>
-                        {e.clock_out
-                          ? `${fmt(e.clock_in)} → ${fmt(e.clock_out)} · ${e.hours}h`
-                          : `Clocked in at ${fmt(e.clock_in)} · still active`}
+              {tEntries.map(e => {
+                const isEditing = editHours?.id === e.id
+                const toTime = (iso: string) => new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+                return (
+                  <div key={e.id} style={{ borderBottom: '1px solid rgba(184,151,58,0.08)' }}>
+                    <div className="px-5 py-3 flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-4">
+                        <div>
+                          <div className="text-xs font-medium" style={{ color: '#1A1814' }}>{fmtDate(e.date)}</div>
+                          <div className="text-xs mt-0.5" style={{ color: '#8A8580' }}>
+                            {e.clock_out
+                              ? `${fmt(e.clock_in)} → ${fmt(e.clock_out)} · ${e.hours}h`
+                              : `Clocked in at ${fmt(e.clock_in)} · still active`}
+                          </div>
+                          {e.notes && <div className="text-xs mt-0.5 italic" style={{ color: '#B8B4B0' }}>{e.notes}</div>}
+                        </div>
                       </div>
-                      {e.notes && <div className="text-xs mt-0.5 italic" style={{ color: '#B8B4B0' }}>{e.notes}</div>}
+                      <div className="flex items-center gap-2">
+                        {/* Edit hours button */}
+                        <button onClick={() => setEditHours(isEditing ? null : { id: e.id, clockIn: toTime(e.clock_in), clockOut: e.clock_out ? toTime(e.clock_out) : '' })}
+                          className="text-xs px-2 py-1 rounded-lg border"
+                          style={{ borderColor: 'rgba(184,151,58,0.3)', color: '#8A6E25' }}>
+                          {isEditing ? 'Cancel' : '✎ Edit'}
+                        </button>
+                        {e.status === 'pending' && e.clock_out && (
+                          <>
+                            <button onClick={() => updateStatus(e.id, 'approved')} disabled={working === e.id}
+                              className="text-xs px-3 py-1 rounded-lg font-medium"
+                              style={{ background: '#E8F5E9', color: '#2E7D32' }}>
+                              {working === e.id ? '…' : '✓ Approve'}
+                            </button>
+                            <button onClick={() => updateStatus(e.id, 'rejected')} disabled={working === e.id}
+                              className="text-xs px-3 py-1 rounded-lg"
+                              style={{ background: '#FDECEA', color: '#791F1F' }}>
+                              Reject
+                            </button>
+                          </>
+                        )}
+                        {e.status === 'approved' && (
+                          <span className="text-xs px-3 py-1 rounded-lg" style={{ background: '#E8F5E9', color: '#2E7D32' }}>✓ Approved</span>
+                        )}
+                        {e.status === 'rejected' && (
+                          <span className="text-xs px-3 py-1 rounded-lg" style={{ background: '#FDECEA', color: '#791F1F' }}>Rejected</span>
+                        )}
+                        {e.status === 'pending' && !e.clock_out && (
+                          <span className="text-xs px-3 py-1 rounded-lg" style={{ background: '#FFF8E1', color: '#F57F17' }}>In progress</span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {e.status === 'pending' && e.clock_out && (
-                      <>
-                        <button onClick={() => updateStatus(e.id, 'approved')} disabled={working === e.id}
-                          className="text-xs px-3 py-1 rounded-lg font-medium"
-                          style={{ background: '#E8F5E9', color: '#2E7D32' }}>
-                          {working === e.id ? '…' : '✓ Approve'}
+                    {/* Inline edit form */}
+                    {isEditing && (
+                      <div className="px-5 pb-3 flex items-center gap-3" style={{ background: '#FAF7F2' }}>
+                        <div>
+                          <label className="text-[10px] uppercase tracking-wide block mb-1" style={{ color: '#8A8580' }}>Clock in</label>
+                          <input type="time" className="text-xs rounded-lg px-2 py-1 outline-none" value={editHours!.clockIn}
+                            onChange={e2 => setEditHours(h => h ? { ...h, clockIn: e2.target.value } : h)}
+                            style={{ border: '1.5px solid rgba(184,151,58,0.4)', color: '#1A1814' }} />
+                        </div>
+                        <div>
+                          <label className="text-[10px] uppercase tracking-wide block mb-1" style={{ color: '#8A8580' }}>Clock out</label>
+                          <input type="time" className="text-xs rounded-lg px-2 py-1 outline-none" value={editHours!.clockOut}
+                            onChange={e2 => setEditHours(h => h ? { ...h, clockOut: e2.target.value } : h)}
+                            style={{ border: '1.5px solid rgba(184,151,58,0.4)', color: '#1A1814' }} />
+                        </div>
+                        <button onClick={saveHours} disabled={savingHours || !editHours?.clockIn || !editHours?.clockOut}
+                          className="text-xs px-3 py-1.5 rounded-lg mt-4 disabled:opacity-50"
+                          style={{ background: '#1A1814', color: '#B8973A' }}>
+                          {savingHours ? '…' : 'Save'}
                         </button>
-                        <button onClick={() => updateStatus(e.id, 'rejected')} disabled={working === e.id}
-                          className="text-xs px-3 py-1 rounded-lg"
-                          style={{ background: '#FDECEA', color: '#791F1F' }}>
-                          Reject
-                        </button>
-                      </>
-                    )}
-                    {e.status === 'approved' && (
-                      <span className="text-xs px-3 py-1 rounded-lg" style={{ background: '#E8F5E9', color: '#2E7D32' }}>✓ Approved</span>
-                    )}
-                    {e.status === 'rejected' && (
-                      <span className="text-xs px-3 py-1 rounded-lg" style={{ background: '#FDECEA', color: '#791F1F' }}>Rejected</span>
-                    )}
-                    {e.status === 'pending' && !e.clock_out && (
-                      <span className="text-xs px-3 py-1 rounded-lg" style={{ background: '#FFF8E1', color: '#F57F17' }}>In progress</span>
+                      </div>
                     )}
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )
         })
