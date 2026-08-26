@@ -41,11 +41,11 @@ const ENROLLMENT_PRESETS: Record<EnrollmentType, number[]> = {
   '1_day': [1],
 }
 
-export default function StudentList({ students: initial, programId, schools = [], isTeacher = false }: { students: StudentRow[]; programId: string | null; schools?: School[]; isTeacher?: boolean }) {
+export default function StudentList({ students: initial, programId, schools = [], isTeacher = false, defaultSchoolId }: { students: StudentRow[]; programId: string | null; schools?: School[]; isTeacher?: boolean; defaultSchoolId?: string | null }) {
   const [students, setStudents] = useState(initial)
   const [search, setSearch] = useState('')
   const [gradeFilter, setGradeFilter] = useState('all')
-  const [schoolFilter, setSchoolFilter] = useState('all')
+  const [schoolFilter, setSchoolFilter] = useState(defaultSchoolId ?? 'all')
   const [planFilter, setPlanFilter] = useState('all')
   const [showAdd, setShowAdd] = useState(false)
   const [form, setForm] = useState({ 
