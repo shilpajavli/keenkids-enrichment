@@ -499,11 +499,22 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
                                 </button>
                               )}
                               {(p.status === 'pending' || p.status === 'overdue') && (
-                                <button onClick={() => updatePayment(p.id, { status: 'paid', paid_at: new Date().toISOString() } as any)}
-                                  disabled={updating === p.id}
-                                  className="btn btn-gold text-[10px] py-0.5 px-2 disabled:opacity-50">
-                                  {updating === p.id ? '…' : '✓ Mark paid'}
-                                </button>
+                                <>
+                                  <button onClick={() => updatePayment(p.id, { status: 'paid', paid_at: new Date().toISOString() } as any)}
+                                    disabled={updating === p.id}
+                                    className="btn btn-gold text-[10px] py-0.5 px-2 disabled:opacity-50">
+                                    {updating === p.id ? '…' : '✓ Mark paid'}
+                                  </button>
+                                  <button onClick={async () => {
+                                    if (!confirm('Delete this pending record?')) return
+                                    await fetch(`/api/payments?id=${p.id}`, { method: 'DELETE' })
+                                    setPayments(prev => prev.filter(x => x.id !== p.id))
+                                  }}
+                                    className="text-[10px] px-2 py-0.5 rounded"
+                                    style={{ background: '#FDECEA', color: '#791F1F' }}>
+                                    Delete
+                                  </button>
+                                </>
                               )}
                             </div>
                           </div>
