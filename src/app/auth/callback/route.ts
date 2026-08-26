@@ -46,8 +46,8 @@ export async function GET(request: NextRequest) {
             .update({ parent_id: user.id })
             .eq('id', invite.student_id)
         }
-        // Set role to parent if not already set
-        if (!existing || existing.role !== 'admin') {
+        // Set role to parent only if not already admin or teacher
+        if (!existing || (existing.role !== 'admin' && existing.role !== 'teacher')) {
           await admin.from('profiles').update({ role: 'parent' }).eq('id', user.id)
         }
         // Remove used invites

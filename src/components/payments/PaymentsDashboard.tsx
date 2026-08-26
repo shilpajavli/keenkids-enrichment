@@ -27,7 +27,13 @@ interface Props {
   summary: { collected: number; outstanding: number; overdue: number }
   students?: StudentOption[]
   enrolledCount?: number
+  programId?: string
 }
+
+const PERIODS = [
+  'September 2026', 'October 2026', 'November 2026', 'December 2026',
+  'January 2027', 'February 2027', 'March 2027', 'April 2027', 'May 2027',
+]
 
 const STATUS_VARIANT: Record<PaymentStatus, any> = {
   paid: 'green',
@@ -72,7 +78,7 @@ function groupByStudent(payments: PaymentRecord[]) {
   return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name))
 }
 
-export default function PaymentsDashboard({ payments: initial, students = [], enrolledCount }: Props) {
+export default function PaymentsDashboard({ payments: initial, students = [], enrolledCount, programId }: Props) {
   const [payments, setPayments] = useState(initial)
   const [page, setPage] = useState(0)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
@@ -84,6 +90,13 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
   const [unmatched, setUnmatched] = useState<UnmatchedPayment[]>([])
   const [linking, setLinking] = useState<string | null>(null)
   const [linkSelections, setLinkSelections] = useState<Record<string, string>>({})
+  const [genOpen, setGenOpen] = useState(false)
+  const [genPeriod, setGenPeriod] = useState(PERIODS[0])
+  const [genAmount, setGenAmount] = useState('699')
+  const [genDue, setGenDue] = useState('')
+  const [generating, setGenerating] = useState(false)
+  const [genResult, setGenResult] = useState<string | null>(null)
+  const [filterPeriod, setFilterPeriod] = useState('')
 
   const loadUnmatched = useCallback(() => {
     fetch('/api/payments/unmatched').then(r => r.json()).then(j => setUnmatched(j.data ?? []))
@@ -183,7 +196,34 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
     setUpdating(null)
   }
 
-  const grouped = groupByStudent(payments)
+  async function generatePayments() {
+    if (!programId) return
+    setGenerating(true); setGenResult(null)
+    const res = await fetch('/api/payments/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        period: genPeriod,
+        amount_cents: Math.round(parseFloat(genAmount) * 100),
+        due_date: genDue || null,
+        program_id: programId,
+      }),
+    })
+    const json = await res.json()
+    if (json.error) {
+      setGenResult(`Error: ${json.error}`)
+    } else {
+      setGenResult(`✓ Created ${json.created} pending records · ${json.skipped ?? 0} already had ${genPeriod}`)
+      // Reload page data
+      window.location.reload()
+    }
+    setGenerating(false)
+  }
+
+  const filteredPayments = filterPeriod
+    ? payments.filter(p => (p as any).period === filterPeriod)
+    : payments
+  const grouped = groupByStudent(filteredPayments)
   const totalPages = Math.ceil(grouped.length / PAGE_SIZE)
   const pageItems = grouped.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 
@@ -222,8 +262,8 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
         </div>
       </div>
 
-      {/* Sync + Export buttons */}
-      <div className="flex items-center gap-3">
+      {/* Sync + Export + Generate buttons */}
+      <div className="flex flex-wrap items-center gap-3">
         <button onClick={exportPaymentsCSV}
           className="btn text-[11.5px] py-1.5 px-4 flex items-center gap-1.5"
           style={{ background: '#F5F0E8', color: '#8A6E25', border: '1px solid rgba(184,151,58,0.35)' }}>
@@ -234,11 +274,58 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
           style={{ background: '#F5F0E8', color: '#8A6E25', border: '1px solid rgba(184,151,58,0.35)' }}>
           {syncing ? 'Syncing…' : '↓ Sync past payments from Stripe'}
         </button>
+        {programId && (
+          <button onClick={() => setGenOpen(v => !v)}
+            className="btn text-[11.5px] py-1.5 px-4 flex items-center gap-1.5"
+            style={{ background: '#1A1814', color: '#B8973A', border: '1px solid rgba(184,151,58,0.35)' }}>
+            + Generate monthly pending
+          </button>
+        )}
         {syncResult && (
           <span className="text-[12px]" style={{ color: '#4A4640' }}>
             ✓ {syncResult.synced} synced · {syncResult.created ?? 0} new students · {syncResult.unmatched} unmatched · {syncResult.refunds ?? 0} refunds
           </span>
         )}
+      </div>
+
+      {/* Generate pending payments form */}
+      {genOpen && (
+        <div className="rounded-xl p-4 space-y-3" style={{ background: '#FAF7F2', border: '1px solid rgba(184,151,58,0.25)' }}>
+          <div className="text-[12px] font-medium" style={{ color: '#1A1814' }}>Generate pending payment records for all active students</div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-[10px] uppercase tracking-wide block mb-1" style={{ color: '#8A8580' }}>Period</label>
+              <select className="input text-[12px]" value={genPeriod} onChange={e => setGenPeriod(e.target.value)}>
+                {PERIODS.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-wide block mb-1" style={{ color: '#8A8580' }}>Amount ($)</label>
+              <input className="input text-[12px]" type="number" value={genAmount} onChange={e => setGenAmount(e.target.value)} placeholder="699" />
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-wide block mb-1" style={{ color: '#8A8580' }}>Due date (optional)</label>
+              <input className="input text-[12px]" type="date" value={genDue} onChange={e => setGenDue(e.target.value)} />
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <button onClick={generatePayments} disabled={generating || !genAmount}
+              className="btn btn-gold text-[12px] py-1.5 px-4 disabled:opacity-50">
+              {generating ? 'Generating…' : `Generate for ${genPeriod}`}
+            </button>
+            {genResult && <span className="text-[12px]" style={{ color: genResult.startsWith('Error') ? '#791F1F' : '#27500A' }}>{genResult}</span>}
+          </div>
+        </div>
+      )}
+
+      {/* Period filter */}
+      <div className="flex items-center gap-2">
+        <span className="text-[11px]" style={{ color: '#8A8580' }}>Filter by period:</span>
+        <select className="text-[12px] rounded-lg px-2 py-1 outline-none" style={{ border: '1.5px solid rgba(184,151,58,0.3)', color: '#1A1814' }}
+          value={filterPeriod} onChange={e => { setFilterPeriod(e.target.value); setPage(0) }}>
+          <option value="">All periods</option>
+          {PERIODS.map(p => <option key={p} value={p}>{p}</option>)}
+        </select>
       </div>
 
       {/* Unmatched Stripe payments */}
@@ -346,10 +433,11 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
                     )}
                     {/* Header */}
                     <div className="grid px-8 py-2 text-[10px] font-medium tracking-wide uppercase"
-                      style={{ color: '#8A8580', gridTemplateColumns: '1fr 80px 90px 100px 110px 100px' }}>
+                      style={{ color: '#8A8580', gridTemplateColumns: '1fr 80px 90px 110px 100px 110px 100px' }}>
                       <span>Date</span>
                       <span>Amount</span>
                       <span>Type</span>
+                      <span>Period</span>
                       <span>Plan</span>
                       <span>Status</span>
                       <span></span>
@@ -364,7 +452,7 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
                           <div key={p.id}
                             className="grid items-center px-8 py-2.5 text-[12px]"
                             style={{
-                              gridTemplateColumns: '1fr 80px 90px 100px 110px 100px',
+                              gridTemplateColumns: '1fr 80px 90px 110px 100px 110px 100px',
                               borderTop: pi > 0 ? '1px solid rgba(184,151,58,0.08)' : 'none',
                             }}>
                             <span style={{ color: '#4A4640' }}>
@@ -384,6 +472,15 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
                                 {TYPE_LABELS[ptype]}
                               </span>
                             </button>
+                            {/* Period — inline select */}
+                            <select
+                              value={(p as any).period ?? ''}
+                              onChange={e => updatePayment(p.id, { period: e.target.value || null } as any)}
+                              className="text-[11px] rounded px-1 py-0.5 outline-none"
+                              style={{ border: '1px solid rgba(184,151,58,0.3)', color: (p as any).period ? '#1A1814' : '#8A8580', maxWidth: 105 }}>
+                              <option value="">— period</option>
+                              {PERIODS.map(per => <option key={per} value={per}>{per}</option>)}
+                            </select>
                             <span className="text-[11px]" style={{ color: '#8A8580' }}>{(p as any).plan_name ?? '—'}</span>
                             <Badge variant={STATUS_VARIANT[p.status]}>{p.status}</Badge>
                             <div className="flex justify-end gap-1.5">

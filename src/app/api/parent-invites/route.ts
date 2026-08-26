@@ -88,10 +88,13 @@ export async function POST(req: NextRequest) {
   const { data: student } = await admin.from('students').select('full_name').eq('id', student_id).single()
   const studentName = student?.full_name ?? 'your child'
 
-  // Check if parent already has an account
-  const { data: { users } } = await admin.auth.admin.listUsers()
-  let parentUser = users.find((u: any) => u.email?.toLowerCase() === invite.email.toLowerCase())
-  const isNewUser = !parentUser
+  // Check if parent already has an account by looking up directly in profiles
+  const { data: existingProfile } = await admin.from('profiles').select('id').eq('email', invite.email.toLowerCase()).single()
+  let parentUser: { id: string } | null = null
+  const isNewUser = !existingProfile
+  if (existingProfile) {
+    parentUser = { id: existingProfile.id }
+  }
 
   if (!parentUser) {
     // Send magic link invite email from Supabase
