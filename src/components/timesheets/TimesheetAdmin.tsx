@@ -145,7 +145,7 @@ export default function TimesheetAdmin() {
 
       {/* Summary strip */}
       <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(184,151,58,0.18)' }}>
-        <div className="grid grid-cols-4 divide-x" style={{ divideColor: 'rgba(184,151,58,0.15)' }}>
+        <div className="grid grid-cols-4">
           {[
             { label: 'Entries', value: entries.length.toString(), color: '#8A6E25' },
             { label: 'Needs approval', value: pendingCount.toString(), color: pendingCount > 0 ? '#B45309' : '#8A8580' },
