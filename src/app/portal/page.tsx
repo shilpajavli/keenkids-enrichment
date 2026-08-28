@@ -489,6 +489,31 @@ export default async function ParentPortalPage({
             </CardBody>
           </Card>
 
+          {/* Daily time schedule */}
+          <Card>
+            <CardHeader title="Daily Schedule" />
+            <CardBody className="p-0">
+              {[
+                { time: '2:00 – 2:20', label: 'Snack Break / Outdoor Play', emoji: '🍎' },
+                { time: '2:20 – 2:50', label: 'Homework', emoji: '📚' },
+                { time: '2:50 – 3:10', label: 'Break / Homework Catch-up', emoji: '⏸️' },
+                { time: '3:10 – 4:20', label: 'Theory + Build + Test', emoji: '🔧' },
+                { time: '4:20 – 4:30', label: 'Scientist Log (Reflection / Drawing / Writing)', emoji: '📓' },
+                { time: '4:30 – 4:40', label: 'Cleanup / Pack-up', emoji: '🧹' },
+                { time: '4:40 – 5:00', label: 'Outdoor Play & Pickup', emoji: '🌳' },
+              ].map((row, i, arr) => (
+                <div key={row.time} className="flex items-center gap-3 px-5 py-3"
+                  style={{ borderBottom: i < arr.length - 1 ? '1px solid rgba(184,151,58,0.12)' : 'none' }}>
+                  <span className="text-xl w-7 flex-shrink-0">{row.emoji}</span>
+                  <div className="flex-1">
+                    <div className="text-[11px] tabular-nums" style={{ color: '#B8973A' }}>{row.time}</div>
+                    <div className="text-[13px]" style={{ color: '#1A1814' }}>{row.label}</div>
+                  </div>
+                </div>
+              ))}
+            </CardBody>
+          </Card>
+
           {/* Monthly themes — current + next 2 */}
           <Card>
             <CardHeader title="Upcoming Themes" />

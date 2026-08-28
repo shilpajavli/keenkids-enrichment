@@ -54,7 +54,9 @@ export async function GET(request: NextRequest) {
         await admin.from('parent_invites').delete().ilike('email', email)
       }
 
-      const role = existing?.role ?? 'parent'
+      // Re-fetch role after any updates above to get the current value
+      const { data: finalProfile } = await admin.from('profiles').select('role').eq('id', user.id).single()
+      const role = finalProfile?.role ?? 'parent'
       const dest = role === 'parent' ? `${origin}/portal` : `${origin}/dashboard`
       return NextResponse.redirect(dest)
     }
