@@ -46,12 +46,12 @@ const ACTIVITIES = {
   },
 }
 
-// Sinnott: Mon=Coding, Tue=Build, Wed=Science, Thu=Speaking, Fri=Exploration
+// Sinnott: Mon=Build, Tue=Coding, Wed=Speaking, Thu=Science, Fri=Exploration
 const WEEKLY_SINNOTT = [
-  { day: 'Monday',    ...ACTIVITIES.coding },
-  { day: 'Tuesday',   ...ACTIVITIES.build },
-  { day: 'Wednesday', ...ACTIVITIES.science },
-  { day: 'Thursday',  ...ACTIVITIES.speaking },
+  { day: 'Monday',    ...ACTIVITIES.build },
+  { day: 'Tuesday',   ...ACTIVITIES.coding },
+  { day: 'Wednesday', ...ACTIVITIES.speaking },
+  { day: 'Thursday',  ...ACTIVITIES.science },
   { day: 'Friday',    ...ACTIVITIES.exploration },
 ]
 

@@ -24,10 +24,10 @@ function getMonday(date: Date): string {
 
 const SCHEDULE: Record<string, Record<number, { emoji: string; title: string; color: string; tagline: string }>> = {
   sinnott: {
-    1: { emoji: '💻', title: 'Coding & Technology',              color: '#2563EB', tagline: 'Code Today. Create Tomorrow.' },
-    2: { emoji: '🔧', title: 'STEAM Build Day',                  color: '#EA580C', tagline: 'Build Ideas. Build Confidence.' },
-    3: { emoji: '🧪', title: 'Science Lab & Experiments',        color: '#16A34A', tagline: 'Explore Science. Discover Possibilities.' },
-    4: { emoji: '🎤', title: 'Public Speaking & Communication',  color: '#7C3AED', tagline: 'Speak Up. Stand Out.' },
+    1: { emoji: '🔧', title: 'STEAM Build Day',                  color: '#EA580C', tagline: 'Build Ideas. Build Confidence.' },
+    2: { emoji: '💻', title: 'Coding & Technology',              color: '#2563EB', tagline: 'Code Today. Create Tomorrow.' },
+    3: { emoji: '🎤', title: 'Public Speaking & Communication',  color: '#7C3AED', tagline: 'Speak Up. Stand Out.' },
+    4: { emoji: '🧪', title: 'Science Lab & Experiments',        color: '#16A34A', tagline: 'Explore Science. Discover Possibilities.' },
     5: { emoji: '🎨', title: 'Free Exploration Station',         color: '#DC2626', tagline: 'Explore Freely. Create Fearlessly.' },
   },
   mattos: {
