@@ -181,6 +181,37 @@ export default async function SchedulePage() {
             ))}
           </div>
 
+          {/* Daily schedule — Sinnott only */}
+          {isSinnott && (
+            <div>
+              <div className="text-[11px] tracking-[0.15em] uppercase text-center mb-4" style={{ color: '#B8973A' }}>
+                Daily Schedule · Sinnott
+              </div>
+              <div className="card overflow-hidden">
+                {[
+                  { time: '2:00 – 2:20', label: 'Snack Break / Outdoor Play', emoji: '🍎' },
+                  { time: '2:20 – 2:50', label: 'Homework', emoji: '📚' },
+                  { time: '2:50 – 3:10', label: 'Break / Homework Catch-up', emoji: '⏸️' },
+                  { time: '3:10 – 4:20', label: 'Theory + Build + Test', emoji: '🔧' },
+                  { time: '4:20 – 4:30', label: 'Scientist Log (Reflection / Drawing / Writing)', emoji: '📓' },
+                  { time: '4:30 – 4:40', label: 'Cleanup / Pack-up', emoji: '🧹' },
+                  { time: '4:40 – 5:00', label: 'Outdoor Play & Pickup', emoji: '🌳' },
+                ].map((row, i, arr) => (
+                  <div key={row.time} className="grid items-center px-5 py-3"
+                    style={{
+                      gridTemplateColumns: '110px 32px 1fr',
+                      borderBottom: i < arr.length - 1 ? '1px solid rgba(184,151,58,0.1)' : 'none',
+                      background: i % 2 === 0 ? '#FDFCF9' : '#FAF7F2',
+                    }}>
+                    <span className="text-[12px] tabular-nums font-medium" style={{ color: '#8A6E25' }}>{row.time}</span>
+                    <span className="text-base">{row.emoji}</span>
+                    <span className="text-[13px]" style={{ color: '#1A1814' }}>{row.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Program pillars */}
           <div>
             <div className="text-[11px] tracking-[0.15em] uppercase text-center mb-4" style={{ color: '#B8973A' }}>
