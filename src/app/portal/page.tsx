@@ -473,14 +473,11 @@ export default async function ParentPortalPage({
                   const dayItems = ((curriculum.content ?? []) as CurriculumItem[]).filter(item => item.day === day)
                   if (dayItems.length === 0) return null
                   return (
-                    <div key={day} className="flex gap-4 px-5 py-3" style={{ borderBottom: '1px solid rgba(184,151,58,0.12)' }}>
-                      <div className="w-24 text-[12px] font-medium flex-shrink-0 mt-0.5" style={{ color: '#B8973A' }}>{day}</div>
-                      <div className="flex-1 space-y-1">
+                    <div key={day} className="flex gap-4 px-5 py-2.5" style={{ borderBottom: '1px solid rgba(184,151,58,0.12)' }}>
+                      <div className="w-20 text-[11px] font-medium flex-shrink-0 mt-0.5" style={{ color: '#B8973A' }}>{day}</div>
+                      <div className="flex-1">
                         {dayItems.map((item, j) => (
-                          <div key={j}>
-                            <span className="text-[13px] font-medium">{item.subject}</span>
-                            {item.activity && <span className="text-[13px]" style={{ color: '#4A4640' }}> — {item.activity}</span>}
-                          </div>
+                          <span key={j} className="text-[13px]">{item.subject}{item.activity && <span style={{ color: '#8A8580' }}> · {item.activity}</span>}</span>
                         ))}
                       </div>
                     </div>
@@ -490,64 +487,68 @@ export default async function ParentPortalPage({
             </Card>
           )}
 
-          {/* Weekly schedule — compact */}
-          <Card>
-            <CardHeader title="Weekly Schedule" />
-            <CardBody className="p-0">
-              {DAILY_SCHEDULE.map((d, i) => (
-                <div key={d.day} className="flex items-center gap-3 px-5 py-3"
-                  style={{ borderBottom: i < DAILY_SCHEDULE.length - 1 ? '1px solid rgba(184,151,58,0.12)' : 'none' }}>
-                  <span className="text-xl w-7 flex-shrink-0">{d.emoji}</span>
-                  <div>
-                    <div className="text-[11px]" style={{ color: '#8A8580' }}>{d.day}</div>
-                    <div className="text-[13px] font-medium" style={{ color: '#1A1814' }}>{d.theme}</div>
-                  </div>
+          {/* Weekly + Daily side by side on desktop, stacked on mobile */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Weekly activities — compact emoji chips */}
+            <Card>
+              <CardHeader title="Weekly Activities" />
+              <CardBody className="p-3">
+                <div className="space-y-1.5">
+                  {DAILY_SCHEDULE.map(d => (
+                    <div key={d.day} className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg"
+                      style={{ background: 'rgba(184,151,58,0.05)' }}>
+                      <span className="text-base w-6 text-center flex-shrink-0">{d.emoji}</span>
+                      <span className="text-[11px] w-16 flex-shrink-0" style={{ color: '#B8973A' }}>{d.day.slice(0, 3)}</span>
+                      <span className="text-[12px] font-medium leading-tight" style={{ color: '#1A1814' }}>{d.theme}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </CardBody>
-          </Card>
+              </CardBody>
+            </Card>
 
-          {/* Daily time schedule */}
-          <Card>
-            <CardHeader title="Daily Schedule" />
-            <CardBody className="p-0">
-              {[
-                { time: '2:00 – 2:20', label: 'Snack Break / Outdoor Play', emoji: '🍎' },
-                { time: '2:20 – 2:50', label: 'Homework', emoji: '📚' },
-                { time: '2:50 – 3:10', label: 'Break / Homework Catch-up', emoji: '⏸️' },
-                { time: '3:10 – 4:20', label: 'Theory + Build + Test', emoji: '🔧' },
-                { time: '4:20 – 4:30', label: 'Scientist Log (Reflection / Drawing / Writing)', emoji: '📓' },
-                { time: '4:30 – 4:40', label: 'Cleanup / Pack-up', emoji: '🧹' },
-                { time: '4:40 – 5:00', label: 'Outdoor Play & Pickup', emoji: '🌳' },
-              ].map((row, i, arr) => (
-                <div key={row.time} className="flex items-center gap-3 px-5 py-3"
-                  style={{ borderBottom: i < arr.length - 1 ? '1px solid rgba(184,151,58,0.12)' : 'none' }}>
-                  <span className="text-xl w-7 flex-shrink-0">{row.emoji}</span>
-                  <div className="flex-1">
-                    <div className="text-[11px] tabular-nums" style={{ color: '#B8973A' }}>{row.time}</div>
-                    <div className="text-[13px]" style={{ color: '#1A1814' }}>{row.label}</div>
-                  </div>
+            {/* Daily time schedule — compact */}
+            <Card>
+              <CardHeader title="Daily Timing" />
+              <CardBody className="p-3">
+                <div className="space-y-1.5">
+                  {[
+                    { time: '2:00–2:20',  label: 'Snack & Outdoor Play',   emoji: '🍎' },
+                    { time: '2:20–2:50',  label: 'Homework',               emoji: '📚' },
+                    { time: '2:50–3:10',  label: 'Break / Catch-up',       emoji: '⏸️' },
+                    { time: '3:10–4:20',  label: 'Theory + Build + Test',  emoji: '🔧' },
+                    { time: '4:20–4:30',  label: 'Scientist Log',          emoji: '📓' },
+                    { time: '4:30–4:40',  label: 'Cleanup & Pack-up',      emoji: '🧹' },
+                    { time: '4:40–5:00',  label: 'Outdoor Play & Pickup',  emoji: '🌳' },
+                  ].map(row => (
+                    <div key={row.time} className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg"
+                      style={{ background: 'rgba(184,151,58,0.05)' }}>
+                      <span className="text-base w-6 text-center flex-shrink-0">{row.emoji}</span>
+                      <span className="text-[11px] tabular-nums w-16 flex-shrink-0" style={{ color: '#B8973A' }}>{row.time}</span>
+                      <span className="text-[12px] leading-tight" style={{ color: '#1A1814' }}>{row.label}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </CardBody>
-          </Card>
+              </CardBody>
+            </Card>
+          </div>
 
-          {/* Monthly themes — current + next 2 */}
+          {/* Upcoming themes — horizontal chips */}
           <Card>
             <CardHeader title="Upcoming Themes" />
-            <CardBody className="p-0">
-              {upcomingThemes.map((m, i) => (
-                <div key={m.month} className="flex items-center gap-3 px-5 py-3"
-                  style={{ borderBottom: i < upcomingThemes.length - 1 ? '1px solid rgba(184,151,58,0.12)' : 'none',
-                           background: i === 0 ? 'rgba(184,151,58,0.06)' : 'transparent' }}>
-                  <span className="text-xl w-7 flex-shrink-0">{m.emoji}</span>
-                  <div className="flex-1">
-                    <div className="text-[11px]" style={{ color: '#8A8580' }}>{m.month}</div>
-                    <div className="text-[13px] font-medium" style={{ color: '#1A1814' }}>{m.theme}</div>
+            <CardBody className="px-4 py-3">
+              <div className="flex gap-2 flex-wrap">
+                {upcomingThemes.map((m, i) => (
+                  <div key={m.month} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px]"
+                    style={{
+                      background: i === 0 ? '#1A1814' : '#F5F0E8',
+                      color: i === 0 ? '#B8973A' : '#4A4640',
+                    }}>
+                    <span>{m.emoji}</span>
+                    <span className="font-medium">{m.theme}</span>
+                    <span className="text-[10px] opacity-60">{m.month.split(' ')[0]}</span>
                   </div>
-                  {i === 0 && <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: '#EFE6CC', color: '#8A6E25' }}>This month</span>}
-                </div>
-              ))}
+                ))}
+              </div>
             </CardBody>
           </Card>
         </div>
