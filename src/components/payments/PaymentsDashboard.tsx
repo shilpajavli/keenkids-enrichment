@@ -31,6 +31,7 @@ interface Props {
 }
 
 const PERIODS = [
+  'Enrollment Fee',
   'September 2026', 'October 2026', 'November 2026', 'December 2026',
   'January 2027', 'February 2027', 'March 2027', 'April 2027', 'May 2027',
 ]
