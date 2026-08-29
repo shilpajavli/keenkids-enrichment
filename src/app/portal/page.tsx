@@ -194,7 +194,7 @@ export default async function ParentPortalPage({
       {/* Child switcher — only shown when parent has multiple children */}
       {allStudents.length > 1 && (
         <div className="flex gap-2 flex-wrap">
-          {allStudents.map(s => (
+          {allStudents.map((s: { id: string; full_name: string }) => (
             <Link key={s.id} href={`/portal?tab=${tab}&child=${s.id}`}
               className="px-3 py-1.5 rounded-full text-[12px] font-medium transition-all"
               style={{
