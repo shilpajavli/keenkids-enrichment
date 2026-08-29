@@ -56,22 +56,22 @@ function formatTime(ts: string | null): string {
 export default async function ParentPortalPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>
+  searchParams: Promise<{ tab?: string; child?: string }>
 }) {
-  const { tab = 'today' } = await searchParams
+  const { tab = 'today', child: childParam } = await searchParams
 
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
   const admin = createAdminClient()
-  const { data: student } = await admin
+  const { data: allStudents } = await admin
     .from('students')
     .select('*, school:schools(*), needs_escort, teacher_name, room_number, pickup_person, pickup_notes, material_fee_paid')
     .eq('parent_id', user.id)
-    .single()
+    .eq('status', 'active')
 
-  if (!student) {
+  if (!allStudents || allStudents.length === 0) {
     return (
       <div className="text-center py-16">
         <h2 className="font-serif text-2xl font-light text-ink mb-2">No student linked yet</h2>
@@ -79,6 +79,8 @@ export default async function ParentPortalPage({
       </div>
     )
   }
+
+  const student = (childParam ? allStudents.find(s => s.id === childParam) : null) ?? allStudents[0]
 
   // Check if parent has signed consent forms
   const { data: consent } = await admin.from('consents').select('id').eq('student_id', student.id).maybeSingle()
@@ -189,10 +191,26 @@ export default async function ParentPortalPage({
         </div>
       </div>
 
+      {/* Child switcher — only shown when parent has multiple children */}
+      {allStudents.length > 1 && (
+        <div className="flex gap-2 flex-wrap">
+          {allStudents.map(s => (
+            <Link key={s.id} href={`/portal?tab=${tab}&child=${s.id}`}
+              className="px-3 py-1.5 rounded-full text-[12px] font-medium transition-all"
+              style={{
+                background: s.id === student.id ? '#1A1814' : '#EEEBE3',
+                color: s.id === student.id ? '#B8973A' : '#8A8580',
+              }}>
+              {s.full_name.split(' ')[0]}
+            </Link>
+          ))}
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="flex gap-1 p-1 rounded-xl" style={{ background: '#EEEBE3' }}>
         {tabs.map(t => (
-          <Link key={t.key} href={`/portal?tab=${t.key}`}
+          <Link key={t.key} href={`/portal?tab=${t.key}${childParam ? `&child=${childParam}` : ''}`}
             className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[13px] font-medium transition-all"
             style={{
               background: tab === t.key ? 'white' : 'transparent',
