@@ -5,6 +5,12 @@ import { extractFields, resolveStudent, PLAN_BY_AMOUNT } from '@/lib/stripe-stud
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
+function inferPeriod(paidAt: Date): string {
+  const next = new Date(paidAt)
+  next.setMonth(next.getMonth() + 1)
+  return next.toLocaleString('en-US', { month: 'long', year: 'numeric' })
+}
+
 export async function POST() {
   const admin = createAdminClient()
 
@@ -62,6 +68,7 @@ export async function POST() {
       created++
     }
 
+    const paidAt = new Date(session.created * 1000)
     const { error } = await admin.from('payments').insert({
       stripe_session_id: session.id,
       student_id: studentId,
@@ -72,8 +79,9 @@ export async function POST() {
       customer_name: session.customer_details?.name ?? '',
       child_name_entered: childName || null,
       school_name_entered: schoolName || null,
-      paid_at: new Date(session.created * 1000).toISOString(),
-      due_date: new Date(session.created * 1000).toISOString(),
+      paid_at: paidAt.toISOString(),
+      due_date: paidAt.toISOString(),
+      period: inferPeriod(paidAt),
       stripe_payment_link: (session as any).payment_link ?? null,
     })
 

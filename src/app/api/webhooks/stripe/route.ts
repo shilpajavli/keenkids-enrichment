@@ -5,6 +5,14 @@ import { extractFields, resolveStudent, PLAN_BY_AMOUNT } from '@/lib/stripe-stud
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
+// Payment collected in month X is for the following month's tuition
+// e.g. collected in August → "September 2026"
+function inferPeriod(paidAt: Date): string {
+  const next = new Date(paidAt)
+  next.setMonth(next.getMonth() + 1)
+  return next.toLocaleString('en-US', { month: 'long', year: 'numeric' })
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.text()
   const sig = req.headers.get('stripe-signature')!
@@ -33,6 +41,8 @@ export async function POST(req: NextRequest) {
   const planName = PLAN_BY_AMOUNT[amountCents] ?? `Payment ($${(amountCents / 100).toFixed(2)})`
 
   const studentId = await resolveStudent(admin, childName, schoolName, amountCents)
+  const paidAt = new Date(session.created * 1000)
+  const period = inferPeriod(paidAt)
 
   const { error } = await admin.from('payments').upsert({
     stripe_session_id: session.id,
@@ -43,8 +53,9 @@ export async function POST(req: NextRequest) {
     customer_email: session.customer_details?.email ?? '',
     customer_name: session.customer_details?.name ?? '',
     child_name_entered: childName || null,
-    paid_at: new Date(session.created * 1000).toISOString(),
-    due_date: new Date(session.created * 1000).toISOString(),
+    paid_at: paidAt.toISOString(),
+    due_date: paidAt.toISOString(),
+    period,
   }, { onConflict: 'stripe_session_id' })
 
   if (error) {
