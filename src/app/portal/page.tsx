@@ -80,7 +80,7 @@ export default async function ParentPortalPage({
     )
   }
 
-  const student = (childParam ? allStudents.find(s => s.id === childParam) : null) ?? allStudents[0]
+  const student = (childParam ? allStudents.find((s: { id: string }) => s.id === childParam) : null) ?? allStudents[0]
 
   // Check if parent has signed consent forms
   const { data: consent } = await admin.from('consents').select('id').eq('student_id', student.id).maybeSingle()
