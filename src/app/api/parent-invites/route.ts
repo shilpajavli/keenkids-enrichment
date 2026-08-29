@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
 
   // Check if parent already has an auth account
   const { data: authList } = await admin.auth.admin.listUsers()
-  const existingAuthUser = authList?.users?.find(u => u.email?.toLowerCase() === invite.email.toLowerCase())
+  const existingAuthUser = authList?.users?.find((u: { email?: string; id: string }) => u.email?.toLowerCase() === invite.email.toLowerCase())
 
   // Also check profiles table
   const { data: existingProfile } = await admin.from('profiles').select('id').eq('email', invite.email.toLowerCase()).single()
