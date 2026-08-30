@@ -1,6 +1,62 @@
 import Stripe from 'stripe'
 import { SupabaseClient } from '@supabase/supabase-js'
 
+// Payment collected in month X → next month's tuition period
+export function inferPeriod(paidAt: Date): string {
+  const next = new Date(paidAt)
+  next.setMonth(next.getMonth() + 1)
+  return next.toLocaleString('en-US', { month: 'long', year: 'numeric' })
+}
+
+// Upsert a payment: if a pending record exists for same student+period, mark it paid.
+// Otherwise upsert by stripe_session_id.
+export async function upsertStripePayment(
+  admin: SupabaseClient,
+  fields: {
+    stripe_session_id: string
+    student_id: string | null
+    amount_cents: number
+    plan_name: string
+    period: string
+    paid_at: string
+    due_date: string
+    customer_email: string
+    customer_name: string
+    child_name_entered: string | null
+    school_name_entered?: string | null
+    stripe_payment_link?: string | null
+  }
+) {
+  // Try to find an existing pending/overdue record for this student + period
+  if (fields.student_id && fields.period) {
+    const { data: pending } = await admin
+      .from('payments')
+      .select('id')
+      .eq('student_id', fields.student_id)
+      .eq('period', fields.period)
+      .in('status', ['pending', 'overdue'])
+      .maybeSingle()
+
+    if (pending) {
+      // Merge: update the existing pending row to paid
+      await admin.from('payments').update({
+        status: 'paid',
+        stripe_session_id: fields.stripe_session_id,
+        amount_cents: fields.amount_cents,
+        plan_name: fields.plan_name,
+        paid_at: fields.paid_at,
+        customer_email: fields.customer_email,
+        customer_name: fields.customer_name,
+        stripe_payment_link: fields.stripe_payment_link ?? null,
+      }).eq('id', pending.id)
+      return
+    }
+  }
+
+  // No pending record — upsert by stripe_session_id
+  await admin.from('payments').upsert(fields, { onConflict: 'stripe_session_id' })
+}
+
 export const PLAN_BY_AMOUNT: Record<number, string> = {
   11000: '1-Day Plan',
   23000: '3-Day Plan',

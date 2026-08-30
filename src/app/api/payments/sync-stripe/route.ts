@@ -1,15 +1,9 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createAdminClient } from '@/lib/supabase-server'
-import { extractFields, resolveStudent, PLAN_BY_AMOUNT } from '@/lib/stripe-student-sync'
+import { extractFields, resolveStudent, PLAN_BY_AMOUNT, inferPeriod, upsertStripePayment } from '@/lib/stripe-student-sync'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
-
-function inferPeriod(paidAt: Date): string {
-  const next = new Date(paidAt)
-  next.setMonth(next.getMonth() + 1)
-  return next.toLocaleString('en-US', { month: 'long', year: 'numeric' })
-}
 
 export async function POST() {
   const admin = createAdminClient()
@@ -69,24 +63,21 @@ export async function POST() {
     }
 
     const paidAt = new Date(session.created * 1000)
-    const { error } = await admin.from('payments').insert({
+    await upsertStripePayment(admin, {
       stripe_session_id: session.id,
       student_id: studentId,
       amount_cents: amountCents,
       plan_name: planName,
-      status: 'paid',
+      period: inferPeriod(paidAt),
+      paid_at: paidAt.toISOString(),
+      due_date: paidAt.toISOString(),
       customer_email: session.customer_details?.email ?? '',
       customer_name: session.customer_details?.name ?? '',
       child_name_entered: childName || null,
       school_name_entered: schoolName || null,
-      paid_at: paidAt.toISOString(),
-      due_date: paidAt.toISOString(),
-      period: inferPeriod(paidAt),
       stripe_payment_link: (session as any).payment_link ?? null,
     })
-
-    if (error) console.error(`Failed session ${session.id}:`, error.message)
-    else synced++
+    synced++
   }
 
   // ── 2. Sync refunds ───────────────────────────────────────────────────────

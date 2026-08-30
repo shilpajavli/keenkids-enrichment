@@ -1,17 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createAdminClient } from '@/lib/supabase-server'
-import { extractFields, resolveStudent, PLAN_BY_AMOUNT } from '@/lib/stripe-student-sync'
+import { extractFields, resolveStudent, PLAN_BY_AMOUNT, inferPeriod, upsertStripePayment } from '@/lib/stripe-student-sync'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
-
-// Payment collected in month X is for the following month's tuition
-// e.g. collected in August → "September 2026"
-function inferPeriod(paidAt: Date): string {
-  const next = new Date(paidAt)
-  next.setMonth(next.getMonth() + 1)
-  return next.toLocaleString('en-US', { month: 'long', year: 'numeric' })
-}
 
 export async function POST(req: NextRequest) {
   const body = await req.text()
@@ -44,24 +36,18 @@ export async function POST(req: NextRequest) {
   const paidAt = new Date(session.created * 1000)
   const period = inferPeriod(paidAt)
 
-  const { error } = await admin.from('payments').upsert({
+  await upsertStripePayment(admin, {
     stripe_session_id: session.id,
     student_id: studentId,
     amount_cents: amountCents,
     plan_name: planName,
-    status: 'paid',
+    period,
+    paid_at: paidAt.toISOString(),
+    due_date: paidAt.toISOString(),
     customer_email: session.customer_details?.email ?? '',
     customer_name: session.customer_details?.name ?? '',
     child_name_entered: childName || null,
-    paid_at: paidAt.toISOString(),
-    due_date: paidAt.toISOString(),
-    period,
-  }, { onConflict: 'stripe_session_id' })
-
-  if (error) {
-    console.error('Failed to save payment:', error.message)
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
+  })
 
   return NextResponse.json({ received: true })
 }
