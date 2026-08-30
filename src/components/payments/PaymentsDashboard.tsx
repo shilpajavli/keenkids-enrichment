@@ -205,7 +205,6 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         period: genPeriod,
-        amount_cents: Math.round(parseFloat(genAmount) * 100),
         due_date: genDue || null,
         program_id: programId,
       }),
@@ -293,7 +292,7 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
       {genOpen && (
         <div className="rounded-xl p-4 space-y-3" style={{ background: '#FAF7F2', border: '1px solid rgba(184,151,58,0.25)' }}>
           <div className="text-[12px] font-medium" style={{ color: '#1A1814' }}>Generate pending payment records for all active students</div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-[10px] uppercase tracking-wide block mb-1" style={{ color: '#8A8580' }}>Period</label>
               <select className="input text-[12px]" value={genPeriod} onChange={e => setGenPeriod(e.target.value)}>
@@ -301,16 +300,12 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
               </select>
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wide block mb-1" style={{ color: '#8A8580' }}>Amount ($)</label>
-              <input className="input text-[12px]" type="number" value={genAmount} onChange={e => setGenAmount(e.target.value)} placeholder="699" />
-            </div>
-            <div>
               <label className="text-[10px] uppercase tracking-wide block mb-1" style={{ color: '#8A8580' }}>Due date (optional)</label>
               <input className="input text-[12px]" type="date" value={genDue} onChange={e => setGenDue(e.target.value)} />
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={generatePayments} disabled={generating || !genAmount}
+            <button onClick={generatePayments} disabled={generating}
               className="btn btn-gold text-[12px] py-1.5 px-4 disabled:opacity-50">
               {generating ? 'Generating…' : `Generate for ${genPeriod}`}
             </button>
