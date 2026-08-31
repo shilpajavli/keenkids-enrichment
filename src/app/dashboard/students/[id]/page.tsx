@@ -47,14 +47,17 @@ export default async function StudentDetailPage({ params }: Props) {
   const admin = createAdminClient()
 
   let parentProfile: { full_name: string; email: string } | null = null
-  if (student.parent_id) {
-    const { data } = await admin
-      .from('profiles')
-      .select('full_name, email, phone')
-      .eq('id', student.parent_id)
-      .single()
-    parentProfile = data
-  }
+  let parent2Profile: { full_name: string; email: string } | null = null
+  const [p1, p2] = await Promise.all([
+    student.parent_id
+      ? admin.from('profiles').select('full_name, email, phone').eq('id', student.parent_id).single()
+      : Promise.resolve({ data: null }),
+    (student as any).parent2_id
+      ? admin.from('profiles').select('full_name, email, phone').eq('id', (student as any).parent2_id).single()
+      : Promise.resolve({ data: null }),
+  ])
+  parentProfile = p1.data
+  parent2Profile = p2.data
 
   const { data: consent } = await admin
     .from('consents')
@@ -70,6 +73,7 @@ export default async function StudentDetailPage({ params }: Props) {
       attendance={attendanceRes.data ?? []}
       media={mediaRes.data ?? []}
       parentProfile={parentProfile}
+      parent2Profile={parent2Profile}
       schools={schoolsRes.data ?? []}
       weeklySessionsAttended={weeklySessionsAttended}
       consent={consent ?? null}

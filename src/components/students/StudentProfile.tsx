@@ -26,6 +26,7 @@ interface Props {
   attendance: AttendanceRecord[]
   media: MediaItem[]
   parentProfile: { full_name: string; email: string; phone?: string | null } | null
+  parent2Profile?: { full_name: string; email: string; phone?: string | null } | null
   schools?: School[]
   weeklySessionsAttended?: number
   consent?: Consent | null
@@ -62,7 +63,7 @@ const ATTEND_BADGE: Record<string, any> = {
 const subjects = (skills: StudentSkill[]) =>
   [...new Set(skills.map(s => s.skill?.subject).filter(Boolean))]
 
-export default function StudentProfile({ student, skills, notes, attendance, media, parentProfile, schools = [], weeklySessionsAttended = 0, consent = null }: Props) {
+export default function StudentProfile({ student, skills, notes, attendance, media, parentProfile, parent2Profile = null, schools = [], weeklySessionsAttended = 0, consent = null }: Props) {
   const [tab, setTab] = useState<Tab>('progress')
   const [noteText, setNoteText] = useState('')
   const [saving, setSaving] = useState(false)
@@ -466,7 +467,7 @@ export default function StudentProfile({ student, skills, notes, attendance, med
       {/* Parent info */}
       {parentProfile ? (
         <div className="flex flex-wrap items-center gap-2 text-[12.5px] px-1" style={{ color: '#4A4640' }}>
-          <span style={{ color: '#8A8580' }}>Parent:</span>
+          <span style={{ color: '#8A8580' }}>Parent 1:</span>
           <span className="font-medium">{parentProfile.full_name}</span>
           <span style={{ color: '#8A8580' }}>·</span>
           <span style={{ color: '#8A8580' }}>{parentProfile.email}</span>
@@ -482,6 +483,24 @@ export default function StudentProfile({ student, skills, notes, attendance, med
       ) : (
         <div className="flex items-center gap-2 text-[12px] px-1" style={{ color: '#8A8580' }}>
           <span>No parent linked yet</span>
+        </div>
+      )}
+
+      {/* Parent 2 info */}
+      {parent2Profile && (
+        <div className="flex flex-wrap items-center gap-2 text-[12.5px] px-1" style={{ color: '#4A4640' }}>
+          <span style={{ color: '#8A8580' }}>Parent 2:</span>
+          <span className="font-medium">{parent2Profile.full_name}</span>
+          <span style={{ color: '#8A8580' }}>·</span>
+          <span style={{ color: '#8A8580' }}>{parent2Profile.email}</span>
+          {parent2Profile.phone && (
+            <>
+              <span style={{ color: '#8A8580' }}>·</span>
+              <a href={`tel:${parent2Profile.phone}`} className="font-medium" style={{ color: '#B8973A' }}>
+                📞 {parent2Profile.phone}
+              </a>
+            </>
+          )}
         </div>
       )}
 
