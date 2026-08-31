@@ -13,11 +13,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'period and program_id are required' }, { status: 400 })
   }
 
-  // Amount by session_day (monthly tuition rates)
-  const AMOUNT_BY_DAY: Record<number, number> = {
-    1: 22000,  // $220
-    3: 45000,  // $450
-    5: 69900,  // $699
+  // Amount by session_day (stored as text in DB)
+  const AMOUNT_BY_DAY: Record<string, number> = {
+    '1': 22000,  // $220
+    '3': 45000,  // $450
+    '5': 69900,  // $699
   }
 
   const admin = createAdminClient()
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
 
   const rows = toCreate.map((s: any) => ({
     student_id: s.id,
-    amount_cents: AMOUNT_BY_DAY[s.session_day as number] ?? 69900,
+    amount_cents: AMOUNT_BY_DAY[String(s.session_day)] ?? 69900,
     status: 'pending',
     period,
     due_date: due_date ?? null,
