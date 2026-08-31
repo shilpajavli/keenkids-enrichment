@@ -12,6 +12,7 @@ import LocalDate from '@/components/ui/LocalDate'
 import StudentInfoCard from '@/components/portal/StudentInfoCard'
 import ConsentWall from '@/components/portal/ConsentWall'
 import AutoRefresh from '@/components/ui/AutoRefresh'
+import ParentSignOutButton from '@/components/portal/ParentSignOutButton'
 
 const STRIPE_LINKS: Record<string, string> = {
   '5_day': 'https://buy.stripe.com/fZu3co3pf6zT1MHg1me3e02',
@@ -290,6 +291,13 @@ export default async function ParentPortalPage({
                   </div>
                 </div>
               </div>
+
+              {/* Parent self sign-out — visible when checked in but not yet signed out */}
+              {todayRec && todayRec.sign_in_time && !todayRec.sign_out_time && (
+                <div className="flex justify-end mb-3">
+                  <ParentSignOutButton studentId={student.id} />
+                </div>
+              )}
 
               {todaySchedule && (
                 <div className="rounded-xl p-3.5" style={{ background: '#F5F0E8', border: '1px solid rgba(184,151,58,0.25)' }}>
