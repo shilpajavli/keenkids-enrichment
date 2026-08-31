@@ -519,8 +519,8 @@ export default async function ParentPortalPage({
               </CardBody>
             </Card>
 
-            {/* Daily time schedule — compact */}
-            <Card>
+            {/* Daily time schedule — Sinnott only */}
+            {student.school?.name?.toLowerCase().includes('sinnott') && <Card>
               <CardHeader title="Daily Timing" />
               <CardBody className="p-3">
                 <div className="space-y-1.5">
@@ -542,7 +542,7 @@ export default async function ParentPortalPage({
                   ))}
                 </div>
               </CardBody>
-            </Card>
+            </Card>}
           </div>
 
           {/* Upcoming themes — horizontal chips */}
