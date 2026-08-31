@@ -25,8 +25,8 @@ export default async function CommunityPage() {
       : supabase.from('announcements').select('*').order('pinned', { ascending: false }).order('created_at', { ascending: false }),
     supabase.from('programs').select('id, name').order('start_date', { ascending: false }),
     programId
-      ? admin.from('students').select('id, parent_id, program_id').eq('program_id', programId)
-      : admin.from('students').select('id, parent_id, program_id'),
+      ? admin.from('students').select('id, parent_id, parent2_id, program_id').eq('program_id', programId)
+      : admin.from('students').select('id, parent_id, parent2_id, program_id'),
   ])
 
   return (

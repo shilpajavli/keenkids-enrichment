@@ -30,7 +30,8 @@ export async function POST(req: NextRequest) {
   try {
     await transporter.sendMail({
       from: `KeenKids Enrichment <${process.env.GMAIL_USER}>`,
-      to: emails,
+      to: process.env.GMAIL_USER,
+      bcc: emails,
       subject,
       html: `
         <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; color: #1A1814;">

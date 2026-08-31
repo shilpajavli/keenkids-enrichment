@@ -8,7 +8,7 @@ import { Pin, Trash2 } from 'lucide-react'
 
 interface Parent { id: string; full_name: string; email: string }
 interface Program { id: string; name: string }
-interface Student { id: string; parent_id: string | null; program_id: string | null }
+interface Student { id: string; parent_id: string | null; parent2_id?: string | null; program_id: string | null }
 
 export default function CommunityHub({ announcements: initial, parents, programs, students }: {
   announcements: Announcement[]
@@ -33,7 +33,7 @@ export default function CommunityHub({ announcements: initial, parents, programs
   const filteredParentList = programFilter === 'all'
     ? parentList
     : parentList.filter(p => {
-        const parentStudents = students.filter(s => s.parent_id === p.id)
+        const parentStudents = students.filter(s => s.parent_id === p.id || s.parent2_id === p.id)
         return parentStudents.some(s => s.program_id === programFilter)
       })
 
@@ -181,7 +181,7 @@ export default function CommunityHub({ announcements: initial, parents, programs
                   <option value="all">All camps ({parentList.length} families)</option>
                   {programs.map(p => {
                     const count = parentList.filter(par =>
-                      students.some(s => s.parent_id === par.id && s.program_id === p.id)
+                      students.some(s => (s.parent_id === par.id || s.parent2_id === par.id) && s.program_id === p.id)
                     ).length
                     return <option key={p.id} value={p.id}>{p.name} ({count} families)</option>
                   })}
