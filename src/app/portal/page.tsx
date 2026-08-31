@@ -153,11 +153,12 @@ export default async function ParentPortalPage({
     const paid = paidPeriods.has(m.label) || paidMonths.has(`${m.year}-${m.month}`)
     return { ...m, isPast, isCurrent, paid }
   })
-  // Show past + current + next upcoming month (so parents can pay ahead); hide further future unless already paid
+  // Show past + current; show next upcoming month only after the 20th (so parents can pay ahead)
+  const showNextMonth = localNow.getDate() >= 20
   let nextShown = false
   const visibleMonthRows = monthRows.filter(m => {
     if (m.isPast || m.isCurrent || m.paid) return true
-    if (!nextShown) { nextShown = true; return true } // show first upcoming month
+    if (showNextMonth && !nextShown) { nextShown = true; return true }
     return false
   })
   const unpaidDueCount = visibleMonthRows.filter(m => !m.paid).length
