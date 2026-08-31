@@ -97,6 +97,7 @@ export async function POST(req: NextRequest) {
         hour: 'numeric',
         minute: '2-digit',
         hour12: true,
+        timeZone: 'America/Los_Angeles',
       })
       const schoolName = signEvent.student.school?.name || 'school'
       const action = event_type === 'sign_in' ? 'signed in' : 'signed out'
