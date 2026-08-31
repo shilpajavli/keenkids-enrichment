@@ -123,7 +123,7 @@ export default async function ParentPortalPage({
   const curriculum = curriculumRes.data
   const media = mediaRes.data ?? []
   const notes = notesRes.data ?? []
-  const pendingPayments = payments.filter(p => p.status !== 'paid')
+  const pendingPayments = payments.filter((p: any) => p.status !== 'paid')
 
   // Monthly payment schedule Sep 2026 – May 2027
   const PROGRAM_MONTHS = [
