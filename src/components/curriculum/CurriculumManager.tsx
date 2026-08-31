@@ -9,6 +9,7 @@ interface Props {
   schools: School[]
   initialCurriculum: Curriculum[]
   currentWeek: string
+  defaultSchoolId?: string | null
 }
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
@@ -27,9 +28,9 @@ function getWeekOffset(weekOf: string, offset: number): string {
   return date.toISOString().slice(0, 10)
 }
 
-export default function CurriculumManager({ schools, initialCurriculum, currentWeek }: Props) {
+export default function CurriculumManager({ schools, initialCurriculum, currentWeek, defaultSchoolId }: Props) {
   const [curriculum, setCurriculum] = useState<Curriculum[]>(initialCurriculum)
-  const [selectedSchool, setSelectedSchool] = useState<string>(schools[0]?.id ?? '')
+  const [selectedSchool, setSelectedSchool] = useState<string>(defaultSchoolId ?? schools[0]?.id ?? '')
   const [selectedWeek, setSelectedWeek] = useState(currentWeek)
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)

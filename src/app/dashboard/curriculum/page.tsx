@@ -36,10 +36,11 @@ export default async function CurriculumPage() {
         <h1 className="font-serif text-3xl font-light text-ink">Curriculum</h1>
         <p className="text-ink-tertiary text-sm mt-1">Manage weekly curriculum for each school</p>
       </div>
-      <CurriculumManager 
-        schools={schoolsRes.data ?? []} 
+      <CurriculumManager
+        schools={schoolsRes.data ?? []}
         initialCurriculum={curriculumRes.data ?? []}
         currentWeek={currentWeek}
+        defaultSchoolId={schoolId}
       />
     </div>
   )
