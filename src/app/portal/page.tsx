@@ -484,9 +484,13 @@ export default async function ParentPortalPage({
                   return (
                     <div key={day} className="flex gap-4 px-5 py-2.5" style={{ borderBottom: '1px solid rgba(184,151,58,0.12)' }}>
                       <div className="w-20 text-[11px] font-medium flex-shrink-0 mt-0.5" style={{ color: '#B8973A' }}>{day}</div>
-                      <div className="flex-1">
+                      <div className="flex-1 space-y-0.5">
                         {dayItems.map((item, j) => (
-                          <span key={j} className="text-[13px]">{item.subject}{item.activity && <span style={{ color: '#8A8580' }}> · {item.activity}</span>}</span>
+                          <div key={j} className="flex items-baseline gap-2">
+                            <span className="text-[13px] font-medium">{item.subject}</span>
+                            {item.activity && <span className="text-[13px]" style={{ color: '#8A8580' }}>· {item.activity}</span>}
+                            {(item as any).grade && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: '#EFE6CC', color: '#8A6E25' }}>{(item as any).grade}</span>}
+                          </div>
                         ))}
                       </div>
                     </div>
