@@ -242,6 +242,12 @@ export default function CurriculumManager({ schools, initialCurriculum, currentW
                       onChange={e => updateItem(i, 'activity', e.target.value)}
                     />
                     <input
+                      className="input text-[12px] w-20"
+                      placeholder="Grade"
+                      value={(item as any).grade ?? ''}
+                      onChange={e => updateItem(i, 'grade' as any, e.target.value)}
+                    />
+                    <input
                       className="input text-[12px] flex-1"
                       placeholder="Materials (optional)"
                       value={item.materials ?? ''}
@@ -293,10 +299,11 @@ export default function CurriculumManager({ schools, initialCurriculum, currentW
                       <div className="w-24 text-[12px] font-medium" style={{ color: '#B8973A' }}>{day}</div>
                       <div className="flex-1 space-y-1">
                         {dayItems.map((item, i) => (
-                          <div key={i}>
+                          <div key={i} className="flex items-baseline gap-2">
                             <span className="text-[13px] font-medium">{item.subject}</span>
                             {item.activity && <span className="text-[13px]" style={{ color: '#4A4640' }}> — {item.activity}</span>}
-                            {item.materials && <span className="text-[11px] ml-2 px-1.5 py-0.5 rounded" style={{ background: '#F5F0E8', color: '#8A8580' }}>{item.materials}</span>}
+                            {(item as any).grade && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: '#EFE6CC', color: '#8A6E25' }}>{(item as any).grade}</span>}
+                            {item.materials && <span className="text-[11px] px-1.5 py-0.5 rounded" style={{ background: '#F5F0E8', color: '#8A8580' }}>{item.materials}</span>}
                           </div>
                         ))}
                       </div>
