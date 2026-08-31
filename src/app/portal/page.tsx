@@ -137,15 +137,15 @@ export default async function ParentPortalPage({
     { label: 'April 2027',     year: 2027, month: 3  },
     { label: 'May 2027',       year: 2027, month: 4  },
   ]
-  const paidMonths = new Set(
+  const paidPeriods = new Set(
     payments
-      .filter((p: any) => p.status === 'paid' && p.paid_at)
-      .map((p: any) => { const d = new Date(p.paid_at); return `${d.getFullYear()}-${d.getMonth()}` })
+      .filter((p: any) => p.status === 'paid' && p.period)
+      .map((p: any) => p.period as string)
   )
   const monthRows = PROGRAM_MONTHS.map(m => {
     const isPast = m.year < localNow.getFullYear() || (m.year === localNow.getFullYear() && m.month < localNow.getMonth())
     const isCurrent = m.year === localNow.getFullYear() && m.month === localNow.getMonth()
-    const paid = paidMonths.has(`${m.year}-${m.month}`)
+    const paid = paidPeriods.has(m.label)
     return { ...m, isPast, isCurrent, paid }
   })
   // Show past + current + next upcoming month (so parents can pay ahead); hide further future unless already paid
