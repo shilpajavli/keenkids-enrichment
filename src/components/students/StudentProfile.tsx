@@ -120,6 +120,7 @@ export default function StudentProfile({ student, skills, notes, attendance, med
   const [deleting, setDeleting] = useState(false)
   const [skillsState, setSkillsState] = useState(skills)
   const [showLinkParent, setShowLinkParent] = useState(false)
+  const [linkSlot, setLinkSlot] = useState<'parent' | 'parent2'>('parent')
   const [parentEmail, setParentEmail] = useState('')
   const [parentName, setParentName] = useState('')
   const [linking, setLinking] = useState(false)
@@ -159,7 +160,7 @@ export default function StudentProfile({ student, skills, notes, attendance, med
     const res = await fetch('/api/students/link-parent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ student_id: student.id, parent_email: parentEmail, parent_name: parentName }),
+      body: JSON.stringify({ student_id: student.id, parent_email: parentEmail, parent_name: parentName, slot: linkSlot }),
     })
     const json = await res.json()
     setLinking(false)
@@ -251,11 +252,18 @@ export default function StudentProfile({ student, skills, notes, attendance, med
               <div className="text-[11px]" style={{ color: '#8A8580' }}>overall progress</div>
             </div>
             <button
-              onClick={() => setShowLinkParent(p => !p)}
+              onClick={() => { setShowLinkParent(p => !p); setLinkSlot('parent') }}
               className="btn text-[12px] flex items-center gap-1.5"
               style={{ color: '#8A6E25' }}>
               <Link2 size={13} />
               Link parent
+            </button>
+            <button
+              onClick={() => { setShowLinkParent(p => !p); setLinkSlot('parent2') }}
+              className="btn text-[12px] flex items-center gap-1.5"
+              style={{ color: '#8A6E25' }}>
+              <Link2 size={13} />
+              Link parent 2
             </button>
             <button
               onClick={handleDelete}
@@ -274,7 +282,7 @@ export default function StudentProfile({ student, skills, notes, attendance, med
         <Card>
           <CardBody>
             <p className="text-[12.5px] mb-3" style={{ color: '#4A4640' }}>
-              Ask the parent to log in first at <strong>/portal</strong> using their Google account. Then search their email below to link them to {student.first_name}.
+              Linking <strong>{linkSlot === 'parent2' ? 'Parent 2' : 'Parent 1'}</strong> to {student.first_name}. Ask them to log in first at <strong>/portal</strong>, then search their email below.
             </p>
             <div className="flex gap-2">
               <input
@@ -310,7 +318,7 @@ export default function StudentProfile({ student, skills, notes, attendance, med
                 className="btn btn-gold text-[12px]"
                 onClick={linkParent}
                 disabled={linking || !parentEmail}>
-                {linking ? 'Linking…' : 'Link parent'}
+                {linking ? 'Linking…' : linkSlot === 'parent2' ? 'Link parent 2' : 'Link parent'}
               </button>
             </div>
             {linkMsg && <p className="text-[12px] mt-2" style={{ color: linkMsg.startsWith('✓') ? '#27500A' : '#791F1F' }}>{linkMsg}</p>}

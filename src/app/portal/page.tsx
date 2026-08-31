@@ -65,11 +65,20 @@ export default async function ParentPortalPage({
   if (!user) redirect('/auth/login')
 
   const admin = createAdminClient()
-  const { data: allStudents } = await admin
-    .from('students')
-    .select('*, school:schools(*), needs_escort, teacher_name, room_number, pickup_person, pickup_notes, material_fee_paid')
-    .eq('parent_id', user.id)
-    .eq('status', 'active')
+  // Fetch students where user is primary OR secondary parent
+  const [{ data: primary }, { data: secondary }] = await Promise.all([
+    admin.from('students')
+      .select('*, school:schools(*), needs_escort, teacher_name, room_number, pickup_person, pickup_notes, material_fee_paid')
+      .eq('parent_id', user.id).eq('status', 'active'),
+    admin.from('students')
+      .select('*, school:schools(*), needs_escort, teacher_name, room_number, pickup_person, pickup_notes, material_fee_paid')
+      .eq('parent2_id', user.id).eq('status', 'active'),
+  ])
+  const seen = new Set<string>()
+  const allStudents = [...(primary ?? []), ...(secondary ?? [])].filter(s => {
+    if (seen.has(s.id)) return false
+    seen.add(s.id); return true
+  })
 
   if (!allStudents || allStudents.length === 0) {
     return (

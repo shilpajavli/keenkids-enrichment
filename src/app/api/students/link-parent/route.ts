@@ -3,46 +3,39 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerClient()
-  const { student_id, parent_email, parent_name } = await req.json()
+  const { student_id, parent_email, parent_name, slot = 'parent' } = await req.json()
 
   const admin = createAdminClient()
 
   // Find or invite the parent user
   const { data: users } = await admin.auth.admin.listUsers()
-  let parentUser = users?.users.find((u: any) => u.email === parent_email)
+  let parentUser = users?.users.find((u: any) => u.email?.toLowerCase() === parent_email?.toLowerCase())
 
   if (!parentUser) {
-    // Invite them — they'll get a magic link email
     const { data, error } = await admin.auth.admin.inviteUserByEmail(parent_email)
     if (error) return NextResponse.json({ error: error.message }, { status: 400 })
     parentUser = data.user
   }
 
-  // Upsert their profile as parent
-  await admin.from('profiles').upsert({
-    id: parentUser.id,
-    email: parent_email,
-    full_name: parent_name || parent_email.split('@')[0],
-    role: 'parent',
-  }, { onConflict: 'id' })
+  // Upsert their profile — never downgrade an existing admin/teacher
+  const { data: existing } = await admin.from('profiles').select('role').eq('id', parentUser.id).single()
+  if (!existing || existing.role === 'parent') {
+    await admin.from('profiles').upsert({
+      id: parentUser.id,
+      email: parent_email,
+      full_name: parent_name || parent_email.split('@')[0],
+      role: 'parent',
+    }, { onConflict: 'id' })
+  }
 
-  // Link the student to the parent
-  const { error } = await supabase
+  // Link to parent_id or parent2_id based on slot
+  const field = slot === 'parent2' ? 'parent2_id' : 'parent_id'
+  const { error } = await admin
     .from('students')
-    .update({ parent_id: parentUser.id })
+    .update({ [field]: parentUser.id })
     .eq('id', student_id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
-
-  // Auto-create payment record if one doesn't exist
-  await admin.from('payments').upsert({
-    student_id,
-    parent_id: parentUser.id,
-    amount_cents: 17500,
-    currency: 'usd',
-    status: 'pending',
-    due_date: '2026-04-13',
-  }, { onConflict: 'student_id,parent_id', ignoreDuplicates: true })
 
   return NextResponse.json({ success: true })
 }
