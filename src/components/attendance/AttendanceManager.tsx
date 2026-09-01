@@ -54,7 +54,7 @@ function getLocalDateDisplay() {
 
 function formatTime(iso: string | null) {
   if (!iso) return null
-  return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+  return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' })
 }
 
 function gradeLabel(g: number) {

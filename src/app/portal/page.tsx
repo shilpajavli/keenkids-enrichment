@@ -51,7 +51,7 @@ function getMonday(date: Date = new Date()): string {
 
 function formatTime(ts: string | null): string {
   if (!ts) return '—'
-  return new Date(ts).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+  return new Date(ts).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' })
 }
 
 export default async function ParentPortalPage({
