@@ -9,7 +9,7 @@ export const metadata = { title: 'Attendance — KeenKids Enrichment' }
 
 export default async function AttendancePage() {
   const supabase = await createServerClient()
-  const today = format(new Date(), 'yyyy-MM-dd')
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' })
   const programId = await getCurrentProgramId()
 
   const { data: { user } } = await supabase.auth.getUser()

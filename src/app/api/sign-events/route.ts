@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
   }
   
   // Also update attendance record for today
-  const today = new Date().toISOString().slice(0, 10)
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' })
   const now = new Date().toISOString()
   
   if (event_type === 'sign_in') {
