@@ -36,8 +36,8 @@ export async function GET(req: NextRequest) {
       const hours = r.hours ?? 0
       const rate = r.hourly_rate ?? 0
       const pay = (hours * rate).toFixed(2)
-      const clockIn = r.clock_in ? new Date(r.clock_in).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : ''
-      const clockOut = r.clock_out ? new Date(r.clock_out).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : ''
+      const clockIn = r.clock_in ? new Date(r.clock_in).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Los_Angeles' }) : ''
+      const clockOut = r.clock_out ? new Date(r.clock_out).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Los_Angeles' }) : ''
       return [
         `"${r.teacher?.full_name ?? ''}"`,
         `"${r.teacher?.email ?? ''}"`,
