@@ -54,9 +54,9 @@ export async function POST(req: NextRequest) {
       event_type,
       recorded_by: user?.id,
     })
-    .select('*, student:students(id, full_name, parent_id, school:schools(name))')
+    .select('*, student:students(id, full_name, parent_id, parent2_id, school:schools(name))')
     .single()
-  
+
   if (insertError) {
     return NextResponse.json({ error: insertError.message }, { status: 400 })
   }
@@ -82,17 +82,20 @@ export async function POST(req: NextRequest) {
       .eq('date', today)
   }
   
-  // Send notification to parent
+  // Send notification to parent(s)
   let notificationError: string | null = null
-  
-  if (signEvent.student?.parent_id) {
-    const { data: parent } = await admin
+
+  const parentIds = [signEvent.student?.parent_id, (signEvent.student as any)?.parent2_id].filter(Boolean)
+
+  if (parentIds.length > 0) {
+    const { data: parentProfiles } = await admin
       .from('profiles')
       .select('email, full_name')
-      .eq('id', signEvent.student.parent_id)
-      .single()
-    
-    if (parent?.email) {
+      .in('id', parentIds)
+
+    const emails = (parentProfiles ?? []).map((p: { email: string }) => p.email).filter(Boolean)
+
+    if (emails.length > 0) {
       const eventTime = new Date().toLocaleTimeString('en-US', {
         hour: 'numeric',
         minute: '2-digit',
@@ -101,11 +104,11 @@ export async function POST(req: NextRequest) {
       })
       const schoolName = signEvent.student.school?.name || 'school'
       const action = event_type === 'sign_in' ? 'signed in' : 'signed out'
-      
+
       try {
         await transporter.sendMail({
           from: `KeenKids Enrichment <${process.env.GMAIL_USER}>`,
-          to: parent.email,
+          to: emails,
           subject: `${signEvent.student.full_name} ${action} at ${schoolName}`,
           html: `
             <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; color: #1A1814;">
