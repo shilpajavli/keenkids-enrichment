@@ -109,7 +109,9 @@ export default async function ParentPortalPage({
     supabase.from('attendance').select('*').eq('student_id', student.id).eq('date', today).maybeSingle(),
     supabase.from('attendance').select('date, status, sign_in_time, sign_out_time').eq('student_id', student.id).order('date', { ascending: false }).limit(10),
     admin.from('payments').select('*').eq('student_id', student.id).order('due_date', { ascending: false }),
-    supabase.from('announcements').select('*').order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(5),
+    student.school_id
+      ? supabase.from('announcements').select('*').or(`school_id.eq.${student.school_id},school_id.is.null`).order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(5)
+      : supabase.from('announcements').select('*').order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(5),
     student.school_id
       ? supabase.from('curriculum').select('*').eq('school_id', student.school_id).eq('week_of', currentWeek).single()
       : Promise.resolve({ data: null }),
