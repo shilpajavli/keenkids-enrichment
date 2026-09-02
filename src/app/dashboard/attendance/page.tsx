@@ -30,9 +30,10 @@ export default async function AttendancePage() {
     : { data: null }
   const programSchoolId = (programData as any)?.school?.id ?? null
 
-  // Day number 1=Mon…5=Fri in Pacific time (getDay: 0=Sun,1=Mon…6=Sat)
-  const pacificDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }))
-  const todayDayNum = pacificDate.getDay() // 1=Mon,2=Tue,3=Wed,4=Thu,5=Fri
+  // Day number 1=Mon…5=Fri in Pacific time
+  const pacificWeekday = new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: 'America/Los_Angeles' }).format(new Date())
+  const dayMap: Record<string, number> = { Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5 }
+  const todayDayNum = dayMap[pacificWeekday] ?? 0
 
   const schoolFiltered = teacherSchoolId
     ? (programSchoolId === teacherSchoolId ? allStudents : [])
