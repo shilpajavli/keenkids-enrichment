@@ -30,9 +30,9 @@ export default async function AttendancePage() {
     : { data: null }
   const programSchoolId = (programData as any)?.school?.id ?? null
 
-  // Day number 1=Mon…5=Fri in Pacific time
-  const todayDayNum = new Date().toLocaleDateString('en-US', { weekday: 'short', timeZone: 'America/Los_Angeles' }) === 'Sun' ? 0
-    : ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].indexOf(new Date().toLocaleDateString('en-US', { weekday: 'short', timeZone: 'America/Los_Angeles' })) + 1
+  // Day number 1=Mon…5=Fri in Pacific time (getDay: 0=Sun,1=Mon…6=Sat)
+  const pacificDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }))
+  const todayDayNum = pacificDate.getDay() // 1=Mon,2=Tue,3=Wed,4=Thu,5=Fri
 
   const schoolFiltered = teacherSchoolId
     ? (programSchoolId === teacherSchoolId ? allStudents : [])
@@ -40,7 +40,7 @@ export default async function AttendancePage() {
 
   // Filter by enrolled_days if set (Sinnott); show all if not set (Mattos)
   const students = schoolFiltered.filter((s: any) =>
-    !s.enrolled_days?.length || s.enrolled_days.includes(todayDayNum)
+    !s.enrolled_days?.length || s.enrolled_days.map(Number).includes(todayDayNum)
   )
   const studentIds = students.map(s => s.id)
 
