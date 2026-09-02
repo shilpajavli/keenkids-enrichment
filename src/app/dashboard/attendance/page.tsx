@@ -17,7 +17,7 @@ export default async function AttendancePage() {
   const teacherSchoolId = profile?.role === 'teacher' ? (profile?.school_id ?? null) : null
 
   const [studentsRes, classesRes, todayRes] = await Promise.all([
-    supabase.from('students').select('id, full_name, last_name, grade, avatar_url, room_number, needs_escort, teacher_name, alerts, session_day, school_id, pickup_person, pickup_notes').eq('program_id', programId ?? '').eq('status', 'active').order('last_name'),
+    supabase.from('students').select('id, full_name, last_name, grade, avatar_url, room_number, needs_escort, teacher_name, alerts, session_day, enrolled_days, school_id, pickup_person, pickup_notes').eq('program_id', programId ?? '').eq('status', 'active').order('last_name'),
     supabase.from('classes').select('*').eq('program_id', programId ?? '').order('day_of_week').order('start_time'),
     supabase.from('attendance').select('id, student_id, class_id, status, sign_in_time, sign_out_time').eq('date', today),
   ])
@@ -30,9 +30,18 @@ export default async function AttendancePage() {
     : { data: null }
   const programSchoolId = (programData as any)?.school?.id ?? null
 
-  const students = teacherSchoolId
+  // Day number 1=Mon…5=Fri in Pacific time
+  const todayDayNum = new Date().toLocaleDateString('en-US', { weekday: 'short', timeZone: 'America/Los_Angeles' }) === 'Sun' ? 0
+    : ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].indexOf(new Date().toLocaleDateString('en-US', { weekday: 'short', timeZone: 'America/Los_Angeles' })) + 1
+
+  const schoolFiltered = teacherSchoolId
     ? (programSchoolId === teacherSchoolId ? allStudents : [])
     : allStudents
+
+  // Filter by enrolled_days if set (Sinnott); show all if not set (Mattos)
+  const students = schoolFiltered.filter((s: any) =>
+    !s.enrolled_days?.length || s.enrolled_days.includes(todayDayNum)
+  )
   const studentIds = students.map(s => s.id)
 
   const { data: history } = studentIds.length
