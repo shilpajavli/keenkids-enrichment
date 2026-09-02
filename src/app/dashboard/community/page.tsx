@@ -17,7 +17,10 @@ export default async function CommunityPage() {
     : { data: null }
   const schoolId = program?.school_id ?? null
 
-  const allParentsRes = await admin.from('profiles').select('id, full_name, email').eq('role', 'parent').order('full_name')
+  const [allParentsRes, schoolsRes] = await Promise.all([
+    admin.from('profiles').select('id, full_name, email').eq('role', 'parent').order('full_name'),
+    admin.from('schools').select('id, name').order('name'),
+  ])
 
   const [announcementsRes, programsRes, studentsRes] = await Promise.all([
     schoolId
@@ -40,6 +43,7 @@ export default async function CommunityPage() {
         parents={allParentsRes.data ?? []}
         programs={programsRes.data ?? []}
         students={studentsRes.data ?? []}
+        schools={schoolsRes.data ?? []}
       />
     </div>
   )

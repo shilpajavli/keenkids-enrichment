@@ -9,14 +9,17 @@ import { Pin, Trash2 } from 'lucide-react'
 interface Parent { id: string; full_name: string; email: string }
 interface Program { id: string; name: string }
 interface Student { id: string; parent_id: string | null; parent2_id?: string | null; program_id: string | null }
+interface School { id: string; name: string }
 
-export default function CommunityHub({ announcements: initial, parents, programs, students }: {
+export default function CommunityHub({ announcements: initial, parents, programs, students, schools }: {
   announcements: Announcement[]
   parents: Parent[]
   programs: Program[]
   students: Student[]
+  schools: School[]
 }) {
   const [announcements, setAnnouncements] = useState(initial)
+  const [annSchoolId, setAnnSchoolId] = useState<string>('all')
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [pinned, setPinned] = useState(false)
@@ -66,7 +69,7 @@ export default function CommunityHub({ announcements: initial, parents, programs
     const res = await fetch('/api/announcements', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, body, pinned }),
+      body: JSON.stringify({ title, body, pinned, school_id: annSchoolId === 'all' ? null : annSchoolId }),
     })
     const { data } = await res.json()
     if (data) setAnnouncements(prev => [data, ...prev])
@@ -129,13 +132,22 @@ export default function CommunityHub({ announcements: initial, parents, programs
                 onChange={e => setBody(e.target.value)}
                 style={{ resize: 'none' }}
               />
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-[12.5px] cursor-pointer" style={{ color: '#4A4640' }}>
-                  <input type="checkbox" checked={pinned} onChange={e => setPinned(e.target.checked)} />
-                  Pin to top
-                </label>
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 text-[12.5px] cursor-pointer" style={{ color: '#4A4640' }}>
+                    <input type="checkbox" checked={pinned} onChange={e => setPinned(e.target.checked)} />
+                    Pin to top
+                  </label>
+                  <select
+                    className="input text-[12px] py-1"
+                    value={annSchoolId}
+                    onChange={e => setAnnSchoolId(e.target.value)}>
+                    <option value="all">All schools</option>
+                    {schools.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                </div>
                 <button className="btn btn-gold text-[12px]" onClick={postAnnouncement} disabled={posting}>
-                  {posting ? 'Posting…' : 'Post to all families'}
+                  {posting ? 'Posting…' : 'Post'}
                 </button>
               </div>
             </CardBody>
@@ -151,7 +163,14 @@ export default function CommunityHub({ announcements: initial, parents, programs
                       <div className="font-serif text-[16px] font-light">{ann.title}</div>
                     </div>
                     <div className="text-[12.5px] leading-relaxed mb-2" style={{ color: '#4A4640' }}>{ann.body}</div>
-                    <div className="text-[11px]" style={{ color: '#8A8580' }}>{formatRelative(ann.created_at)}</div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[11px]" style={{ color: '#8A8580' }}>{formatRelative(ann.created_at)}</span>
+                      {(ann as any).school_id && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: '#E8E4F8', color: '#5B4B8A' }}>
+                          {schools.find(s => s.id === (ann as any).school_id)?.name ?? 'School'}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <button onClick={() => deleteAnnouncement(ann.id)}
                     className="text-[#8A8580] hover:text-[#791F1F] transition-colors mt-0.5 flex-shrink-0">
