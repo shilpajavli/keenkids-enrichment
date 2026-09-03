@@ -25,6 +25,7 @@ const GRADE_OPTIONS = [
 ]
 
 export default function StudentInfoCard({
+  studentId,
   teacherName: initial_teacher,
   roomNumber: initial_room,
   needsEscort: initial_escort = false,
@@ -51,6 +52,7 @@ export default function StudentInfoCard({
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        student_id: studentId,
         teacher_name: teacher.trim() || null,
         room_number: room.trim() || null,
         needs_escort: escort,
