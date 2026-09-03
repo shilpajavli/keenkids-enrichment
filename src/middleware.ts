@@ -25,16 +25,16 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const { data: { session } } = await supabase.auth.getSession()
+  const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
 
   // Redirect unauthenticated users away from dashboard
-  if (pathname.startsWith('/dashboard') && !session) {
+  if (pathname.startsWith('/dashboard') && !user) {
     return NextResponse.redirect(new URL('/auth/login', request.url))
   }
 
   // Redirect authenticated users away from login
-  if (pathname.startsWith('/auth/login') && session) {
+  if (pathname.startsWith('/auth/login') && user) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
