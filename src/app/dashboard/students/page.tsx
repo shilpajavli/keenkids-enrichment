@@ -26,6 +26,7 @@ export default async function StudentsPage() {
     `)
     .eq('program_id', programId ?? '')
     .eq('status', 'active')
+    .order('parent_id', { ascending: true, nullsFirst: true })
     .order('created_at', { ascending: false })
 
   // Resolve the program's school to compare against teacher's assigned school

@@ -161,13 +161,19 @@ export default function StudentList({ students: initial, programId, schools = []
   const grades = useMemo(() => [...new Set(students.map(s => s.grade))].sort(), [students])
 
   const filtered = useMemo(() =>
-    students.filter(s => {
-      const matchSearch = s.full_name.toLowerCase().includes(search.toLowerCase())
-      const matchGrade = gradeFilter === 'all' || s.grade === Number(gradeFilter)
-      const matchSchool = schoolFilter === 'all' || s.school_id === schoolFilter
-      const matchPlan = planFilter === 'all' || s.enrollment_type === planFilter
-      return matchSearch && matchGrade && matchSchool && matchPlan
-    }),
+    students
+      .filter(s => {
+        const matchSearch = s.full_name.toLowerCase().includes(search.toLowerCase())
+        const matchGrade = gradeFilter === 'all' || s.grade === Number(gradeFilter)
+        const matchSchool = schoolFilter === 'all' || s.school_id === schoolFilter
+        const matchPlan = planFilter === 'all' || s.enrollment_type === planFilter
+        return matchSearch && matchGrade && matchSchool && matchPlan
+      })
+      .sort((a, b) => {
+        if (!a.parent_id && b.parent_id) return -1
+        if (a.parent_id && !b.parent_id) return 1
+        return 0
+      }),
     [students, search, gradeFilter, schoolFilter, planFilter]
   )
 
