@@ -65,7 +65,7 @@ export default async function DashboardPage() {
   const weekStart = getMonday(new Date())
 
   const [studentsRes, programRes, allStudentsRes] = await Promise.all([
-    supabase.from('students').select('id, full_name, grade, school_id').eq('program_id', programId ?? '').eq('status', 'active').order('full_name'),
+    supabase.from('students').select('id, full_name, grade, school_id, enrolled_days').eq('program_id', programId ?? '').eq('status', 'active').order('full_name'),
     programId
       ? supabase.from('programs').select('name, school:schools(id, name)').eq('id', programId).single()
       : Promise.resolve({ data: null }),
@@ -152,8 +152,17 @@ export default async function DashboardPage() {
   const netRevenueCents = totalCollectedCents - totalRefundedCents
 
   const checkedInIds = new Set(attendance.filter(a => a.status === 'present' || a.status === 'late').map(a => a.student_id))
-  const present = (students ?? []).filter(s => checkedInIds.has(s.id))
-  const absent  = (students ?? []).filter(s => !checkedInIds.has(s.id))
+
+  // Filter by enrolled_days for today (same logic as attendance page)
+  const pacificWeekday = new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: 'America/Los_Angeles' }).format(new Date())
+  const dayMap: Record<string, number> = { Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5 }
+  const todayDayNum = dayMap[pacificWeekday] ?? 0
+  const todayStudents = (students ?? []).filter((s: any) =>
+    !s.enrolled_days?.length || s.enrolled_days.map(Number).includes(todayDayNum)
+  )
+
+  const present = todayStudents.filter(s => checkedInIds.has(s.id))
+  const absent  = todayStudents.filter(s => !checkedInIds.has(s.id))
 
   // Group unpaid by student
   const unpaidByStudent = unpaidPayments.reduce((acc: Record<string, { student: any; totalCents: number; hasOverdue: boolean }>, p) => {
