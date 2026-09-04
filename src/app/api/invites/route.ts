@@ -73,11 +73,14 @@ export async function PATCH(req: NextRequest) {
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
   if (profile?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const { id, school_id } = await req.json()
+  const { id, school_id, role } = await req.json()
   if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
 
   const admin = createAdminClient()
-  const { error } = await admin.from('profiles').update({ school_id: school_id || null }).eq('id', id)
+  const update: Record<string, any> = {}
+  if (school_id !== undefined) update.school_id = school_id || null
+  if (role !== undefined) update.role = role
+  const { error } = await admin.from('profiles').update(update).eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true })
 }

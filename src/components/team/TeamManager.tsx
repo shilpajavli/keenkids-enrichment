@@ -26,6 +26,7 @@ export default function TeamManager() {
   const [sending, setSending] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [savingSchool, setSavingSchool] = useState<string | null>(null)
+  const [removingId, setRemovingId] = useState<string | null>(null)
   const [teachersOpen, setTeachersOpen] = useState(false)
   const [parentsOpen, setParentsOpen] = useState(false)
 
@@ -59,6 +60,18 @@ export default function TeamManager() {
       await fetchMembers()
     }
     setSending(false)
+  }
+
+  async function removeTeacher(memberId: string, name: string) {
+    if (!confirm(`Remove ${name || 'this teacher'}? They will no longer be able to access the app.`)) return
+    setRemovingId(memberId)
+    await fetch('/api/invites', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: memberId, role: 'inactive' }),
+    })
+    setMembers(prev => prev.filter(m => m.id !== memberId))
+    setRemovingId(null)
   }
 
   async function assignSchool(memberId: string, schoolId: string) {
@@ -163,6 +176,13 @@ export default function TeamManager() {
                   {schools.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
                 {savingSchool === m.id && <span className="text-xs" style={{ color: '#8A8580' }}>Saving…</span>}
+                <button
+                  onClick={() => removeTeacher(m.id, m.full_name)}
+                  disabled={removingId === m.id}
+                  className="text-xs px-2 py-1 rounded-lg transition-opacity disabled:opacity-50"
+                  style={{ background: '#FDECEA', color: '#791F1F' }}>
+                  {removingId === m.id ? 'Removing…' : 'Remove'}
+                </button>
               </div>
             </div>
           ))
