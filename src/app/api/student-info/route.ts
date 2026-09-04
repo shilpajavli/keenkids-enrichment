@@ -6,7 +6,7 @@ export async function PATCH(req: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { student_id, teacher_name, room_number, needs_escort, pickup_person, pickup_notes, grade } = await req.json()
+  const { student_id, teacher_name, room_number, needs_escort, pickup_person, pickup_notes, grade, parent_notes } = await req.json()
   if (!student_id) return NextResponse.json({ error: 'student_id required' }, { status: 400 })
 
   const admin = createAdminClient()
@@ -18,7 +18,7 @@ export async function PATCH(req: Request) {
 
   const { error } = await admin
     .from('students')
-    .update({ teacher_name, room_number, needs_escort: needs_escort ?? false, pickup_person, pickup_notes, ...(grade !== undefined ? { grade } : {}) })
+    .update({ teacher_name, room_number, needs_escort: needs_escort ?? false, pickup_person, pickup_notes, ...(grade !== undefined ? { grade } : {}), ...(parent_notes !== undefined ? { parent_notes } : {}) })
     .eq('id', student_id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

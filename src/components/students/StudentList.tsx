@@ -17,6 +17,8 @@ interface StudentRow {
   avatar_url: string | null
   classes: string[]
   enrolled_at: string
+  created_at: string | null
+  parent_notes?: string | null
   skills_mastered: number
   skills_total: number
   parent_id: string | null
@@ -144,7 +146,7 @@ export default function StudentList({ students: initial, programId, schools = []
       classes: [],
       school: schools.find(s => s.id === form.school_id),
     }
-    setStudents(prev => [...prev, newStudent])
+    setStudents(prev => [newStudent, ...prev])
     setForm({ 
       first_name: '', 
       last_name: '', 
@@ -354,6 +356,9 @@ export default function StudentList({ students: initial, programId, schools = []
         )}
         {filtered.map((student, i) => {
           const progress = calcProgress(student.skills_mastered, student.skills_total)
+          const isNew = student.created_at
+            ? (Date.now() - new Date(student.created_at).getTime()) < 14 * 24 * 60 * 60 * 1000
+            : false
           return (
             <Link key={student.id} href={`/dashboard/students/${student.id}`}
               className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-[#FAF7F2]"
@@ -375,9 +380,15 @@ export default function StudentList({ students: initial, programId, schools = []
                     </span>
                   )}
                   {student.enrollment_type && student.enrollment_type !== '5_day' && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full" 
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full"
                       style={{ background: '#FEF3C7', color: '#92400E' }}>
                       {student.enrollment_type.replace('_', '-')}
+                    </span>
+                  )}
+                  {isNew && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                      style={{ background: '#DCFCE7', color: '#166534' }}>
+                      New
                     </span>
                   )}
                 </div>
@@ -396,6 +407,12 @@ export default function StudentList({ students: initial, programId, schools = []
                     {student.skills_mastered}/{student.skills_total} skills
                   </span>
                 </div>
+                {student.parent_notes && (
+                  <div className="mt-1.5 text-[11.5px] px-2 py-1 rounded-lg inline-flex items-center gap-1"
+                    style={{ background: '#FFF9EC', color: '#8A6E25', border: '1px solid rgba(184,151,58,0.25)' }}>
+                    <span>📝</span> {student.parent_notes}
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-col items-end gap-1">

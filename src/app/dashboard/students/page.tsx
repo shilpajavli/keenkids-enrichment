@@ -26,7 +26,7 @@ export default async function StudentsPage() {
     `)
     .eq('program_id', programId ?? '')
     .eq('status', 'active')
-    .order('full_name')
+    .order('created_at', { ascending: false })
 
   // Resolve the program's school to compare against teacher's assigned school
   const { data: programData } = programId
@@ -88,6 +88,7 @@ export default async function StudentsPage() {
     skills_total: s.student_skills?.length ?? 0,
     skills_mastered: s.student_skills?.filter((sk: any) => sk.status === 'mastered').length ?? 0,
     parent_email: s.parent_id ? (parentMap[s.parent_id] ?? null) : null,
+    created_at: (s as any).created_at ?? null,
   }))
 
   const gradeLabel = (g: number) => g === 0 ? 'K' : `Grade ${g}`

@@ -1,5 +1,11 @@
 import { createServerClient, createAdminClient } from '@/lib/supabase-server'
 import { NextRequest, NextResponse } from 'next/server'
+import nodemailer from 'nodemailer'
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD },
+})
 
 export async function GET(req: NextRequest) {
   const supabase = await createServerClient()
@@ -31,6 +37,21 @@ export async function POST(req: NextRequest) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+
+  // Email notification to admin
+  const name = `${body.first_name ?? ''} ${body.last_name ?? ''}`.trim() || 'A new student'
+  transporter.sendMail({
+    from: `KeenKids Enrichment <${process.env.GMAIL_USER}>`,
+    to: process.env.GMAIL_USER,
+    subject: `New enrollment: ${name}`,
+    html: `<div style="font-family:Georgia,serif;color:#1A1814;max-width:500px">
+      <h2 style="color:#B8973A;font-weight:300">New Student Enrolled</h2>
+      <p><strong>${name}</strong> has been added to the program.</p>
+      <p style="color:#8A8580;font-size:13px">Log in to link their parent account.</p>
+      <a href="https://keenkids.vercel.app/dashboard/students" style="display:inline-block;margin-top:12px;padding:10px 20px;background:#1A1814;color:#B8973A;text-decoration:none;border-radius:8px;font-size:13px">View Students →</a>
+    </div>`,
+  }).catch(() => {})
+
   return NextResponse.json({ data }, { status: 201 })
 }
 

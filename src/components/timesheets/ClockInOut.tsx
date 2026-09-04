@@ -23,7 +23,7 @@ export default function ClockInOut() {
     setLoading(true)
     const res = await fetch('/api/timesheets')
     const { data } = await res.json()
-    const today = new Date().toISOString().slice(0, 10)
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' })
     const todayEntry = (data ?? []).find((e: any) => e.date === today) ?? null
     setEntry(todayEntry)
     setLoading(false)

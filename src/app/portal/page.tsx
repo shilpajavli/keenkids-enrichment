@@ -10,6 +10,7 @@ import type { CurriculumItem } from '@/types'
 import Link from 'next/link'
 import LocalDate from '@/components/ui/LocalDate'
 import StudentInfoCard from '@/components/portal/StudentInfoCard'
+import ParentNotesCard from '@/components/portal/ParentNotesCard'
 import ConsentWall from '@/components/portal/ConsentWall'
 import AutoRefresh from '@/components/ui/AutoRefresh'
 import ParentSignOutButton from '@/components/portal/ParentSignOutButton'
@@ -69,10 +70,10 @@ export default async function ParentPortalPage({
   // Fetch students where user is primary OR secondary parent
   const [{ data: primary }, { data: secondary }] = await Promise.all([
     admin.from('students')
-      .select('*, school:schools(*), needs_escort, teacher_name, room_number, pickup_person, pickup_notes, material_fee_paid')
+      .select('*, school:schools(*), needs_escort, teacher_name, room_number, pickup_person, pickup_notes, parent_notes, material_fee_paid')
       .eq('parent_id', user.id).eq('status', 'active'),
     admin.from('students')
-      .select('*, school:schools(*), needs_escort, teacher_name, room_number, pickup_person, pickup_notes, material_fee_paid')
+      .select('*, school:schools(*), needs_escort, teacher_name, room_number, pickup_person, pickup_notes, parent_notes, material_fee_paid')
       .eq('parent2_id', user.id).eq('status', 'active'),
   ])
   const seen = new Set<string>()
@@ -257,6 +258,7 @@ export default async function ParentPortalPage({
             pickupNotes={student.pickup_notes ?? null}
             grade={student.grade ?? 0}
           />
+          <ParentNotesCard studentId={student.id} notes={student.parent_notes ?? null} />
 
           {/* Today's status */}
           <Card>
@@ -367,7 +369,7 @@ export default async function ParentPortalPage({
             <Card>
               <CardHeader title="Recent Attendance" />
               <CardBody className="p-0">
-                {attendance.slice(0, 5).map((rec, i) => (
+                {attendance.slice(0, 5).map((rec: any, i: number) => (
                   <div key={`${rec.date}-${i}`} className="flex items-center justify-between px-5 py-3"
                     style={{ borderBottom: i < Math.min(attendance.length, 5) - 1 ? '1px solid rgba(184,151,58,0.1)' : 'none' }}>
                     <div>
