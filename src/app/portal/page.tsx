@@ -22,9 +22,17 @@ const STRIPE_LINKS: Record<string, string> = {
 }
 const MATERIAL_FEE_LINK = 'https://buy.stripe.com/bJeeV6aRHgatbnhaH2e3e00'
 
-const DAILY_SCHEDULE = [
+const DAILY_SCHEDULE_MATTOS = [
   { day: 'Monday',    emoji: '🔧', theme: 'STEAM Build Day',               sub: 'Engineering & Design',              bullets: ['Design', 'Build', 'Test', 'Improve'],                                           tagline: 'BUILD IDEAS. BUILD CONFIDENCE.' },
   { day: 'Tuesday',   emoji: '💻', theme: 'Coding & Technology',           sub: 'Scratch (G2–6) · ScratchJr (G1–2)', bullets: ['Build stories & games', 'Animate characters', 'Solve problems', 'Think creatively'], tagline: 'CODE TODAY. CREATE TOMORROW.' },
+  { day: 'Wednesday', emoji: '🎤', theme: 'Public Speaking',               sub: 'Confidence Building',               bullets: ['Speak with confidence', 'Share ideas', 'Listen & connect', 'Lead with impact'],  tagline: 'SPEAK UP. STAND OUT.' },
+  { day: 'Thursday',  emoji: '🧪', theme: 'Science Lab & Experiments',     sub: 'Hands-on Discovery',                bullets: ['Fun experiments', 'Ask questions', 'Make observations', 'Discover science'],     tagline: 'EXPLORE SCIENCE. DISCOVER POSSIBILITIES.' },
+  { day: 'Friday',    emoji: '🎨', theme: 'Free Exploration Station',      sub: 'Open Creative Time',                bullets: ['Create freely', 'Build & design', 'Explore materials', 'Imagine & innovate'],    tagline: 'EXPLORE FREELY. CREATE FEARLESSLY.' },
+]
+
+const DAILY_SCHEDULE_SINNOTT = [
+  { day: 'Monday',    emoji: '💻', theme: 'Coding & Technology',           sub: 'Scratch (G2–6) · ScratchJr (G1–2)', bullets: ['Build stories & games', 'Animate characters', 'Solve problems', 'Think creatively'], tagline: 'CODE TODAY. CREATE TOMORROW.' },
+  { day: 'Tuesday',   emoji: '🔧', theme: 'STEAM Build Day',               sub: 'Engineering & Design',              bullets: ['Design', 'Build', 'Test', 'Improve'],                                           tagline: 'BUILD IDEAS. BUILD CONFIDENCE.' },
   { day: 'Wednesday', emoji: '🎤', theme: 'Public Speaking',               sub: 'Confidence Building',               bullets: ['Speak with confidence', 'Share ideas', 'Listen & connect', 'Lead with impact'],  tagline: 'SPEAK UP. STAND OUT.' },
   { day: 'Thursday',  emoji: '🧪', theme: 'Science Lab & Experiments',     sub: 'Hands-on Discovery',                bullets: ['Fun experiments', 'Ask questions', 'Make observations', 'Discover science'],     tagline: 'EXPLORE SCIENCE. DISCOVER POSSIBILITIES.' },
   { day: 'Friday',    emoji: '🎨', theme: 'Free Exploration Station',      sub: 'Open Creative Time',                bullets: ['Create freely', 'Build & design', 'Explore materials', 'Imagine & innovate'],    tagline: 'EXPLORE FREELY. CREATE FEARLESSLY.' },
@@ -103,6 +111,8 @@ export default async function ParentPortalPage({
   const today = localNow.toLocaleDateString('en-CA') // YYYY-MM-DD
   const todayDayIndex = localNow.getDay()
   const currentWeek = getMonday()
+  const isSinnott = student.school?.name?.toLowerCase().includes('sinnott')
+  const DAILY_SCHEDULE = isSinnott ? DAILY_SCHEDULE_SINNOTT : DAILY_SCHEDULE_MATTOS
   const todaySchedule = todayDayIndex >= 1 && todayDayIndex <= 5 ? DAILY_SCHEDULE[todayDayIndex - 1] : null
   const initials = student.full_name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
 
