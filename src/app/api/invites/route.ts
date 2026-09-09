@@ -82,5 +82,11 @@ export async function PATCH(req: NextRequest) {
   if (role !== undefined) update.role = role
   const { error } = await admin.from('profiles').update(update).eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Also update auth.users metadata so the trigger doesn't restore the old role on next login
+  if (role !== undefined) {
+    await admin.auth.admin.updateUserById(id, { user_metadata: { role } })
+  }
+
   return NextResponse.json({ success: true })
 }
