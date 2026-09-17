@@ -42,7 +42,9 @@ const DAYS = [
 
 const ENROLLMENT_LABELS: Record<EnrollmentType, string> = {
   '5_day': '5-day',
+  '4_day': '4-day',
   '3_day': '3-day',
+  '2_day': '2-day',
   '1_day': '1-day',
 }
 
@@ -372,7 +374,7 @@ export default function StudentProfile({ student, skills, notes, attendance, med
               <div className="flex items-center gap-2">
                 <label className="text-[12.5px]" style={{ color: '#4A4640' }}>Program</label>
                 <div className="flex gap-1">
-                  {(['5_day', '3_day', '1_day'] as EnrollmentType[]).map(type => (
+                  {(['5_day', '4_day', '3_day', '2_day', '1_day'] as EnrollmentType[]).map(type => (
                     <button
                       key={type}
                       type="button"

@@ -39,7 +39,9 @@ const DAYS = [
 
 const ENROLLMENT_PRESETS: Record<EnrollmentType, number[]> = {
   '5_day': [1, 2, 3, 4, 5],
+  '4_day': [1, 2, 3, 4],
   '3_day': [1, 3, 5],
+  '2_day': [1, 3],
   '1_day': [1],
 }
 
@@ -235,7 +237,7 @@ export default function StudentList({ students: initial, programId, schools = []
             <div className="flex-1">
               <label className="text-[11px] font-medium uppercase tracking-wide mb-1.5 block" style={{ color: '#8A8580' }}>Program</label>
               <div className="flex gap-2">
-                {(['5_day', '3_day', '1_day'] as EnrollmentType[]).map(type => (
+                {(['5_day', '4_day', '3_day', '2_day', '1_day'] as EnrollmentType[]).map(type => (
                   <button
                     key={type}
                     type="button"
@@ -319,7 +321,9 @@ export default function StudentList({ students: initial, programId, schools = []
           onChange={e => setPlanFilter(e.target.value)}>
           <option value="all">All plans</option>
           <option value="5_day">5-Day</option>
+          <option value="4_day">4-Day</option>
           <option value="3_day">3-Day</option>
+          <option value="2_day">2-Day</option>
           <option value="1_day">1-Day</option>
         </select>
         <div className="ml-auto flex items-center gap-3">

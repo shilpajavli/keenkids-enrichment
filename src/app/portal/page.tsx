@@ -17,7 +17,9 @@ import ParentSignOutButton from '@/components/portal/ParentSignOutButton'
 
 const STRIPE_LINKS: Record<string, string> = {
   '5_day': 'https://buy.stripe.com/fZu3co3pf6zT1MHg1me3e02',
+  '4_day': 'https://buy.stripe.com/fZu3co3pf6zT1MHg1me3e02',
   '3_day': 'https://buy.stripe.com/14A28k1h7aQ9dvp6qMe3e04',
+  '2_day': 'https://buy.stripe.com/14A28k1h7aQ9dvp6qMe3e04',
   '1_day': 'https://buy.stripe.com/3cIcMYbVLf6p8b57uQe3e03',
 }
 const MATERIAL_FEE_LINK = 'https://buy.stripe.com/bJeeV6aRHgatbnhaH2e3e00'

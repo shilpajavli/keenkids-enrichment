@@ -5,7 +5,7 @@ export type SkillStatus = 'mastered' | 'in_progress' | 'not_started'
 export type PaymentStatus = 'paid' | 'pending' | 'overdue' | 'refunded' | 'cancelled'
 export type MediaType = 'photo' | 'video'
 export type UserRole = 'admin' | 'teacher' | 'parent'
-export type EnrollmentType = '5_day' | '3_day' | '1_day'
+export type EnrollmentType = '5_day' | '4_day' | '3_day' | '2_day' | '1_day'
 export type SignEventType = 'sign_in' | 'sign_out'
 
 // ─── School ─────────────────────────────────────────────────────────────────
