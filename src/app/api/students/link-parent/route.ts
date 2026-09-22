@@ -14,8 +14,8 @@ export async function POST(req: NextRequest) {
   const admin = createAdminClient()
 
   // Find or invite the parent user
-  const { data: users } = await admin.auth.admin.listUsers()
-  let parentUser = users?.users.find((u: any) => u.email?.toLowerCase() === parent_email?.toLowerCase())
+  const { data: existingUser } = await admin.auth.admin.getUserByEmail(parent_email)
+  let parentUser: any = existingUser?.user ?? null
   const isNewUser = !parentUser
 
   if (!parentUser) {
