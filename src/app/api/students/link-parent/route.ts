@@ -13,10 +13,14 @@ export async function POST(req: NextRequest) {
 
   const admin = createAdminClient()
 
-  // Find or invite the parent user
-  const { data: existingUser } = await admin.auth.admin.getUserByEmail(parent_email)
+  // Find or invite the parent user + fetch student name in parallel
+  const [{ data: existingUser }, { data: studentData }] = await Promise.all([
+    admin.auth.admin.getUserByEmail(parent_email),
+    admin.from('students').select('full_name').eq('id', student_id).single(),
+  ])
   let parentUser: any = existingUser?.user ?? null
   const isNewUser = !parentUser
+  const studentName = studentData?.full_name ?? 'your child'
 
   if (!parentUser) {
     const { data, error } = await admin.auth.admin.inviteUserByEmail(parent_email)
@@ -24,29 +28,24 @@ export async function POST(req: NextRequest) {
     parentUser = data.user
   }
 
-  // Upsert their profile — never downgrade an existing admin/teacher
-  const { data: existing } = await admin.from('profiles').select('role').eq('id', parentUser.id).single()
-  if (!existing || existing.role === 'parent') {
-    await admin.from('profiles').upsert({
-      id: parentUser.id,
-      email: parent_email,
-      full_name: parent_name || parent_email.split('@')[0],
-      role: 'parent',
-    }, { onConflict: 'id' })
-  }
-
-  // Link to parent_id or parent2_id based on slot
+  // Upsert profile + link student in parallel
   const field = slot === 'parent2' ? 'parent2_id' : 'parent_id'
-  const { error } = await admin
-    .from('students')
-    .update({ [field]: parentUser.id })
-    .eq('id', student_id)
+  const [, linkRes] = await Promise.all([
+    admin.from('profiles').select('role').eq('id', parentUser.id).single().then(async ({ data: existing }) => {
+      if (!existing || existing.role === 'parent') {
+        return admin.from('profiles').upsert({
+          id: parentUser.id,
+          email: parent_email,
+          full_name: parent_name || parent_email.split('@')[0],
+          role: 'parent',
+        }, { onConflict: 'id' })
+      }
+    }),
+    admin.from('students').update({ [field]: parentUser.id }).eq('id', student_id),
+  ])
 
+  const error = (linkRes as any)?.error
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
-
-  // Send welcome email
-  const { data: student } = await admin.from('students').select('full_name').eq('id', student_id).single()
-  const studentName = student?.full_name ?? 'your child'
   const portalUrl = `${process.env.NEXT_PUBLIC_APP_URL}/portal`
   const loginLine = isNewUser
     ? `<p style="font-size:14px;color:#4A4640;line-height:1.6;">You'll receive a separate email with a magic link to set up your account. Once logged in, your portal will be ready.</p>`
