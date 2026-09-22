@@ -13,14 +13,15 @@ export async function POST(req: NextRequest) {
 
   const admin = createAdminClient()
 
-  // Find or invite the parent user + fetch student name in parallel
-  const [{ data: existingUser }, { data: studentData }] = await Promise.all([
-    admin.auth.admin.getUserByEmail(parent_email),
+  // Check profiles table first (fast), only hit auth API if not found
+  const [{ data: existingProfile }, { data: studentData }] = await Promise.all([
+    admin.from('profiles').select('id, role').ilike('email', parent_email).single(),
     admin.from('students').select('full_name').eq('id', student_id).single(),
   ])
-  let parentUser: any = existingUser?.user ?? null
-  const isNewUser = !parentUser
   const studentName = studentData?.full_name ?? 'your child'
+
+  let parentUser: any = existingProfile ? { id: existingProfile.id } : null
+  const isNewUser = !parentUser
 
   if (!parentUser) {
     const { data, error } = await admin.auth.admin.inviteUserByEmail(parent_email)
@@ -30,19 +31,19 @@ export async function POST(req: NextRequest) {
 
   // Upsert profile + link student in parallel
   const field = slot === 'parent2' ? 'parent2_id' : 'parent_id'
-  const [, linkRes] = await Promise.all([
-    admin.from('profiles').select('role').eq('id', parentUser.id).single().then(async ({ data: existing }) => {
-      if (!existing || existing.role === 'parent') {
-        return admin.from('profiles').upsert({
-          id: parentUser.id,
-          email: parent_email,
-          full_name: parent_name || parent_email.split('@')[0],
-          role: 'parent',
-        }, { onConflict: 'id' })
-      }
-    }),
+  const shouldUpsertProfile = !existingProfile || existingProfile.role === 'parent'
+  const ops: Promise<any>[] = [
     admin.from('students').update({ [field]: parentUser.id }).eq('id', student_id),
-  ])
+  ]
+  if (shouldUpsertProfile) {
+    ops.push(admin.from('profiles').upsert({
+      id: parentUser.id,
+      email: parent_email.toLowerCase(),
+      full_name: parent_name || parent_email.split('@')[0],
+      role: 'parent',
+    }, { onConflict: 'id' }))
+  }
+  const [linkRes] = await Promise.all(ops)
 
   const error = (linkRes as any)?.error
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
