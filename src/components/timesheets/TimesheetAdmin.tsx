@@ -29,6 +29,12 @@ function fmtDate(iso: string) {
   return new Date(iso + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 }
 
+function getMonday(): string {
+  const d = new Date()
+  d.setDate(d.getDate() - d.getDay() + 1)
+  return d.toISOString().slice(0, 10)
+}
+
 export default function TimesheetAdmin() {
   const [entries, setEntries] = useState<Entry[]>([])
   const [loading, setLoading] = useState(true)
@@ -40,6 +46,8 @@ export default function TimesheetAdmin() {
   const [editHours, setEditHours] = useState<{ id: string; clockIn: string; clockOut: string } | null>(null)
   const [savingHours, setSavingHours] = useState(false)
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+  const [rangeFrom, setRangeFrom] = useState(getMonday())
+  const [rangeTo, setRangeTo] = useState(new Date().toISOString().slice(0, 10))
 
   const weekStart = getWeekStart(weekOffset)
   const weekEnd = new Date(weekStart)
@@ -138,11 +146,20 @@ export default function TimesheetAdmin() {
               style={{ background: '#EFE6CC', color: '#8A6E25' }}>Today</button>
           )}
         </div>
-        <a href={`/api/timesheets/export?week_start=${weekStart}`}
-          className="px-4 py-2 rounded-lg text-xs font-medium tracking-wide transition-opacity hover:opacity-80"
-          style={{ background: '#1A1814', color: '#B8973A', letterSpacing: '0.04em' }}>
-          ↓ Export CSV
-        </a>
+        <div className="flex items-center gap-2 flex-wrap">
+          <input type="date" value={rangeFrom} onChange={e => setRangeFrom(e.target.value)}
+            className="rounded-lg border px-2 py-1.5 text-xs"
+            style={{ borderColor: 'rgba(184,151,58,0.35)', background: '#FAF7F2', color: '#1A1814' }} />
+          <span className="text-xs" style={{ color: '#8A8580' }}>to</span>
+          <input type="date" value={rangeTo} onChange={e => setRangeTo(e.target.value)}
+            className="rounded-lg border px-2 py-1.5 text-xs"
+            style={{ borderColor: 'rgba(184,151,58,0.35)', background: '#FAF7F2', color: '#1A1814' }} />
+          <a href={`/api/timesheets/export?from=${rangeFrom}&to=${rangeTo}`}
+            className="px-4 py-2 rounded-lg text-xs font-medium tracking-wide transition-opacity hover:opacity-80"
+            style={{ background: '#1A1814', color: '#B8973A', letterSpacing: '0.04em' }}>
+            ↓ Export CSV
+          </a>
+        </div>
       </div>
 
       {/* Summary strip */}

@@ -11,6 +11,8 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url)
   const weekStart = searchParams.get('week_start')
+  const from = searchParams.get('from')
+  const to = searchParams.get('to')
 
   const admin = createAdminClient()
   let query = admin
@@ -19,7 +21,9 @@ export async function GET(req: NextRequest) {
     .eq('status', 'approved')
     .order('date', { ascending: true })
 
-  if (weekStart) {
+  if (from && to) {
+    query = query.gte('date', from).lte('date', to)
+  } else if (weekStart) {
     const end = new Date(weekStart)
     end.setDate(end.getDate() + 6)
     query = query.gte('date', weekStart).lte('date', end.toISOString().slice(0, 10))
@@ -54,7 +58,8 @@ export async function GET(req: NextRequest) {
   ]
 
   const csv = csvLines.join('\n')
-  const filename = weekStart ? `timesheets-${weekStart}.csv` : 'timesheets.csv'
+  const dateLabel = from && to ? `${from}_to_${to}` : weekStart ?? 'all'
+  const filename = `timesheets-${dateLabel}.csv`
 
   return new NextResponse(csv, {
     headers: {
