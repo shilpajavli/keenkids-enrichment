@@ -17,14 +17,12 @@ export default async function PaymentsPage() {
   const programId = await getCurrentProgramId()
   const admin = createAdminClient()
 
-  // Include all students (active + inactive) so cancelled students' payments still show
-  const { data: students } = await admin
-    .from('students')
-    .select('id, full_name')
-    .eq('program_id', programId ?? '')
-    .in('status', ['active', 'inactive'])
+  const [{ data: activeStudents }, { data: allStudents }] = await Promise.all([
+    admin.from('students').select('id, full_name, enrollment_type, session_day').eq('program_id', programId ?? '').eq('status', 'active').order('full_name'),
+    admin.from('students').select('id, full_name').eq('program_id', programId ?? '').in('status', ['active', 'inactive']),
+  ])
 
-  const studentIds = (students ?? []).map((s: any) => s.id)
+  const studentIds = (allStudents ?? []).map((s: any) => s.id)
 
   const { data: payments } = studentIds.length
     ? await admin
@@ -47,8 +45,9 @@ export default async function PaymentsPage() {
       <PaymentsDashboard
         payments={payments ?? []}
         summary={{ collected, outstanding, overdue }}
-        students={students ?? []}
-        enrolledCount={students?.length ?? 0}
+        students={allStudents ?? []}
+        activeStudents={activeStudents ?? []}
+        enrolledCount={activeStudents?.length ?? 0}
         programId={programId ?? undefined}
       />
     </div>

@@ -20,12 +20,15 @@ interface UnmatchedPayment {
 interface StudentOption {
   id: string
   full_name: string
+  enrollment_type?: string
+  session_day?: number
 }
 
 interface Props {
   payments: PaymentRecord[]
   summary: { collected: number; outstanding: number; overdue: number }
   students?: StudentOption[]
+  activeStudents?: StudentOption[]
   enrolledCount?: number
   programId?: string
 }
@@ -36,19 +39,14 @@ const PERIODS = [
   'January 2027', 'February 2027', 'March 2027', 'April 2027', 'May 2027',
 ]
 
+const TUITION_PERIODS = PERIODS.filter(p => p !== 'Enrollment Fee')
+
 const STATUS_VARIANT: Record<PaymentStatus, any> = {
-  paid: 'green',
-  pending: 'amber',
-  overdue: 'red',
-  refunded: 'gray',
-  cancelled: 'gray',
+  paid: 'green', pending: 'amber', overdue: 'red', refunded: 'gray', cancelled: 'gray',
 }
 
 const TYPE_LABELS: Record<string, string> = {
-  enrollment: 'Enrollment',
-  tuition: 'Tuition',
-  prorated: 'Prorated',
-  other: 'Other',
+  enrollment: 'Enrollment', tuition: 'Tuition', prorated: 'Prorated', other: 'Other',
 }
 
 const TYPE_COLORS: Record<string, { bg: string; color: string }> = {
@@ -58,12 +56,13 @@ const TYPE_COLORS: Record<string, { bg: string; color: string }> = {
   other:      { bg: '#F5F0E8', color: '#8A8580' },
 }
 
-const PAGE_SIZE = 20
+function getCurrentPeriod(): string {
+  const now = new Date()
+  return now.toLocaleString('en-US', { month: 'long', year: 'numeric' })
+}
 
-// Group payments by student
 function groupByStudent(payments: PaymentRecord[]) {
   const map = new Map<string, { studentId: string | null; name: string; payments: PaymentRecord[]; totalPaid: number; totalOwed: number; totalRefunded: number; hasCancelled: boolean }>()
-
   for (const p of payments) {
     const key = p.student?.id ?? `unlinked-${p.id}`
     const name = p.student?.full_name ?? p.child_name_entered ?? 'Unknown'
@@ -75,25 +74,26 @@ function groupByStudent(payments: PaymentRecord[]) {
     else if (p.status === 'refunded') entry.totalRefunded += (p.refund_amount_cents ?? p.amount_cents)
     else if (p.status === 'cancelled') entry.hasCancelled = true
   }
-
   return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name))
 }
 
-export default function PaymentsDashboard({ payments: initial, students = [], enrolledCount, programId }: Props) {
+const PAGE_SIZE = 30
+
+export default function PaymentsDashboard({ payments: initial, students = [], activeStudents = [], enrolledCount, programId }: Props) {
   const [payments, setPayments] = useState(initial)
+  const [view, setView] = useState<'roster' | 'history'>('roster')
+  const [rosterPeriod, setRosterPeriod] = useState(getCurrentPeriod())
   const [page, setPage] = useState(0)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [updating, setUpdating] = useState<string | null>(null)
   const [syncing, setSyncing] = useState(false)
   const [syncResult, setSyncResult] = useState<{ synced: number; unmatched: number; created: number; refunds: number; total: number } | null>(null)
   const [cancelling, setCancelling] = useState<string | null>(null)
-  const [cancelNotes, setCancelNotes] = useState<Record<string, string>>({})
   const [unmatched, setUnmatched] = useState<UnmatchedPayment[]>([])
   const [linking, setLinking] = useState<string | null>(null)
   const [linkSelections, setLinkSelections] = useState<Record<string, string>>({})
   const [genOpen, setGenOpen] = useState(false)
-  const [genPeriod, setGenPeriod] = useState(PERIODS[0])
-  const [genAmount, setGenAmount] = useState('699')
+  const [genPeriod, setGenPeriod] = useState(getCurrentPeriod())
   const [genDue, setGenDue] = useState('')
   const [generating, setGenerating] = useState(false)
   const [genResult, setGenResult] = useState<string | null>(null)
@@ -102,18 +102,18 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
   const loadUnmatched = useCallback(() => {
     fetch('/api/payments/unmatched').then(r => r.json()).then(j => setUnmatched(j.data ?? []))
   }, [])
-
   useEffect(() => { loadUnmatched() }, [loadUnmatched])
 
   function exportPaymentsCSV() {
     const rows = [
-      ['Student', 'Status', 'Amount', 'Refund', 'Plan', 'Paid Date', 'Due Date'],
+      ['Student', 'Status', 'Amount', 'Refund', 'Plan', 'Period', 'Paid Date', 'Due Date'],
       ...payments.map(p => [
         p.student?.full_name ?? p.child_name_entered ?? '',
         p.status,
         p.amount_cents ? `$${(p.amount_cents / 100).toFixed(2)}` : '',
         p.refund_amount_cents ? `$${(p.refund_amount_cents / 100).toFixed(2)}` : '',
         p.plan_name ?? '',
+        (p as any).period ?? '',
         p.paid_at ? new Date(p.paid_at).toLocaleDateString('en-US') : '',
         p.due_date ? new Date(p.due_date).toLocaleDateString('en-US') : '',
       ]),
@@ -121,10 +121,7 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
     const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `payments-${new Date().toISOString().slice(0, 10)}.csv`
-    a.click()
+    const a = document.createElement('a'); a.href = url; a.download = `payments-${new Date().toISOString().slice(0, 10)}.csv`; a.click()
     URL.revokeObjectURL(url)
   }
 
@@ -139,37 +136,14 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
   async function cancelPayment(id: string, studentId: string | null) {
     const note = window.prompt('Cancellation reason (optional):') ?? ''
     setCancelling(id)
-
-    // Mark payment cancelled
-    await fetch('/api/payments', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id,
-        status: 'cancelled',
-        cancellation_notes: note,
-        cancelled_at: new Date().toISOString(),
-      }),
-    })
+    await fetch('/api/payments', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status: 'cancelled', cancellation_notes: note, cancelled_at: new Date().toISOString() }) })
     setPayments(prev => prev.map(p => p.id === id ? { ...p, status: 'cancelled' as PaymentStatus } : p))
-
-    // Automatically mark student inactive
-    if (studentId) {
-      await fetch(`/api/students?id=${studentId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'inactive' }),
-      })
-    }
+    if (studentId) await fetch(`/api/students?id=${studentId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'inactive' }) })
     setCancelling(null)
   }
 
   async function deleteUnmatched(paymentId: string) {
-    await fetch('/api/payments', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: paymentId, status: 'cancelled' }),
-    })
+    await fetch('/api/payments', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: paymentId, status: 'cancelled' }) })
     setUnmatched(prev => prev.filter(p => p.id !== paymentId))
   }
 
@@ -177,52 +151,52 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
     const studentId = linkSelections[paymentId]
     if (!studentId) return
     setLinking(paymentId)
-    await fetch('/api/payments/unmatched', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ payment_id: paymentId, student_id: studentId }),
-    })
+    await fetch('/api/payments/unmatched', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ payment_id: paymentId, student_id: studentId }) })
     setUnmatched(prev => prev.filter(p => p.id !== paymentId))
     setLinking(null)
   }
 
   async function updatePayment(id: string, patch: Partial<PaymentRecord>) {
     setUpdating(id)
-    await fetch('/api/payments', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, ...patch }),
-    })
+    await fetch('/api/payments', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, ...patch }) })
     setPayments(prev => prev.map(p => p.id === id ? { ...p, ...patch } : p))
     setUpdating(null)
+  }
+
+  async function markPaidFromRoster(studentId: string) {
+    const existing = payments.find(p => p.student?.id === studentId && (p as any).period === rosterPeriod && (p.status === 'pending' || p.status === 'overdue'))
+    if (!existing) return
+    await updatePayment(existing.id, { status: 'paid', paid_at: new Date().toISOString() } as any)
   }
 
   async function generatePayments() {
     if (!programId) return
     setGenerating(true); setGenResult(null)
-    const res = await fetch('/api/payments/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        period: genPeriod,
-        due_date: genDue || null,
-        program_id: programId,
-      }),
-    })
+    const res = await fetch('/api/payments/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ period: genPeriod, due_date: genDue || null, program_id: programId }) })
     const json = await res.json()
-    if (json.error) {
-      setGenResult(`Error: ${json.error}`)
-    } else {
-      setGenResult(`✓ Created ${json.created} pending records · ${json.skipped ?? 0} already had ${genPeriod}`)
-      // Reload page data
-      window.location.reload()
-    }
+    if (json.error) { setGenResult(`Error: ${json.error}`) }
+    else { setGenResult(`✓ Created ${json.created} pending records · ${json.skipped ?? 0} already had ${genPeriod}`); window.location.reload() }
     setGenerating(false)
   }
 
-  const filteredPayments = filterPeriod
-    ? payments.filter(p => (p as any).period === filterPeriod)
-    : payments
+  // ── Roster view: all active students vs selected period ──
+  const rosterPaymentsByStudent = new Map<string, PaymentRecord>()
+  for (const p of payments) {
+    if ((p as any).period === rosterPeriod && p.student?.id) {
+      const existing = rosterPaymentsByStudent.get(p.student.id)
+      // prefer paid > pending > overdue
+      if (!existing || p.status === 'paid' || (p.status !== ('paid' as PaymentStatus) && existing.status !== ('paid' as PaymentStatus))) {
+        rosterPaymentsByStudent.set(p.student.id, p)
+      }
+    }
+  }
+  const rosterRows = activeStudents.map(s => ({ student: s, payment: rosterPaymentsByStudent.get(s.id) ?? null }))
+  const rosterPaid = rosterRows.filter(r => r.payment?.status === 'paid').length
+  const rosterPending = rosterRows.filter(r => r.payment && r.payment.status !== 'paid').length
+  const rosterNone = rosterRows.filter(r => !r.payment).length
+
+  // ── History view ──
+  const filteredPayments = filterPeriod ? payments.filter(p => (p as any).period === filterPeriod) : payments
   const grouped = groupByStudent(filteredPayments)
   const totalPages = Math.ceil(grouped.length / PAGE_SIZE)
   const pageItems = grouped.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
@@ -230,21 +204,13 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
   const totalPaid = payments.filter(p => p.status === 'paid').reduce((s, p) => s + p.amount_cents, 0)
   const totalOwed = payments.filter(p => p.status === 'pending' || p.status === 'overdue').reduce((s, p) => s + p.amount_cents, 0)
 
-  function toggleExpand(name: string) {
-    setExpanded(prev => {
-      const next = new Set(prev)
-      next.has(name) ? next.delete(name) : next.add(name)
-      return next
-    })
-  }
-
   return (
     <div className="space-y-5">
       {/* Summary KPIs */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <div className="card p-5">
           <div className="font-serif text-2xl font-light mb-1" style={{ color: '#27500A' }}>{formatCurrency(totalPaid)}</div>
-          <div className="text-[12px]" style={{ color: '#8A8580' }}>Collected</div>
+          <div className="text-[12px]" style={{ color: '#8A8580' }}>Total collected</div>
         </div>
         <div className="card p-5">
           <div className="font-serif text-2xl font-light mb-1" style={{ color: '#633806' }}>{formatCurrency(totalOwed)}</div>
@@ -254,41 +220,41 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
           <div className="font-serif text-2xl font-light mb-1" style={{ color: '#7C3AED' }}>
             {formatCurrency(payments.reduce((s, p) => s + (p.status === 'refunded' ? (p.refund_amount_cents ?? p.amount_cents) : 0), 0))}
           </div>
-          <div className="text-[12px]" style={{ color: '#8A8580' }}>Refunded · {payments.filter(p => p.status === 'refunded').length} payments</div>
-        </div>
-        <div className="card p-5">
-          <div className="font-serif text-2xl font-light mb-1" style={{ color: '#1A1814' }}>{groupByStudent(payments.filter(p => p.student?.id)).length}</div>
-          <div className="text-[12px]" style={{ color: '#8A8580' }}>Students with payments</div>
+          <div className="text-[12px]" style={{ color: '#8A8580' }}>Refunded</div>
         </div>
       </div>
 
-      {/* Sync + Export + Generate buttons */}
+      {/* View toggle */}
+      <div className="flex items-center gap-1 p-1 rounded-xl w-fit" style={{ background: '#F5F0E8', border: '1px solid rgba(184,151,58,0.2)' }}>
+        {(['roster', 'history'] as const).map(v => (
+          <button key={v} onClick={() => setView(v)}
+            className="px-4 py-1.5 rounded-lg text-[12px] font-medium transition-all"
+            style={view === v ? { background: '#1A1814', color: '#B8973A' } : { color: '#8A6E25' }}>
+            {v === 'roster' ? 'Monthly Roster' : 'Full History'}
+          </button>
+        ))}
+      </div>
+
+      {/* Tools row */}
       <div className="flex flex-wrap items-center gap-3">
-        <button onClick={exportPaymentsCSV}
-          className="btn text-[11.5px] py-1.5 px-4 flex items-center gap-1.5"
-          style={{ background: '#F5F0E8', color: '#8A6E25', border: '1px solid rgba(184,151,58,0.35)' }}>
-          <Download size={13} /> Export CSV
+        <button onClick={exportPaymentsCSV} className="btn text-[11.5px] py-1.5 px-3 flex items-center gap-1.5" style={{ background: '#F5F0E8', color: '#8A6E25', border: '1px solid rgba(184,151,58,0.35)' }}>
+          <Download size={12} /> Export CSV
         </button>
-        <button onClick={syncStripe} disabled={syncing}
-          className="btn text-[11.5px] py-1.5 px-4 flex items-center gap-1.5 disabled:opacity-50"
-          style={{ background: '#F5F0E8', color: '#8A6E25', border: '1px solid rgba(184,151,58,0.35)' }}>
-          {syncing ? 'Syncing…' : '↓ Sync past payments from Stripe'}
+        <button onClick={syncStripe} disabled={syncing} className="btn text-[11.5px] py-1.5 px-3 disabled:opacity-50" style={{ background: '#F5F0E8', color: '#8A6E25', border: '1px solid rgba(184,151,58,0.35)' }}>
+          {syncing ? 'Syncing…' : '↓ Sync Stripe'}
         </button>
         {programId && (
-          <button onClick={() => setGenOpen(v => !v)}
-            className="btn text-[11.5px] py-1.5 px-4 flex items-center gap-1.5"
-            style={{ background: '#1A1814', color: '#B8973A', border: '1px solid rgba(184,151,58,0.35)' }}>
-            + Generate monthly pending
+          <button onClick={() => setGenOpen(v => !v)} className="btn text-[11.5px] py-1.5 px-3" style={{ background: '#1A1814', color: '#B8973A', border: '1px solid rgba(184,151,58,0.35)' }}>
+            + Generate pending
           </button>
         )}
         {syncResult && (
           <span className="text-[12px]" style={{ color: '#4A4640' }}>
-            ✓ {syncResult.synced} synced · {syncResult.created ?? 0} new students · {syncResult.unmatched} unmatched · {syncResult.refunds ?? 0} refunds
+            ✓ {syncResult.synced} synced · {syncResult.created ?? 0} new · {syncResult.unmatched} unmatched
           </span>
         )}
       </div>
 
-      {/* Generate pending payments form */}
       {genOpen && (
         <div className="rounded-xl p-4 space-y-3" style={{ background: '#FAF7F2', border: '1px solid rgba(184,151,58,0.25)' }}>
           <div className="text-[12px] font-medium" style={{ color: '#1A1814' }}>Generate pending payment records for all active students</div>
@@ -296,7 +262,7 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
             <div>
               <label className="text-[10px] uppercase tracking-wide block mb-1" style={{ color: '#8A8580' }}>Period</label>
               <select className="input text-[12px]" value={genPeriod} onChange={e => setGenPeriod(e.target.value)}>
-                {PERIODS.map(p => <option key={p} value={p}>{p}</option>)}
+                {TUITION_PERIODS.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
             <div>
@@ -305,8 +271,7 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={generatePayments} disabled={generating}
-              className="btn btn-gold text-[12px] py-1.5 px-4 disabled:opacity-50">
+            <button onClick={generatePayments} disabled={generating} className="btn btn-gold text-[12px] py-1.5 px-4 disabled:opacity-50">
               {generating ? 'Generating…' : `Generate for ${genPeriod}`}
             </button>
             {genResult && <span className="text-[12px]" style={{ color: genResult.startsWith('Error') ? '#791F1F' : '#27500A' }}>{genResult}</span>}
@@ -314,28 +279,17 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
         </div>
       )}
 
-      {/* Period filter */}
-      <div className="flex items-center gap-2">
-        <span className="text-[11px]" style={{ color: '#8A8580' }}>Filter by period:</span>
-        <select className="text-[12px] rounded-lg px-2 py-1 outline-none" style={{ border: '1.5px solid rgba(184,151,58,0.3)', color: '#1A1814' }}
-          value={filterPeriod} onChange={e => { setFilterPeriod(e.target.value); setPage(0) }}>
-          <option value="">All periods</option>
-          {PERIODS.map(p => <option key={p} value={p}>{p}</option>)}
-        </select>
-      </div>
-
-      {/* Unmatched Stripe payments */}
+      {/* Unmatched */}
       {unmatched.length > 0 && (
         <div className="card overflow-hidden" style={{ border: '1.5px solid rgba(251,188,5,0.4)' }}>
           <div className="px-5 py-3 flex items-center justify-between" style={{ background: '#FFFBEA', borderBottom: '1px solid rgba(251,188,5,0.2)' }}>
             <div>
               <h3 className="font-medium text-sm" style={{ color: '#1A1814' }}>⚠ Unmatched Stripe Payments ({unmatched.length})</h3>
-              <p className="text-xs mt-0.5" style={{ color: '#8A8580' }}>Child name didn't match a student — link them below</p>
+              <p className="text-xs mt-0.5" style={{ color: '#8A8580' }}>Child name didn't match — link them below</p>
             </div>
           </div>
           {unmatched.map((p, i) => (
-            <div key={p.id} className="px-5 py-4"
-              style={{ borderBottom: i < unmatched.length - 1 ? '1px solid rgba(184,151,58,0.1)' : 'none' }}>
+            <div key={p.id} className="px-5 py-4" style={{ borderBottom: i < unmatched.length - 1 ? '1px solid rgba(184,151,58,0.1)' : 'none' }}>
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
                   <div className="text-[13px] font-medium" style={{ color: '#1A1814' }}>
@@ -346,23 +300,16 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <select value={linkSelections[p.id] ?? ''}
-                    onChange={e => setLinkSelections(prev => ({ ...prev, [p.id]: e.target.value }))}
-                    className="text-xs rounded-lg px-2 py-1.5 outline-none"
-                    style={{ border: '1.5px solid rgba(184,151,58,0.3)', color: '#1A1814', minWidth: 160 }}>
+                  <select value={linkSelections[p.id] ?? ''} onChange={e => setLinkSelections(prev => ({ ...prev, [p.id]: e.target.value }))}
+                    className="text-xs rounded-lg px-2 py-1.5 outline-none" style={{ border: '1.5px solid rgba(184,151,58,0.3)', color: '#1A1814', minWidth: 160 }}>
                     <option value="">Select student…</option>
                     {students.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
                   </select>
                   <button onClick={() => linkStudent(p.id)} disabled={!linkSelections[p.id] || linking === p.id}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium disabled:opacity-40"
-                    style={{ background: '#1A1814', color: '#B8973A' }}>
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium disabled:opacity-40" style={{ background: '#1A1814', color: '#B8973A' }}>
                     {linking === p.id ? 'Linking…' : 'Link'}
                   </button>
-                  <button onClick={() => deleteUnmatched(p.id)}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                    style={{ background: '#FEE2E2', color: '#991B1B' }}>
-                    Delete
-                  </button>
+                  <button onClick={() => deleteUnmatched(p.id)} className="px-3 py-1.5 rounded-lg text-xs font-medium" style={{ background: '#FEE2E2', color: '#991B1B' }}>Delete</button>
                 </div>
               </div>
             </div>
@@ -370,180 +317,190 @@ export default function PaymentsDashboard({ payments: initial, students = [], en
         </div>
       )}
 
-      {/* Student payment roster */}
-      <Card>
-        <CardHeader
-          title={`Payment history · ${grouped.length} students`}
-          action={
-            totalPages > 1 ? (
-              <div className="flex items-center gap-2 text-[12px]" style={{ color: '#8A8580' }}>
-                <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
-                  className="px-2 py-1 rounded disabled:opacity-30 hover:bg-[#F5F0E8]">←</button>
-                <span>Page {page + 1} of {totalPages}</span>
-                <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}
-                  className="px-2 py-1 rounded disabled:opacity-30 hover:bg-[#F5F0E8]">→</button>
+      {/* ── MONTHLY ROSTER VIEW ── */}
+      {view === 'roster' && (
+        <Card>
+          <CardHeader
+            title=""
+            action={
+              <div className="flex items-center gap-3">
+                <div className="flex gap-3 text-[12px]">
+                  <span style={{ color: '#27500A' }}>✓ {rosterPaid} paid</span>
+                  <span style={{ color: '#633806' }}>{rosterPending} pending</span>
+                  <span style={{ color: '#8A8580' }}>{rosterNone} no record</span>
+                </div>
+                <select className="text-[12px] rounded-lg px-2 py-1.5 outline-none font-medium"
+                  style={{ border: '1.5px solid rgba(184,151,58,0.3)', color: '#1A1814', background: '#FAF7F2' }}
+                  value={rosterPeriod} onChange={e => setRosterPeriod(e.target.value)}>
+                  {TUITION_PERIODS.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
               </div>
-            ) : null
-          }
-        />
-        <div>
-          {pageItems.length === 0 && (
-            <div className="py-12 text-center text-[13px]" style={{ color: '#8A8580' }}>No payment records</div>
-          )}
-          {pageItems.map((group, gi) => {
-            const isOpen = expanded.has(group.name)
-            return (
-              <div key={group.name} style={{ borderBottom: gi < pageItems.length - 1 ? '1px solid rgba(184,151,58,0.14)' : 'none' }}>
-                {/* Student summary row */}
-                <button onClick={() => toggleExpand(group.name)}
-                  className="w-full flex items-center gap-4 px-5 py-3.5 hover:bg-[#FAF7F2] transition-colors text-left">
-                  <div className="flex-1 text-[13px] font-medium flex items-center gap-2" style={{ color: '#1A1814' }}>
-                    {group.name}
-                    {group.hasCancelled && <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: '#F5F0E8', color: '#791F1F' }}>Cancelled</span>}
-                  </div>
-                  {group.totalPaid > 0 && <div className="text-[12px]" style={{ color: '#27500A' }}>{formatCurrency(group.totalPaid)} paid</div>}
-                  {group.totalOwed > 0 && <div className="text-[12px]" style={{ color: '#791F1F' }}>{formatCurrency(group.totalOwed)} owed</div>}
-                  {group.totalRefunded > 0 && <div className="text-[12px]" style={{ color: '#7C3AED' }}>−{formatCurrency(group.totalRefunded)} refunded</div>}
-                  <div className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: '#F5F0E8', color: '#8A8580' }}>
-                    {group.payments.length} record{group.payments.length !== 1 ? 's' : ''}
-                  </div>
-                  <span className="text-[10px]" style={{ color: '#8A8580' }}>{isOpen ? '▲' : '▼'}</span>
-                </button>
+            }
+          />
+          {/* Column headers */}
+          <div className="grid px-5 py-2 text-[10px] font-semibold tracking-widest uppercase"
+            style={{ color: '#8A8580', gridTemplateColumns: '1fr 120px 110px 80px', borderBottom: '1px solid rgba(184,151,58,0.14)' }}>
+            <span>Student</span>
+            <span>Plan</span>
+            <span>Status</span>
+            <span></span>
+          </div>
+          <div>
+            {rosterRows.length === 0 && (
+              <div className="py-12 text-center text-[13px]" style={{ color: '#8A8580' }}>No active students</div>
+            )}
+            {rosterRows.map(({ student, payment }, i) => {
+              const isPaid = payment?.status === 'paid'
+              const isPending = payment && !isPaid
+              const planLabel = student.enrollment_type?.replace('_', '-') ?? (student.session_day ? `${student.session_day}-day` : '—')
+              return (
+                <div key={student.id}
+                  className="grid items-center px-5 py-3 text-[13px]"
+                  style={{
+                    gridTemplateColumns: '1fr 120px 110px 80px',
+                    borderBottom: i < rosterRows.length - 1 ? '1px solid rgba(184,151,58,0.1)' : 'none',
+                    background: isPaid ? 'rgba(39,80,10,0.03)' : isPending ? 'rgba(99,56,6,0.03)' : undefined,
+                  }}>
+                  <span className="font-medium" style={{ color: '#1A1814' }}>{student.full_name}</span>
+                  <span className="text-[11px]" style={{ color: '#8A8580' }}>{planLabel}</span>
+                  <span>
+                    {isPaid ? (
+                      <span className="inline-flex items-center gap-1 text-[12px] font-medium" style={{ color: '#27500A' }}>
+                        ✓ Paid {payment?.amount_cents ? formatCurrency(payment.amount_cents) : ''}
+                      </span>
+                    ) : isPending ? (
+                      <Badge variant={STATUS_VARIANT[payment!.status]}>{payment!.status}</Badge>
+                    ) : (
+                      <span className="text-[12px]" style={{ color: '#8A8580' }}>— no record</span>
+                    )}
+                  </span>
+                  <span className="flex justify-end">
+                    {!isPaid && (
+                      <button onClick={() => markPaidFromRoster(student.id)} disabled={updating === student.id}
+                        className="text-[11px] px-2.5 py-1 rounded-lg font-medium disabled:opacity-40 transition-opacity hover:opacity-80"
+                        style={{ background: '#1A1814', color: '#B8973A' }}>
+                        {updating === student.id ? '…' : '✓ Mark paid'}
+                      </button>
+                    )}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </Card>
+      )}
 
-                {/* Expanded payment history */}
-                {isOpen && (
-                  <div style={{ background: '#FAF7F2', borderTop: '1px solid rgba(184,151,58,0.1)' }}>
-                    {/* Print receipt button */}
-                    {group.studentId && (
-                      <div className="px-8 pt-3 flex justify-end">
-                        <a
-                          href={`/receipt/${group.studentId}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[11px] px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors"
-                          style={{ background: '#F5F0E8', color: '#4A4640', border: '1px solid rgba(184,151,58,0.3)' }}
-                        >
-                          🖨 Print Receipt
-                        </a>
+      {/* ── FULL HISTORY VIEW ── */}
+      {view === 'history' && (
+        <>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px]" style={{ color: '#8A8580' }}>Filter by period:</span>
+            <select className="text-[12px] rounded-lg px-2 py-1 outline-none" style={{ border: '1.5px solid rgba(184,151,58,0.3)', color: '#1A1814' }}
+              value={filterPeriod} onChange={e => { setFilterPeriod(e.target.value); setPage(0) }}>
+              <option value="">All periods</option>
+              {PERIODS.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </div>
+
+          <Card>
+            <CardHeader title={`Payment history · ${grouped.length} students`}
+              action={totalPages > 1 ? (
+                <div className="flex items-center gap-2 text-[12px]" style={{ color: '#8A8580' }}>
+                  <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="px-2 py-1 rounded disabled:opacity-30 hover:bg-[#F5F0E8]">←</button>
+                  <span>Page {page + 1} of {totalPages}</span>
+                  <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1} className="px-2 py-1 rounded disabled:opacity-30 hover:bg-[#F5F0E8]">→</button>
+                </div>
+              ) : null}
+            />
+            <div>
+              {pageItems.length === 0 && <div className="py-12 text-center text-[13px]" style={{ color: '#8A8580' }}>No payment records</div>}
+              {pageItems.map((group, gi) => {
+                const isOpen = expanded.has(group.name)
+                return (
+                  <div key={group.name} style={{ borderBottom: gi < pageItems.length - 1 ? '1px solid rgba(184,151,58,0.14)' : 'none' }}>
+                    <button onClick={() => { const next = new Set(expanded); next.has(group.name) ? next.delete(group.name) : next.add(group.name); setExpanded(next) }}
+                      className="w-full flex items-center gap-4 px-5 py-3.5 hover:bg-[#FAF7F2] transition-colors text-left">
+                      <div className="flex-1 text-[13px] font-medium flex items-center gap-2" style={{ color: '#1A1814' }}>
+                        {group.name}
+                        {group.hasCancelled && <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: '#F5F0E8', color: '#791F1F' }}>Cancelled</span>}
+                      </div>
+                      {group.totalPaid > 0 && <div className="text-[12px]" style={{ color: '#27500A' }}>{formatCurrency(group.totalPaid)} paid</div>}
+                      {group.totalOwed > 0 && <div className="text-[12px]" style={{ color: '#791F1F' }}>{formatCurrency(group.totalOwed)} owed</div>}
+                      {group.totalRefunded > 0 && <div className="text-[12px]" style={{ color: '#7C3AED' }}>−{formatCurrency(group.totalRefunded)} refunded</div>}
+                      <div className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: '#F5F0E8', color: '#8A8580' }}>{group.payments.length} record{group.payments.length !== 1 ? 's' : ''}</div>
+                      <span className="text-[10px]" style={{ color: '#8A8580' }}>{isOpen ? '▲' : '▼'}</span>
+                    </button>
+                    {isOpen && (
+                      <div style={{ background: '#FAF7F2', borderTop: '1px solid rgba(184,151,58,0.1)' }}>
+                        {group.studentId && (
+                          <div className="px-8 pt-3 flex justify-end">
+                            <a href={`/receipt/${group.studentId}`} target="_blank" rel="noopener noreferrer"
+                              className="text-[11px] px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors"
+                              style={{ background: '#F5F0E8', color: '#4A4640', border: '1px solid rgba(184,151,58,0.3)' }}>
+                              🖨 Print Receipt
+                            </a>
+                          </div>
+                        )}
+                        <div className="grid px-8 py-2 text-[10px] font-medium tracking-wide uppercase"
+                          style={{ color: '#8A8580', gridTemplateColumns: '1fr 80px 90px 110px 100px 110px 100px' }}>
+                          <span>Date</span><span>Amount</span><span>Type</span><span>Period</span><span>Plan</span><span>Status</span><span></span>
+                        </div>
+                        {group.payments.slice().sort((a, b) => new Date(b.paid_at ?? b.due_date ?? b.created_at).getTime() - new Date(a.paid_at ?? a.due_date ?? a.created_at).getTime()).map((p, pi) => {
+                          const ptype = (p as any).payment_type ?? 'tuition'
+                          const typeStyle = TYPE_COLORS[ptype] ?? TYPE_COLORS.other
+                          return (
+                            <div key={p.id} className="grid items-center px-8 py-2.5 text-[12px]"
+                              style={{ gridTemplateColumns: '1fr 80px 90px 110px 100px 110px 100px', borderTop: pi > 0 ? '1px solid rgba(184,151,58,0.08)' : 'none' }}>
+                              <span style={{ color: '#4A4640' }}>{formatDate(p.paid_at ?? p.due_date ?? p.created_at, 'MMM d, yyyy')}</span>
+                              <span style={{ color: '#1A1814' }}>{formatCurrency(p.amount_cents)}</span>
+                              <button onClick={() => { const types = ['enrollment', 'tuition', 'prorated', 'other']; const next = types[(types.indexOf(ptype) + 1) % types.length]; updatePayment(p.id, { payment_type: next } as any) }} className="text-left">
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: typeStyle.bg, color: typeStyle.color }}>{TYPE_LABELS[ptype]}</span>
+                              </button>
+                              <select value={(p as any).period ?? ''} onChange={e => updatePayment(p.id, { period: e.target.value || null } as any)}
+                                className="text-[11px] rounded px-1 py-0.5 outline-none" style={{ border: '1px solid rgba(184,151,58,0.3)', color: (p as any).period ? '#1A1814' : '#8A8580', maxWidth: 105 }}>
+                                <option value="">— period</option>
+                                {PERIODS.map(per => <option key={per} value={per}>{per}</option>)}
+                              </select>
+                              <span className="text-[11px]" style={{ color: '#8A8580' }}>{(p as any).plan_name ?? '—'}</span>
+                              <Badge variant={STATUS_VARIANT[p.status]}>{p.status}</Badge>
+                              <div className="flex justify-end gap-1.5">
+                                {p.status === 'refunded' && p.refund_amount_cents && <span className="text-[10px]" style={{ color: '#8A8580' }}>−{formatCurrency(p.refund_amount_cents)}</span>}
+                                {p.status === 'paid' && (
+                                  <button onClick={() => cancelPayment(p.id, p.student_id)} disabled={cancelling === p.id}
+                                    className="text-[10px] px-2 py-0.5 rounded disabled:opacity-50" style={{ background: '#FDECEA', color: '#791F1F' }}>
+                                    {cancelling === p.id ? '…' : 'Cancel'}
+                                  </button>
+                                )}
+                                {(p.status === 'pending' || p.status === 'overdue') && (
+                                  <>
+                                    <button onClick={() => updatePayment(p.id, { status: 'paid', paid_at: new Date().toISOString() } as any)} disabled={updating === p.id}
+                                      className="btn btn-gold text-[10px] py-0.5 px-2 disabled:opacity-50">{updating === p.id ? '…' : '✓ Mark paid'}</button>
+                                    <button onClick={async () => { if (!confirm('Delete this pending record?')) return; await fetch(`/api/payments?id=${p.id}`, { method: 'DELETE' }); setPayments(prev => prev.filter(x => x.id !== p.id)) }}
+                                      className="text-[10px] px-2 py-0.5 rounded" style={{ background: '#FDECEA', color: '#791F1F' }}>Delete</button>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
                       </div>
                     )}
-                    {/* Header */}
-                    <div className="grid px-8 py-2 text-[10px] font-medium tracking-wide uppercase"
-                      style={{ color: '#8A8580', gridTemplateColumns: '1fr 80px 90px 110px 100px 110px 100px' }}>
-                      <span>Date</span>
-                      <span>Amount</span>
-                      <span>Type</span>
-                      <span>Period</span>
-                      <span>Plan</span>
-                      <span>Status</span>
-                      <span></span>
-                    </div>
-                    {group.payments
-                      .slice()
-                      .sort((a, b) => new Date(b.paid_at ?? b.due_date ?? b.created_at).getTime() - new Date(a.paid_at ?? a.due_date ?? a.created_at).getTime())
-                      .map((p, pi) => {
-                        const ptype = (p as any).payment_type ?? 'tuition'
-                        const typeStyle = TYPE_COLORS[ptype] ?? TYPE_COLORS.other
-                        return (
-                          <div key={p.id}
-                            className="grid items-center px-8 py-2.5 text-[12px]"
-                            style={{
-                              gridTemplateColumns: '1fr 80px 90px 110px 100px 110px 100px',
-                              borderTop: pi > 0 ? '1px solid rgba(184,151,58,0.08)' : 'none',
-                            }}>
-                            <span style={{ color: '#4A4640' }}>
-                              {formatDate(p.paid_at ?? p.due_date ?? p.created_at, 'MMM d, yyyy')}
-                            </span>
-                            <span style={{ color: '#1A1814' }}>{formatCurrency(p.amount_cents)}</span>
-                            {/* Payment type — click to cycle */}
-                            <button
-                              onClick={() => {
-                                const types = ['enrollment', 'tuition', 'prorated', 'other']
-                                const next = types[(types.indexOf(ptype) + 1) % types.length]
-                                updatePayment(p.id, { payment_type: next } as any)
-                              }}
-                              className="text-left">
-                              <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
-                                style={{ background: typeStyle.bg, color: typeStyle.color }}>
-                                {TYPE_LABELS[ptype]}
-                              </span>
-                            </button>
-                            {/* Period — inline select */}
-                            <select
-                              value={(p as any).period ?? ''}
-                              onChange={e => updatePayment(p.id, { period: e.target.value || null } as any)}
-                              className="text-[11px] rounded px-1 py-0.5 outline-none"
-                              style={{ border: '1px solid rgba(184,151,58,0.3)', color: (p as any).period ? '#1A1814' : '#8A8580', maxWidth: 105 }}>
-                              <option value="">— period</option>
-                              {PERIODS.map(per => <option key={per} value={per}>{per}</option>)}
-                            </select>
-                            <span className="text-[11px]" style={{ color: '#8A8580' }}>{(p as any).plan_name ?? '—'}</span>
-                            <Badge variant={STATUS_VARIANT[p.status]}>{p.status}</Badge>
-                            <div className="flex justify-end gap-1.5">
-                              {p.status === 'refunded' && p.refund_amount_cents && (
-                                <span className="text-[10px]" style={{ color: '#8A8580' }}>
-                                  −{formatCurrency(p.refund_amount_cents)}
-                                </span>
-                              )}
-                              {p.status === 'paid' && (
-                                <button
-                                  onClick={() => cancelPayment(p.id, p.student_id)}
-                                  disabled={cancelling === p.id}
-                                  className="text-[10px] px-2 py-0.5 rounded disabled:opacity-50"
-                                  style={{ background: '#FDECEA', color: '#791F1F' }}>
-                                  {cancelling === p.id ? '…' : 'Cancel'}
-                                </button>
-                              )}
-                              {(p.status === 'pending' || p.status === 'overdue') && (
-                                <>
-                                  <button onClick={() => updatePayment(p.id, { status: 'paid', paid_at: new Date().toISOString() } as any)}
-                                    disabled={updating === p.id}
-                                    className="btn btn-gold text-[10px] py-0.5 px-2 disabled:opacity-50">
-                                    {updating === p.id ? '…' : '✓ Mark paid'}
-                                  </button>
-                                  <button onClick={async () => {
-                                    if (!confirm('Delete this pending record?')) return
-                                    await fetch(`/api/payments?id=${p.id}`, { method: 'DELETE' })
-                                    setPayments(prev => prev.filter(x => x.id !== p.id))
-                                  }}
-                                    className="text-[10px] px-2 py-0.5 rounded"
-                                    style={{ background: '#FDECEA', color: '#791F1F' }}>
-                                    Delete
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        )
-                      })}
                   </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-
-        {/* Pagination footer */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-5 py-3" style={{ borderTop: '1px solid rgba(184,151,58,0.14)' }}>
-            <span className="text-[12px]" style={{ color: '#8A8580' }}>
-              Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, grouped.length)} of {grouped.length} students
-            </span>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
-                className="px-3 py-1.5 rounded-lg text-[12px] disabled:opacity-30"
-                style={{ background: '#F5F0E8', color: '#8A6E25', border: '1px solid rgba(184,151,58,0.3)' }}>
-                ← Prev
-              </button>
-              <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}
-                className="px-3 py-1.5 rounded-lg text-[12px] disabled:opacity-30"
-                style={{ background: '#F5F0E8', color: '#8A6E25', border: '1px solid rgba(184,151,58,0.3)' }}>
-                Next →
-              </button>
+                )
+              })}
             </div>
-          </div>
-        )}
-      </Card>
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-5 py-3" style={{ borderTop: '1px solid rgba(184,151,58,0.14)' }}>
+                <span className="text-[12px]" style={{ color: '#8A8580' }}>Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, grouped.length)} of {grouped.length} students</span>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="px-3 py-1.5 rounded-lg text-[12px] disabled:opacity-30" style={{ background: '#F5F0E8', color: '#8A6E25', border: '1px solid rgba(184,151,58,0.3)' }}>← Prev</button>
+                  <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1} className="px-3 py-1.5 rounded-lg text-[12px] disabled:opacity-30" style={{ background: '#F5F0E8', color: '#8A6E25', border: '1px solid rgba(184,151,58,0.3)' }}>Next →</button>
+                </div>
+              </div>
+            )}
+          </Card>
+        </>
+      )}
     </div>
   )
 }
