@@ -74,7 +74,7 @@ export default function AttendanceManager({ students, classes, todayRecords, his
   })
 
   const [saving, setSaving] = useState<Record<string, boolean>>({})
-  const [bulkSaving, setBulkSaving] = useState(false)
+  const [notificationStatus, setNotificationStatus] = useState<Record<string, 'sent' | 'failed' | null>>({})
   const [search, setSearch] = useState('')
   const [gradeFilter, setGradeFilter] = useState<string>('all')
 
@@ -97,41 +97,54 @@ export default function AttendanceManager({ students, classes, todayRecords, his
     .filter(s => gradeFilter === 'all' || String(s.grade) === gradeFilter)
     .sort((a, b) => a.full_name.localeCompare(b.full_name))
 
-  const [notificationStatus, setNotificationStatus] = useState<Record<string, 'sent' | 'failed' | null>>({})
+  // Batch sign-in state: set of student IDs checked as present
+  const [checkedIn, setCheckedIn] = useState<Set<string>>(new Set())
+  const [batchSubmitting, setBatchSubmitting] = useState(false)
+  const [batchDone, setBatchDone] = useState(false)
 
-  // Sign in — marks present + stamps time + notifies parent
-  async function signIn(student: Student) {
-    setSaving(s => ({ ...s, [student.id]: true }))
-    setNotificationStatus(n => ({ ...n, [student.id]: null }))
-    
-    // Call sign-events API which handles attendance + notification
-    const res = await fetch('/api/sign-events', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ student_id: student.id, event_type: 'sign_in' }),
+  function toggleCheck(id: string) {
+    setCheckedIn(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
     })
-    const json = await res.json()
-    
-    if (json.data) {
-      // Update local state with the attendance record
-      const now = new Date().toISOString()
-      setRosterRecords(r => ({
-        ...r,
-        [student.id]: {
-          ...r[student.id],
-          id: json.data.id,
-          sign_in_time: now,
-          status: 'present'
-        }
-      }))
-      setNotificationStatus(n => ({ ...n, [student.id]: json.notified ? 'sent' : 'failed' }))
-    }
-    setSaving(s => ({ ...s, [student.id]: false }))
-    
-    // Clear notification status after 3 seconds
-    setTimeout(() => {
-      setNotificationStatus(n => ({ ...n, [student.id]: null }))
-    }, 3000)
+  }
+
+  function selectAllVisible() {
+    const notYetIn = pagedStudents.filter(s => !rosterRecords[s.id]?.sign_in_time)
+    setCheckedIn(prev => {
+      const next = new Set(prev)
+      notYetIn.forEach(s => next.add(s.id))
+      return next
+    })
+  }
+
+  function clearAll() { setCheckedIn(new Set()) }
+
+  async function submitBatch() {
+    const toSignIn = filteredStudents.filter(s => checkedIn.has(s.id) && !rosterRecords[s.id]?.sign_in_time)
+    if (toSignIn.length === 0) return
+    setBatchSubmitting(true)
+    const now = new Date().toISOString()
+    // Fire all sign-in events in parallel (each sends parent email)
+    await Promise.all(toSignIn.map(s =>
+      fetch('/api/sign-events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id: s.id, event_type: 'sign_in' }),
+      })
+    ))
+    setRosterRecords(r => {
+      const updated = { ...r }
+      toSignIn.forEach(s => {
+        updated[s.id] = { ...updated[s.id], sign_in_time: now, status: 'present' }
+      })
+      return updated
+    })
+    setCheckedIn(new Set())
+    setBatchSubmitting(false)
+    setBatchDone(true)
+    setTimeout(() => setBatchDone(false), 4000)
   }
 
   // Sign out — stamps sign_out_time + notifies parent
@@ -160,36 +173,6 @@ export default function AttendanceManager({ students, classes, todayRecords, his
     setTimeout(() => {
       setNotificationStatus(n => ({ ...n, [student.id]: null }))
     }, 3000)
-  }
-
-  // Mark all visible students as present at once
-  async function markAllPresent() {
-    const notSignedIn = filteredStudents.filter(s => !rosterRecords[s.id]?.sign_in_time)
-    if (notSignedIn.length === 0) return
-    setBulkSaving(true)
-    const now = new Date().toISOString()
-    const payload = notSignedIn.map(s => ({
-      student_id: s.id,
-      date: today,
-      status: 'present',
-      sign_in_time: now,
-    }))
-    const res = await fetch('/api/attendance', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-    const json = await res.json()
-    if (json.data) {
-      setRosterRecords(prev => {
-        const updated = { ...prev }
-        json.data.forEach((rec: AttRecord) => {
-          updated[rec.student_id] = { ...updated[rec.student_id], ...rec }
-        })
-        return updated
-      })
-    }
-    setBulkSaving(false)
   }
 
   // History helpers
@@ -258,13 +241,16 @@ export default function AttendanceManager({ students, classes, todayRecords, his
                 {filteredStudents.filter(s => rosterRecords[s.id]?.sign_in_time).length} signed in
                 · {filteredStudents.filter(s => rosterRecords[s.id]?.sign_out_time).length} signed out
               </span>
-              {filteredStudents.some(s => !rosterRecords[s.id]?.sign_in_time) && (
-                <button
-                  onClick={markAllPresent}
-                  disabled={bulkSaving}
-                  className="btn btn-gold text-[11px] py-1 px-3">
-                  {bulkSaving ? 'Marking…' : `✓ Mark all present (${filteredStudents.filter(s => !rosterRecords[s.id]?.sign_in_time).length})`}
+              {batchDone && (
+                <span className="text-[11px] font-medium" style={{ color: '#27500A' }}>✓ Check-in submitted!</span>
+              )}
+              {checkedIn.size > 0 && !batchSubmitting && (
+                <button onClick={submitBatch} className="btn btn-gold text-[11px] py-1 px-3">
+                  Submit Check-in ({checkedIn.size})
                 </button>
+              )}
+              {batchSubmitting && (
+                <span className="text-[11px]" style={{ color: '#8A8580' }}>Submitting…</span>
               )}
             </div>
           } />
@@ -278,7 +264,18 @@ export default function AttendanceManager({ students, classes, todayRecords, his
                   <th className="text-left px-3 py-3 font-medium hidden md:table-cell" style={{ color: '#8A8580' }}>Room</th>
                   <th className="text-left px-3 py-3 font-medium hidden md:table-cell" style={{ color: '#8A8580' }}>Teacher</th>
                   <th className="text-left px-3 py-3 font-medium hidden lg:table-cell" style={{ color: '#8A8580' }}>Notes</th>
-                  <th className="text-center px-3 py-3 font-medium" style={{ color: '#8A8580' }}>Sign In</th>
+                  <th className="text-center px-3 py-3 font-medium" style={{ color: '#8A8580' }}>
+                    <div className="flex flex-col items-center gap-1">
+                      <span>Sign In</span>
+                      {pagedStudents.some(s => !rosterRecords[s.id]?.sign_in_time) && (
+                        <button onClick={checkedIn.size > 0 ? clearAll : selectAllVisible}
+                          className="text-[9px] px-1.5 py-0.5 rounded"
+                          style={{ background: '#EFE6CC', color: '#8A6E25', cursor: 'pointer' }}>
+                          {checkedIn.size > 0 ? 'Clear' : 'All'}
+                        </button>
+                      )}
+                    </div>
+                  </th>
                   <th className="text-center px-3 py-3 font-medium" style={{ color: '#8A8580' }}>Sign Out</th>
                 </tr>
               </thead>
@@ -330,18 +327,18 @@ export default function AttendanceManager({ students, classes, todayRecords, his
                         {signedIn ? (
                           <div className="flex flex-col items-center gap-0.5">
                             <span className="text-[12px] font-medium" style={{ color: '#27500A' }}>{formatTime(rec.sign_in_time)}</span>
-                            {notificationStatus[student.id] === 'sent' && (
-                              <span className="text-[9px]" style={{ color: '#27500A' }}>✓ Parent notified</span>
-                            )}
                           </div>
                         ) : (
-                          <button
-                            onClick={() => signIn(student)}
-                            disabled={isSav}
-                            className="px-3 py-1.5 rounded-full text-[11px] font-medium transition-all"
-                            style={{ background: '#EAF3DE', color: '#27500A', border: '1px solid #B8D99A', cursor: 'pointer' }}>
-                            {isSav ? '…' : 'Sign In'}
-                          </button>
+                          <label className="flex items-center justify-center cursor-pointer gap-1.5">
+                            <input
+                              type="checkbox"
+                              checked={checkedIn.has(student.id)}
+                              onChange={() => toggleCheck(student.id)}
+                              className="w-4 h-4 rounded accent-amber-600"
+                              style={{ cursor: 'pointer' }}
+                            />
+                            <span className="text-[10px]" style={{ color: '#8A8580' }}>Here</span>
+                          </label>
                         )}
                       </td>
                       <td className="px-3 py-3 text-center">
