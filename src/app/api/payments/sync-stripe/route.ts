@@ -38,18 +38,18 @@ export async function POST() {
       .single()
 
     if (existing) {
-      // Payment already in DB — never overwrite status or re-create deleted students
-      // Only link if student_id is null AND we find an existing student by name (no auto-create)
+      // Always sync paid_at from Stripe so manual "Mark paid" dates get corrected
+      const paidAt = new Date(session.created * 1000).toISOString()
+      const update: Record<string, unknown> = { paid_at: paidAt }
+      // Also link student if missing
       if (!existing.student_id) {
         const { data: allStudents } = await admin.from('students').select('id, full_name')
         const normalized = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim()
         const match = allStudents?.find((s: { id: string; full_name: string }) => normalized(s.full_name) === normalized(childName))
-        if (match) {
-          await admin.from('payments').update({ student_id: match.id }).eq('id', existing.id)
-        } else {
-          unmatched++
-        }
+        if (match) update.student_id = match.id
+        else unmatched++
       }
+      await admin.from('payments').update(update).eq('id', existing.id)
       synced++
       continue
     }
