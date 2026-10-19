@@ -451,7 +451,16 @@ export default function PaymentsDashboard({ payments: initial, students = [], ac
                           return (
                             <div key={p.id} className="grid items-center px-8 py-2.5 text-[12px]"
                               style={{ gridTemplateColumns: '1fr 80px 90px 110px 100px 110px 100px', borderTop: pi > 0 ? '1px solid rgba(184,151,58,0.08)' : 'none' }}>
-                              <span style={{ color: '#4A4640' }}>{formatDate(p.paid_at ?? p.due_date ?? p.created_at, 'MMM d, yyyy')}</span>
+                              <input
+                                type="date"
+                                defaultValue={(p.paid_at ?? p.due_date ?? p.created_at ?? '').slice(0, 10)}
+                                onBlur={e => {
+                                  const val = e.target.value
+                                  if (val) updatePayment(p.id, { paid_at: new Date(val).toISOString() } as any)
+                                }}
+                                className="text-[11px] rounded px-1 py-0.5 outline-none"
+                                style={{ border: '1px solid rgba(184,151,58,0.3)', color: '#4A4640', background: 'transparent', maxWidth: 130 }}
+                              />
                               <span style={{ color: '#1A1814' }}>{formatCurrency(p.amount_cents)}</span>
                               <button onClick={() => { const types = ['enrollment', 'tuition', 'prorated', 'other']; const next = types[(types.indexOf(ptype) + 1) % types.length]; updatePayment(p.id, { payment_type: next } as any) }} className="text-left">
                                 <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: typeStyle.bg, color: typeStyle.color }}>{TYPE_LABELS[ptype]}</span>
