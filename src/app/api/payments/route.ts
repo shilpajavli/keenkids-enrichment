@@ -35,6 +35,7 @@ export async function PATCH(req: NextRequest) {
     .from('payments')
     .update({
       ...(status !== undefined ? { status, paid_at: paid_at ?? (status === 'paid' ? new Date().toISOString() : null) } : {}),
+      ...(status === undefined && paid_at !== undefined ? { paid_at } : {}),
       ...(amount_cents !== undefined ? { amount_cents } : {}),
       ...(payment_type !== undefined ? { payment_type } : {}),
       ...(period !== undefined ? { period } : {}),
