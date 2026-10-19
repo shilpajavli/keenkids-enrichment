@@ -54,6 +54,11 @@ export default async function ReceiptPage({ params }: { params: Promise<{ studen
           <div>
             <div style={{ fontSize: 22, fontWeight: 700 }}>KeenKids Enrichment</div>
             <div style={{ fontSize: 12, color: '#8A8580', marginTop: 3, fontFamily: 'Arial, sans-serif' }}>After School Enrichment Program</div>
+            <div style={{ fontSize: 11, color: '#8A8580', marginTop: 6, fontFamily: 'Arial, sans-serif', lineHeight: 1.6 }}>
+              867 Del Rio Ct, Milpitas, CA 95035<br />
+              (408) 658-8524 · (408) 306-5963<br />
+              EIN: 41-4833887
+            </div>
           </div>
           <div style={{ textAlign: 'right', fontFamily: 'Arial, sans-serif' }}>
             <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: 2, color: '#8A8580' }}>Payment Receipt</div>
