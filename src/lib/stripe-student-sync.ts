@@ -27,18 +27,33 @@ export async function upsertStripePayment(
     stripe_payment_link?: string | null
   }
 ) {
-  // Try to find an existing pending/overdue OR manually-paid (no stripe_session_id) record for this student + period
+  // Try to find an existing record (pending/overdue, or paid-but-not-yet-linked-to-Stripe) for this student + period
   if (fields.student_id && fields.period) {
-    const { data: match } = await admin
+    // First: pending or overdue
+    let matchId: string | null = null
+    const { data: pendingMatch } = await admin
       .from('payments')
-      .select('id, status, stripe_session_id')
+      .select('id')
       .eq('student_id', fields.student_id)
       .eq('period', fields.period)
-      .or('status.in.(pending,overdue),and(status.eq.paid,stripe_session_id.is.null)')
+      .in('status', ['pending', 'overdue'])
       .maybeSingle()
+    if (pendingMatch) matchId = pendingMatch.id
 
-    if (match) {
-      // Merge: stamp the real Stripe date and session id onto the existing row
+    // Second: paid but manually marked (no stripe_session_id) — backfill real date
+    if (!matchId) {
+      const { data: manualMatch } = await admin
+        .from('payments')
+        .select('id')
+        .eq('student_id', fields.student_id)
+        .eq('period', fields.period)
+        .eq('status', 'paid')
+        .is('stripe_session_id', null)
+        .maybeSingle()
+      if (manualMatch) matchId = manualMatch.id
+    }
+
+    if (matchId) {
       await admin.from('payments').update({
         status: 'paid',
         stripe_session_id: fields.stripe_session_id,
@@ -48,7 +63,7 @@ export async function upsertStripePayment(
         customer_email: fields.customer_email,
         customer_name: fields.customer_name,
         stripe_payment_link: fields.stripe_payment_link ?? null,
-      }).eq('id', match.id)
+      }).eq('id', matchId)
       return
     }
   }
