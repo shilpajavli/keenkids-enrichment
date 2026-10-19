@@ -480,6 +480,12 @@ export default function PaymentsDashboard({ payments: initial, students = [], ac
                                     {cancelling === p.id ? '…' : 'Cancel'}
                                   </button>
                                 )}
+                                {p.status === 'cancelled' && (
+                                  <button onClick={() => updatePayment(p.id, { status: 'paid', paid_at: (p.paid_at ?? new Date().toISOString()) } as any)} disabled={updating === p.id}
+                                    className="text-[10px] px-2 py-0.5 rounded disabled:opacity-50" style={{ background: '#EAF3DE', color: '#27500A' }}>
+                                    {updating === p.id ? '…' : 'Restore'}
+                                  </button>
+                                )}
                                 {(p.status === 'pending' || p.status === 'overdue') && (
                                   <>
                                     <button onClick={() => updatePayment(p.id, { status: 'paid', paid_at: new Date().toISOString() } as any)} disabled={updating === p.id}
