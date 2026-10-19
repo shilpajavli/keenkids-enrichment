@@ -27,18 +27,18 @@ export async function upsertStripePayment(
     stripe_payment_link?: string | null
   }
 ) {
-  // Try to find an existing pending/overdue record for this student + period
+  // Try to find an existing pending/overdue OR manually-paid (no stripe_session_id) record for this student + period
   if (fields.student_id && fields.period) {
-    const { data: pending } = await admin
+    const { data: match } = await admin
       .from('payments')
-      .select('id')
+      .select('id, status, stripe_session_id')
       .eq('student_id', fields.student_id)
       .eq('period', fields.period)
-      .in('status', ['pending', 'overdue'])
+      .or('status.in.(pending,overdue),and(status.eq.paid,stripe_session_id.is.null)')
       .maybeSingle()
 
-    if (pending) {
-      // Merge: update the existing pending row to paid
+    if (match) {
+      // Merge: stamp the real Stripe date and session id onto the existing row
       await admin.from('payments').update({
         status: 'paid',
         stripe_session_id: fields.stripe_session_id,
@@ -48,7 +48,7 @@ export async function upsertStripePayment(
         customer_email: fields.customer_email,
         customer_name: fields.customer_name,
         stripe_payment_link: fields.stripe_payment_link ?? null,
-      }).eq('id', pending.id)
+      }).eq('id', match.id)
       return
     }
   }
@@ -59,10 +59,12 @@ export async function upsertStripePayment(
 
 export const PLAN_BY_AMOUNT: Record<number, string> = {
   11000: '1-Day Plan',
-  23000: '3-Day Plan',
-  10000: '5-Day Plan',
   22000: '1-Day Plan',
+  32900: '2-Day Plan',
+  23000: '3-Day Plan',
   45000: '3-Day Plan',
+  56900: '4-Day Plan',
+  10000: '5-Day Plan',
   69900: '5-Day Plan',
 }
 

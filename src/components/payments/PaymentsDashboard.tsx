@@ -163,17 +163,10 @@ export default function PaymentsDashboard({ payments: initial, students = [], ac
     setUpdating(null)
   }
 
-  // Per-student date for manual "Mark paid" — defaults to today
-  const todayISO = new Date().toISOString().slice(0, 10)
-  const [markPaidDates, setMarkPaidDates] = useState<Record<string, string>>({})
-  function getMarkPaidDate(studentId: string) { return markPaidDates[studentId] ?? todayISO }
-
   async function markPaidFromRoster(studentId: string) {
     const existing = payments.find(p => p.student?.id === studentId && (p as any).period === rosterPeriod && (p.status === 'pending' || p.status === 'overdue'))
     if (!existing) return
-    const dateVal = getMarkPaidDate(studentId)
-    const paidAt = dateVal ? new Date(dateVal).toISOString() : new Date().toISOString()
-    await updatePayment(existing.id, { status: 'paid', paid_at: paidAt } as any)
+    await updatePayment(existing.id, { status: 'paid', paid_at: new Date().toISOString() } as any)
   }
 
   async function generatePayments() {
@@ -381,23 +374,13 @@ export default function PaymentsDashboard({ payments: initial, students = [], ac
                       <span className="text-[12px]" style={{ color: '#8A8580' }}>— no record</span>
                     )}
                   </span>
-                  <span className="flex justify-end items-center gap-1.5">
+                  <span className="flex justify-end">
                     {!isPaid && (
-                      <>
-                        <input
-                          type="date"
-                          value={getMarkPaidDate(student.id)}
-                          onChange={e => setMarkPaidDates(d => ({ ...d, [student.id]: e.target.value }))}
-                          className="text-[10px] rounded border px-1 py-0.5"
-                          style={{ borderColor: 'rgba(184,151,58,0.35)', color: '#4A4640', background: '#FAF7F2' }}
-                          title="Actual payment date"
-                        />
-                        <button onClick={() => markPaidFromRoster(student.id)} disabled={updating === student.id}
-                          className="text-[11px] px-2.5 py-1 rounded-lg font-medium disabled:opacity-40 transition-opacity hover:opacity-80"
-                          style={{ background: '#1A1814', color: '#B8973A' }}>
-                          {updating === student.id ? '…' : '✓ Mark paid'}
-                        </button>
-                      </>
+                      <button onClick={() => markPaidFromRoster(student.id)} disabled={updating === student.id}
+                        className="text-[11px] px-2.5 py-1 rounded-lg font-medium disabled:opacity-40 transition-opacity hover:opacity-80"
+                        style={{ background: '#1A1814', color: '#B8973A' }}>
+                        {updating === student.id ? '…' : '✓ Mark paid'}
+                      </button>
                     )}
                   </span>
                 </div>
@@ -490,12 +473,7 @@ export default function PaymentsDashboard({ payments: initial, students = [], ac
                                 )}
                                 {(p.status === 'pending' || p.status === 'overdue') && (
                                   <>
-                                    <button onClick={() => {
-                                      const d = prompt('Payment date (YYYY-MM-DD):', new Date().toISOString().slice(0, 10))
-                                      if (d === null) return
-                                      const paidAt = d ? new Date(d).toISOString() : new Date().toISOString()
-                                      updatePayment(p.id, { status: 'paid', paid_at: paidAt } as any)
-                                    }} disabled={updating === p.id}
+                                    <button onClick={() => updatePayment(p.id, { status: 'paid', paid_at: new Date().toISOString() } as any)} disabled={updating === p.id}
                                       className="btn btn-gold text-[10px] py-0.5 px-2 disabled:opacity-50">{updating === p.id ? '…' : '✓ Mark paid'}</button>
                                     <button onClick={async () => { if (!confirm('Delete this pending record?')) return; await fetch(`/api/payments?id=${p.id}`, { method: 'DELETE' }); setPayments(prev => prev.filter(x => x.id !== p.id)) }}
                                       className="text-[10px] px-2 py-0.5 rounded" style={{ background: '#FDECEA', color: '#791F1F' }}>Delete</button>
