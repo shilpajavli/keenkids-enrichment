@@ -57,7 +57,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ studen
           </div>
           <div style={{ textAlign: 'right', fontFamily: 'Arial, sans-serif' }}>
             <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: 2, color: '#8A8580' }}>Payment Receipt</div>
-            <div style={{ fontSize: 13, color: '#4A4640', marginTop: 4 }}>{new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
+            <div style={{ fontSize: 13, color: '#4A4640', marginTop: 4 }}>Printed {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
           </div>
         </div>
 
