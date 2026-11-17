@@ -7,6 +7,7 @@ import Badge from '@/components/ui/Badge'
 import Link from 'next/link'
 import AutoRefresh from '@/components/ui/AutoRefresh'
 import TeacherLeaveForm from '@/components/team/TeacherLeaveForm'
+import WeeklyUpdateCard from '@/components/dashboard/WeeklyUpdateCard'
 
 const gradeLabel = (g: number) => g === 0 ? 'K' : `Grade ${g}`
 
@@ -98,7 +99,7 @@ export default async function DashboardPage() {
   const todayActivity = schoolKey ? (SCHEDULE[schoolKey][todayDow] ?? null) : null
   const monthTheme = MONTHLY_THEMES[monthKey] ?? null
 
-  const [attendanceRes, announcementsRes, paymentsRes, curriculumRes, revenueRes, teacherLeavesRes] = await Promise.all([
+  const [attendanceRes, announcementsRes, paymentsRes, curriculumRes, revenueRes, teacherLeavesRes, weeklyUpdateRes] = await Promise.all([
     supabase.from('attendance').select('student_id, status').eq('date', today),
     supabase.from('announcements').select('id, title, body, pinned').order('pinned', { ascending: false }).order('created_at', { ascending: false }).limit(3),
     !isTeacher && studentIds.length
@@ -115,18 +116,22 @@ export default async function DashboardPage() {
     !isTeacher
       ? createAdminClient()
           .from('payments')
-          .select('amount_cents, status, refund_amount_cents, student_id, student:students(program:programs(school:schools(name)))')
+          .select('amount_cents, status, refund_amount_cents, student_id, student:students(school_id, school:schools(name), program:programs(school:schools(name)))')
           .in('status', ['paid', 'refunded'])
       : Promise.resolve({ data: [] }),
     isTeacher && profile?.full_name
       ? createAdminClient().from('teacher_absences').select('id, date, conflict_type, hours_affected, notes').eq('teacher_name', profile.full_name).order('date', { ascending: true })
       : Promise.resolve({ data: [] }),
+    isTeacher && teacherSchoolId
+      ? createAdminClient().from('weekly_updates').select('message, author_name, updated_at').eq('school_id', teacherSchoolId).eq('week_of', weekOf).maybeSingle()
+      : Promise.resolve({ data: null }),
   ])
 
   const attendance     = attendanceRes.data ?? []
   const announcements  = announcementsRes.data ?? []
   const unpaidPayments = (paymentsRes.data ?? []) as any[]
   const curriculum     = curriculumRes.data as any
+  const weeklyUpdate   = weeklyUpdateRes.data as any
   const allRevPayments = (revenueRes.data ?? []) as any[]
   const teacherLeaves  = (teacherLeavesRes.data ?? []) as any[]
 
@@ -135,8 +140,8 @@ export default async function DashboardPage() {
   const revBySchool: Record<string, SchoolRev> = {}
   let totalRefundedCents = 0
   for (const p of allRevPayments) {
-    const sname: string = (p.student as any)?.program?.school?.name ?? 'Unknown'
-    const key = sname.toLowerCase().includes('sinnott') ? 'Sinnott' : sname.toLowerCase().includes('mattos') ? 'Mattos' : sname
+    const sname: string = (p.student as any)?.school?.name ?? (p.student as any)?.program?.school?.name ?? 'Unknown'
+    const key = sname.toLowerCase().includes('sinnott') ? 'Sinnott' : sname.toLowerCase().includes('mattos') ? 'Mattos' : sname.toLowerCase().includes('curtner') ? 'Curtner' : sname
     if (!revBySchool[key]) revBySchool[key] = { paid: 0, refunded: 0, studentIds: new Set() }
     if (p.status === 'paid') {
       revBySchool[key].paid += p.amount_cents
@@ -194,6 +199,14 @@ export default async function DashboardPage() {
       {/* KPIs — teacher */}
       {isTeacher && <TeacherLeaveForm teacherName={profile?.full_name ?? ''} initial={teacherLeaves} />}
 
+      {isTeacher && teacherSchoolId && (
+        <WeeklyUpdateCard
+          schoolId={teacherSchoolId}
+          weekOf={weekOf}
+          initial={weeklyUpdate ?? null}
+        />
+      )}
+
       {isTeacher && (
         <div className="grid gap-4 grid-cols-3">
           <Link href="/dashboard/attendance" className="card p-5 hover:opacity-80 transition-opacity">
@@ -240,7 +253,7 @@ export default async function DashboardPage() {
           {revSchools.length > 0 && (
             <div className="card p-5">
               <div className="text-[11px] font-semibold tracking-[0.1em] uppercase mb-4" style={{ color: '#8A8580' }}>Revenue</div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))' }}>
                 {/* Net revenue */}
                 <div className="rounded-xl p-3" style={{ background: '#1A1814' }}>
                   <div className="font-serif text-2xl font-light mb-1" style={{ color: '#B8973A' }}>{formatCurrency(netRevenueCents)}</div>
