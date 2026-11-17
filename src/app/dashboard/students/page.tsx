@@ -69,7 +69,7 @@ export default async function StudentsPage() {
     .order('name')
 
   // Fetch parent emails for linked students using admin client (bypasses RLS)
-  const parentIds = [...new Set((students ?? []).map(s => s.parent_id).filter(Boolean))] as string[]
+  const parentIds = [...new Set((students ?? []).map((s: any) => s.parent_id).filter(Boolean))] as string[]
   let parentMap: Record<string, string> = {}
   if (parentIds.length > 0) {
     const { data: parentProfiles } = await admin
