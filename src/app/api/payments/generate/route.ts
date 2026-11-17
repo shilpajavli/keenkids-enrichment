@@ -13,19 +13,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'period and program_id are required' }, { status: 400 })
   }
 
-  // Amount by session_day (stored as text in DB)
+  // Amount by enrollment_type (preferred) or session_day fallback
+  const AMOUNT_BY_TYPE: Record<string, number> = {
+    '5_day': 69900,  // $699
+    '4_day': 56900,  // $569 — update to your Stripe price
+    '3_day': 45000,  // $450
+    '2_day': 32900,  // $329 — update to your Stripe price
+    '1_day': 22000,  // $220
+  }
   const AMOUNT_BY_DAY: Record<string, number> = {
-    '1': 22000,  // $220
-    '3': 45000,  // $450
-    '5': 69900,  // $699
+    '1': 22000, '2': 32900, '3': 45000, '4': 56900, '5': 69900,
   }
 
   const admin = createAdminClient()
 
-  // Get all active students in this program with their session_day
+  // Get all active students in this program with their enrollment_type and session_day
   const { data: students, error: studentsErr } = await admin
     .from('students')
-    .select('id, session_day')
+    .select('id, session_day, enrollment_type')
     .eq('program_id', program_id)
     .eq('status', 'active')
 
@@ -48,7 +53,7 @@ export async function POST(req: NextRequest) {
 
   const rows = toCreate.map((s: any) => ({
     student_id: s.id,
-    amount_cents: AMOUNT_BY_DAY[String(s.session_day)] ?? 69900,
+    amount_cents: AMOUNT_BY_TYPE[s.enrollment_type] ?? AMOUNT_BY_DAY[String(s.session_day)] ?? 69900,
     status: 'pending',
     period,
     due_date: due_date ?? null,

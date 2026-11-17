@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
   // Also update attendance record for today
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' })
   const now = new Date().toISOString()
-  
+
   if (event_type === 'sign_in') {
     await admin
       .from('attendance')
@@ -78,6 +78,12 @@ export async function POST(req: NextRequest) {
     await admin
       .from('attendance')
       .update({ sign_out_time: now })
+      .eq('student_id', student_id)
+      .eq('date', today)
+  } else if (event_type === 'undo_sign_in') {
+    await admin
+      .from('attendance')
+      .update({ status: 'absent', sign_in_time: null, sign_out_time: null })
       .eq('student_id', student_id)
       .eq('date', today)
   }
@@ -104,37 +110,52 @@ export async function POST(req: NextRequest) {
       })
       const schoolName = signEvent.student.school?.name || 'school'
       const action = event_type === 'sign_in' ? 'signed in' : 'signed out'
+      const isUndo = event_type === 'undo_sign_in'
+
+      const subject = isUndo
+        ? `Correction: ${signEvent.student.full_name} — please disregard earlier sign-in notification`
+        : `${signEvent.student.full_name} ${action} at ${schoolName}`
+
+      const html = isUndo ? `
+        <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; color: #1A1814;">
+          <div style="background: #1A1814; padding: 24px 32px; border-bottom: 3px solid #B8973A;">
+            <h1 style="color: white; margin: 0; font-weight: 300; font-size: 22px;"><em style="color: #B8973A;">KeenKids</em> Enrichment</h1>
+          </div>
+          <div style="padding: 32px; background: #FAF7F2;">
+            <p style="font-size: 18px; margin: 0 0 16px;">ℹ️ <strong>Correction Notice</strong></p>
+            <p style="font-size: 15px; color: #4A4640; margin: 0 0 16px;">
+              Hi there — we sent you a sign-in notification for <strong>${signEvent.student.full_name}</strong> earlier today at ${eventTime}.
+            </p>
+            <p style="font-size: 15px; color: #4A4640; margin: 0 0 16px;">
+              <strong>Please disregard that message.</strong> It was entered by mistake — ${signEvent.student.full_name} was not actually signed in.
+            </p>
+            <p style="font-size: 15px; color: #4A4640; margin: 0;">We apologise for any confusion!</p>
+            <hr style="border: none; border-top: 1px solid rgba(184,151,58,0.3); margin: 24px 0;" />
+            <p style="font-size: 12px; color: #8A8580;">
+              View your child's portal at <a href="${process.env.NEXT_PUBLIC_APP_URL}/portal" style="color: #B8973A;">${process.env.NEXT_PUBLIC_APP_URL}/portal</a>
+            </p>
+          </div>
+        </div>
+      ` : `
+        <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; color: #1A1814;">
+          <div style="background: #1A1814; padding: 24px 32px; border-bottom: 3px solid #B8973A;">
+            <h1 style="color: white; margin: 0; font-weight: 300; font-size: 22px;"><em style="color: #B8973A;">KeenKids</em> Enrichment</h1>
+          </div>
+          <div style="padding: 32px; background: #FAF7F2;">
+            <p style="font-size: 18px; margin: 0 0 16px;">${event_type === 'sign_in' ? '👋' : '🏠'} <strong>${signEvent.student.full_name}</strong> ${action}</p>
+            <p style="font-size: 15px; color: #4A4640; margin: 0;"><strong>Time:</strong> ${eventTime}<br><strong>Location:</strong> ${schoolName}</p>
+            <hr style="border: none; border-top: 1px solid rgba(184,151,58,0.3); margin: 24px 0;" />
+            <p style="font-size: 12px; color: #8A8580;">View your child's portal at <a href="${process.env.NEXT_PUBLIC_APP_URL}/portal" style="color: #B8973A;">${process.env.NEXT_PUBLIC_APP_URL}/portal</a></p>
+          </div>
+        </div>
+      `
 
       try {
         await transporter.sendMail({
           from: `KeenKids Enrichment <${process.env.GMAIL_USER}>`,
           to: emails,
-          subject: `${signEvent.student.full_name} ${action} at ${schoolName}`,
-          html: `
-            <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; color: #1A1814;">
-              <div style="background: #1A1814; padding: 24px 32px; border-bottom: 3px solid #B8973A;">
-                <h1 style="color: white; margin: 0; font-weight: 300; font-size: 22px;">
-                  <em style="color: #B8973A;">KeenKids</em> Enrichment
-                </h1>
-              </div>
-              <div style="padding: 32px; background: #FAF7F2;">
-                <p style="font-size: 18px; margin: 0 0 16px;">
-                  ${event_type === 'sign_in' ? '👋' : '🏠'} <strong>${signEvent.student.full_name}</strong> ${action}
-                </p>
-                <p style="font-size: 15px; color: #4A4640; margin: 0;">
-                  <strong>Time:</strong> ${eventTime}<br>
-                  <strong>Location:</strong> ${schoolName}
-                </p>
-                <hr style="border: none; border-top: 1px solid rgba(184,151,58,0.3); margin: 24px 0;" />
-                <p style="font-size: 12px; color: #8A8580;">
-                  View your child's portal at
-                  <a href="${process.env.NEXT_PUBLIC_APP_URL}/portal" style="color: #B8973A;">
-                    ${process.env.NEXT_PUBLIC_APP_URL}/portal
-                  </a>
-                </p>
-              </div>
-            </div>
-          `,
+          subject,
+          html,
         })
         
         // Mark notification as sent
