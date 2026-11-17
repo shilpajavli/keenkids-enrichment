@@ -79,7 +79,7 @@ export default async function StudentsPage() {
     parentProfiles?.forEach((p: { id: string; email: string }) => { parentMap[p.id] = p.email })
   }
 
-  const enriched = (students ?? []).map(s => ({
+  const enriched = (students ?? []).map((s: any) => ({
     ...s,
     skills_total: s.student_skills?.length ?? 0,
     skills_mastered: s.student_skills?.filter((sk: any) => sk.status === 'mastered').length ?? 0,
