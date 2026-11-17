@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'
 
-import { createServerClient } from '@/lib/supabase-server'
+import { createServerClient, createAdminClient } from '@/lib/supabase-server'
 import { getCurrentProgramId } from '@/lib/program'
 import AttendanceManager from '@/components/attendance/AttendanceManager'
 import { format } from 'date-fns'
@@ -14,10 +14,17 @@ export default async function AttendancePage() {
 
   const { data: { user } } = await supabase.auth.getUser()
   const { data: profile } = await supabase.from('profiles').select('role, school_id').eq('id', user?.id ?? '').single()
-  const teacherSchoolId = profile?.role === 'teacher' ? (profile?.school_id ?? null) : null
+  const isTeacher = profile?.role === 'teacher'
+  const teacherSchoolId = isTeacher ? (profile?.school_id ?? null) : null
+  const isAllSchools = isTeacher && !teacherSchoolId
 
+  const admin = createAdminClient()
+
+  const studentFields = 'id, full_name, last_name, grade, avatar_url, room_number, needs_escort, teacher_name, alerts, session_day, enrolled_days, school_id, pickup_person, pickup_notes'
   const [studentsRes, classesRes, todayRes] = await Promise.all([
-    supabase.from('students').select('id, full_name, last_name, grade, avatar_url, room_number, needs_escort, teacher_name, alerts, session_day, enrolled_days, school_id, pickup_person, pickup_notes').eq('program_id', programId ?? '').eq('status', 'active').order('last_name'),
+    isAllSchools
+      ? admin.from('students').select(studentFields).eq('status', 'active').order('last_name')
+      : supabase.from('students').select(studentFields).eq('program_id', programId ?? '').eq('status', 'active').order('last_name'),
     supabase.from('classes').select('*').eq('program_id', programId ?? '').order('day_of_week').order('start_time'),
     supabase.from('attendance').select('id, student_id, class_id, status, sign_in_time, sign_out_time').eq('date', today),
   ])
@@ -35,9 +42,11 @@ export default async function AttendancePage() {
   const dayMap: Record<string, number> = { Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5 }
   const todayDayNum = dayMap[pacificWeekday] ?? 0
 
-  const schoolFiltered = teacherSchoolId
-    ? (programSchoolId === teacherSchoolId ? allStudents : [])
-    : allStudents
+  const schoolFiltered = isAllSchools
+    ? allStudents
+    : teacherSchoolId
+      ? (programSchoolId === teacherSchoolId ? allStudents : [])
+      : allStudents
 
   // Filter by enrolled_days if set (Sinnott); show all if not set (Mattos)
   const students = schoolFiltered.filter((s: any) =>
