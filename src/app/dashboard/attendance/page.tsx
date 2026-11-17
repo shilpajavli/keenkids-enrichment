@@ -21,12 +21,13 @@ export default async function AttendancePage() {
   const admin = createAdminClient()
 
   const studentFields = 'id, full_name, last_name, grade, avatar_url, room_number, needs_escort, teacher_name, alerts, session_day, enrolled_days, school_id, pickup_person, pickup_notes'
-  const [studentsRes, classesRes, todayRes] = await Promise.all([
+  const [studentsRes, classesRes, todayRes, schoolsRes] = await Promise.all([
     isAllSchools
       ? admin.from('students').select(studentFields).eq('status', 'active').order('last_name')
       : supabase.from('students').select(studentFields).eq('program_id', programId ?? '').eq('status', 'active').order('last_name'),
     supabase.from('classes').select('*').eq('program_id', programId ?? '').order('day_of_week').order('start_time'),
     supabase.from('attendance').select('id, student_id, class_id, status, sign_in_time, sign_out_time').eq('date', today),
+    isAllSchools ? admin.from('schools').select('id, name').order('name') : Promise.resolve({ data: null }),
   ])
 
   const allStudents = studentsRes.data ?? []
@@ -74,6 +75,7 @@ export default async function AttendancePage() {
         todayRecords={todayRes.data ?? []}
         history={history ?? []}
         today={today}
+        schools={isAllSchools ? (schoolsRes.data ?? undefined) : undefined}
       />
     </div>
   )

@@ -21,6 +21,7 @@ interface Student {
   session_day: string | null
   pickup_person: string | null
   pickup_notes: string | null
+  school_id?: string | null
 }
 interface ClassItem { id: string; name: string }
 interface AttRecord {
@@ -33,12 +34,15 @@ interface AttRecord {
 }
 interface HistoryItem { student_id: string; date: string; status: AttendanceStatus }
 
+interface SchoolItem { id: string; name: string }
+
 interface Props {
   students: Student[]
   classes: ClassItem[]
   todayRecords: AttRecord[]
   history: HistoryItem[]
   today: string
+  schools?: SchoolItem[]
 }
 
 type Tab = 'roster' | 'history'
@@ -61,7 +65,7 @@ function gradeLabel(g: number) {
   return g === 0 ? 'K' : `Grade ${g}`
 }
 
-export default function AttendanceManager({ students, classes, todayRecords, history, today: _today }: Props) {
+export default function AttendanceManager({ students, classes, todayRecords, history, today: _today, schools }: Props) {
   const today = getLocalDate()
   const [tab, setTab] = useState<Tab>('roster')
   const classId = classes[0]?.id ?? ''
@@ -77,6 +81,7 @@ export default function AttendanceManager({ students, classes, todayRecords, his
   const [notificationStatus, setNotificationStatus] = useState<Record<string, 'sent' | 'failed' | null>>({})
   const [search, setSearch] = useState('')
   const [gradeFilter, setGradeFilter] = useState<string>('all')
+  const [schoolFilter, setSchoolFilter] = useState<string>('all')
 
   // Auto-refresh every 30s so cross-user changes (parent pickup info, other staff sign-ins) appear without manual reload
   useEffect(() => {
@@ -91,6 +96,7 @@ export default function AttendanceManager({ students, classes, todayRecords, his
 
   const filteredStudents = students
     .filter(s => s.full_name.toLowerCase().includes(search.toLowerCase()))
+    .filter(s => schoolFilter === 'all' || s.school_id === schoolFilter)
 
   const totalPages = Math.ceil(filteredStudents.length / PAGE_SIZE)
   const pagedStudents = filteredStudents.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
@@ -204,6 +210,13 @@ export default function AttendanceManager({ students, classes, todayRecords, his
     <div className="px-4 py-3 flex flex-wrap gap-2" style={{ borderBottom: '1px solid rgba(184,151,58,0.14)' }}>
       <input className="input flex-1 text-[13px]" placeholder="Search…" value={search}
         onChange={e => { setSearch(e.target.value); setPage(0) }} style={{ minHeight: '40px', minWidth: 120 }} />
+      {schools && schools.length > 1 && (
+        <select className="input w-auto text-[13px]" value={schoolFilter}
+          onChange={e => { setSchoolFilter(e.target.value); setPage(0) }} style={{ minHeight: '40px' }}>
+          <option value="all">All schools</option>
+          {schools.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+        </select>
+      )}
       <select className="input w-auto text-[13px]" value={gradeFilter}
         onChange={e => setGradeFilter(e.target.value)} style={{ minHeight: '40px' }}>
         {grades.map(g => <option key={g} value={g}>{g === 'all' ? 'All grades' : gradeLabel(Number(g))}</option>)}
