@@ -52,7 +52,7 @@ export default async function AttendancePage() {
   const students = schoolFiltered.filter((s: any) =>
     !s.enrolled_days?.length || s.enrolled_days.map(Number).includes(todayDayNum)
   )
-  const studentIds = students.map(s => s.id)
+  const studentIds = students.map((s: any) => s.id)
 
   const { data: history } = studentIds.length
     ? await supabase
