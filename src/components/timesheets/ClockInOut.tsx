@@ -19,13 +19,17 @@ export default function ClockInOut() {
   const [elapsed, setElapsed] = useState('')
   const [error, setError] = useState('')
 
+  const [entries, setEntries] = useState<TimeEntry[]>([])
+
   const fetchToday = useCallback(async () => {
     setLoading(true)
     const res = await fetch('/api/timesheets')
     const { data } = await res.json()
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' })
-    const todayEntry = (data ?? []).find((e: any) => e.date === today) ?? null
-    setEntry(todayEntry)
+    const todayEntries = (data ?? []).filter((e: any) => e.date === today)
+    setEntries(todayEntries)
+    // Active entry = one without clock_out
+    setEntry(todayEntries.find((e: any) => !e.clock_out) ?? null)
     setLoading(false)
   }, [])
 
@@ -90,41 +94,41 @@ export default function ClockInOut() {
       </div>
 
       {/* Status */}
-      {!entry && (
+      {/* Completed shifts today */}
+      {entries.filter(e => e.clock_out).map((e, i) => (
+        <div key={e.id} className="rounded-xl p-4" style={{ background: '#EFE6CC', border: '1.5px solid #B8973A' }}>
+          <div className="text-sm font-semibold mb-2" style={{ color: '#8A6E25' }}>✅ Shift {i + 1} complete</div>
+          <div className="grid grid-cols-2 gap-2 text-xs" style={{ color: '#4A4640' }}>
+            <div><span style={{ color: '#8A8580' }}>Clock in</span><br /><strong>{fmt(e.clock_in)}</strong></div>
+            <div><span style={{ color: '#8A8580' }}>Clock out</span><br /><strong>{fmt(e.clock_out!)}</strong></div>
+            <div><span style={{ color: '#8A8580' }}>Hours</span><br /><strong>{e.hours}h</strong></div>
+            <div><span style={{ color: '#8A8580' }}>Status</span><br />
+              <span className="capitalize" style={{ color: e.status === 'approved' ? '#2E7D32' : '#8A6E25' }}>{e.status}</span>
+            </div>
+          </div>
+          {e.notes && <div className="text-xs mt-2" style={{ color: '#8A8580' }}>Note: {e.notes}</div>}
+        </div>
+      ))}
+
+      {!isClockedIn && (
         <div className="rounded-xl p-4 text-center" style={{ background: '#F5F0E8' }}>
           <div className="text-3xl mb-1">⏱</div>
-          <div className="text-sm font-medium" style={{ color: '#4A4640' }}>Not clocked in yet</div>
+          <div className="text-sm font-medium" style={{ color: '#4A4640' }}>
+            {entries.length > 0 ? 'Ready for next shift' : 'Not clocked in yet'}
+          </div>
         </div>
       )}
 
       {isClockedIn && (
         <div className="rounded-xl p-4 text-center" style={{ background: '#E8F5E9' }}>
           <div className="text-3xl mb-1">🟢</div>
-          <div className="text-sm font-semibold" style={{ color: '#2E7D32' }}>Clocked in at {fmt(entry.clock_in)}</div>
+          <div className="text-sm font-semibold" style={{ color: '#2E7D32' }}>Clocked in at {fmt(entry!.clock_in)}</div>
           <div className="text-xl font-mono mt-1" style={{ color: '#1B5E20' }}>{elapsed}</div>
-          <div className="text-xs mt-1" style={{ color: '#4CAF50' }}>Max 3 hours per day</div>
-        </div>
-      )}
-
-      {entry && entry.clock_out && (
-        <div className="rounded-xl p-4" style={{ background: '#EFE6CC', border: '1.5px solid #B8973A' }}>
-          <div className="text-sm font-semibold mb-2" style={{ color: '#8A6E25' }}>✅ Shift complete</div>
-          <div className="grid grid-cols-2 gap-2 text-xs" style={{ color: '#4A4640' }}>
-            <div><span style={{ color: '#8A8580' }}>Clock in</span><br /><strong>{fmt(entry.clock_in)}</strong></div>
-            <div><span style={{ color: '#8A8580' }}>Clock out</span><br /><strong>{fmt(entry.clock_out)}</strong></div>
-            <div><span style={{ color: '#8A8580' }}>Hours</span><br /><strong>{entry.hours}h</strong></div>
-            <div><span style={{ color: '#8A8580' }}>Status</span><br />
-              <span className="capitalize" style={{ color: entry.status === 'approved' ? '#2E7D32' : '#8A6E25' }}>
-                {entry.status}
-              </span>
-            </div>
-          </div>
-          {entry.notes && <div className="text-xs mt-2" style={{ color: '#8A8580' }}>Note: {entry.notes}</div>}
         </div>
       )}
 
       {/* Notes input */}
-      {!entry?.clock_out && (
+      {(!isClockedIn || entry) && (
         <div>
           <label className="block text-xs font-medium mb-1" style={{ color: '#8A8580' }}>
             Notes <span style={{ color: '#B8B4B0' }}>(optional)</span>
@@ -143,7 +147,7 @@ export default function ClockInOut() {
       {error && <div className="text-xs rounded-lg px-3 py-2" style={{ background: '#FDECEA', color: '#791F1F' }}>{error}</div>}
 
       {/* Action button */}
-      {!entry && (
+      {!isClockedIn && (
         <button
           onClick={handleClockIn}
           disabled={working}

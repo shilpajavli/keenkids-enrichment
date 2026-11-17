@@ -1,7 +1,6 @@
 import { createServerClient, createAdminClient } from '@/lib/supabase-server'
 import { NextRequest, NextResponse } from 'next/server'
 
-const MAX_HOURS = 3
 
 // GET — list entries (teacher: own; admin: all, filterable by week/teacher)
 export async function GET(req: NextRequest) {
@@ -54,9 +53,8 @@ export async function POST(req: NextRequest) {
     .eq('date', today)
     .single()
 
-  if (existing) {
-    if (!existing.clock_out) return NextResponse.json({ error: 'Already clocked in' }, { status: 400 })
-    return NextResponse.json({ error: 'Already completed a shift today' }, { status: 400 })
+  if (existing && !existing.clock_out) {
+    return NextResponse.json({ error: 'Already clocked in' }, { status: 400 })
   }
 
   // Get teacher's school via program assignment (or from body)
@@ -110,9 +108,7 @@ export async function PATCH(req: NextRequest) {
 
     const clockOut = new Date()
     const clockIn = new Date(entry.clock_in)
-    let hours = (clockOut.getTime() - clockIn.getTime()) / 3600000
-    hours = Math.min(hours, MAX_HOURS) // cap at 3 hours
-    hours = Math.round(hours * 100) / 100
+    const hours = Math.round(((clockOut.getTime() - clockIn.getTime()) / 3600000) * 100) / 100
 
     const { data, error } = await supabase
       .from('time_entries')
