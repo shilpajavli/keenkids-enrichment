@@ -63,15 +63,19 @@ export default async function DashboardPage() {
   const isTeacher = profile?.role === 'teacher'
   const teacherSchoolId = isTeacher ? (profile?.school_id ?? null) : null
 
+  const isAllSchools = isTeacher && !teacherSchoolId
   const weekStart = getMonday(new Date())
+  const admin = createAdminClient()
 
   const [studentsRes, programRes, allStudentsRes] = await Promise.all([
-    supabase.from('students').select('id, full_name, grade, school_id, enrolled_days').eq('program_id', programId ?? '').eq('status', 'active').order('full_name'),
+    isAllSchools
+      ? admin.from('students').select('id, full_name, grade, school_id, enrolled_days').eq('status', 'active').order('full_name')
+      : supabase.from('students').select('id, full_name, grade, school_id, enrolled_days').eq('program_id', programId ?? '').eq('status', 'active').order('full_name'),
     programId
       ? supabase.from('programs').select('name, school:schools(id, name)').eq('id', programId).single()
       : Promise.resolve({ data: null }),
     programId
-      ? createAdminClient().from('students').select('id, status, created_at, updated_at').eq('program_id', programId)
+      ? admin.from('students').select('id, status, created_at, updated_at').eq('program_id', programId)
       : Promise.resolve({ data: [] }),
   ])
 
@@ -79,9 +83,11 @@ export default async function DashboardPage() {
   const program   = programRes.data as any
   const schoolId  = program?.school?.id ?? null
   // For teachers: filter students by their assigned school directly
-  const students = teacherSchoolId
-    ? allFetchedStudents.filter((s: any) => s.school_id === teacherSchoolId)
-    : allFetchedStudents
+  const students = isAllSchools
+    ? allFetchedStudents
+    : teacherSchoolId
+      ? allFetchedStudents.filter((s: any) => s.school_id === teacherSchoolId)
+      : allFetchedStudents
   const schoolName = (program?.school?.name ?? program?.name ?? '').toLowerCase()
   const schoolKey = schoolName.includes('sinnott') ? 'sinnott' : schoolName.includes('mattos') ? 'mattos' : null
 
