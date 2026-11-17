@@ -419,7 +419,7 @@ export default function StudentProfile({ student, skills, notes, attendance, med
                 onChange={e => setMaterialFeePaid(e.target.checked)}
               />
               <span className="text-[12.5px]" style={{ color: materialFeePaid ? '#27500A' : '#4A4640' }}>
-                Tuesday material fee {materialFeePaid ? '✓ paid' : '— not paid'}
+                Material fee {materialFeePaid ? '✓ paid' : '— not paid'}
               </span>
             </label>
           </div>
