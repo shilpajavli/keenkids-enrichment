@@ -91,7 +91,7 @@ export default async function DashboardPage() {
   const schoolName = (program?.school?.name ?? program?.name ?? '').toLowerCase()
   const schoolKey = schoolName.includes('sinnott') ? 'sinnott' : schoolName.includes('mattos') ? 'mattos' : null
 
-  const studentIds = students.map(s => s.id)
+  const studentIds = students.map((s: any) => s.id)
   const allStudents = (allStudentsRes.data ?? []) as any[]
 
   const totalCancelled = allStudents.filter(s => s.status !== 'active').length
