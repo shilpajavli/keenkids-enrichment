@@ -16,18 +16,14 @@ export default async function StudentsPage() {
   const isTeacher = profile?.role === 'teacher'
   const teacherSchoolId = isTeacher ? (profile?.school_id ?? null) : null
 
-  // Fetch students with school info
-  const { data: allStudentsData } = await supabase
-    .from('students')
-    .select(`
-      *,
-      student_skills (status),
-      school:schools(*)
-    `)
-    .eq('program_id', programId ?? '')
-    .eq('status', 'active')
-    .order('parent_id', { ascending: true, nullsFirst: true })
-    .order('created_at', { ascending: false })
+  const admin = createAdminClient()
+
+  // Fetch students — all-school teachers (school_id = NULL) see everyone
+  const isAllSchools = isTeacher && !teacherSchoolId
+  const studentsQuery = isAllSchools
+    ? admin.from('students').select('*, student_skills(status), school:schools(*)').eq('status', 'active').order('full_name')
+    : supabase.from('students').select('*, student_skills(status), school:schools(*)').eq('program_id', programId ?? '').eq('status', 'active').order('parent_id', { ascending: true, nullsFirst: true }).order('created_at', { ascending: false })
+  const { data: allStudentsData } = await studentsQuery
 
   // Resolve the program's school to compare against teacher's assigned school
   const { data: programData } = programId
