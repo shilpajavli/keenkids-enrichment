@@ -96,7 +96,7 @@ export default async function StudentsPage() {
         <h1 className="font-serif text-3xl font-light text-ink">Students</h1>
         <p className="text-ink-tertiary text-sm mt-1">{enriched.length} enrolled</p>
       </div>
-      <StudentList students={enriched} programId={programId} schools={schools ?? []} isTeacher={isTeacher} defaultSchoolId={programSchoolId} />
+      <StudentList students={enriched} programId={programId} schools={schools ?? []} isTeacher={isTeacher} defaultSchoolId={isAllSchools ? null : programSchoolId} />
 
       {/* Past / Inactive Students */}
       {(inactiveStudents ?? []).length > 0 && (
