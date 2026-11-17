@@ -123,11 +123,6 @@ export async function POST() {
 
       if (error) { console.error(`Failed refund ${refund.id}:`, error.message); continue }
       refundsSynced++
-
-      // If full refund, mark student as inactive
-      if (payment?.student_id && refund.amount >= payment.amount_cents) {
-        await admin.from('students').update({ status: 'inactive' }).eq('id', payment.student_id)
-      }
     } catch (e) {
       console.error(`Error processing refund ${refund.id}:`, e)
     }
