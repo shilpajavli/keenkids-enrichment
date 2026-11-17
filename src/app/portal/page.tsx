@@ -15,14 +15,6 @@ import ConsentWall from '@/components/portal/ConsentWall'
 import AutoRefresh from '@/components/ui/AutoRefresh'
 import ParentSignOutButton from '@/components/portal/ParentSignOutButton'
 
-const STRIPE_LINKS: Record<string, string> = {
-  '5_day': 'https://buy.stripe.com/fZu3co3pf6zT1MHg1me3e02',
-  '4_day': 'https://buy.stripe.com/fZu3co3pf6zT1MHg1me3e02',
-  '3_day': 'https://buy.stripe.com/14A28k1h7aQ9dvp6qMe3e04',
-  '2_day': 'https://buy.stripe.com/14A28k1h7aQ9dvp6qMe3e04',
-  '1_day': 'https://buy.stripe.com/3cIcMYbVLf6p8b57uQe3e03',
-}
-const MATERIAL_FEE_LINK = 'https://buy.stripe.com/bJeeV6aRHgatbnhaH2e3e00'
 
 const DAILY_SCHEDULE_MATTOS = [
   { day: 'Monday',    emoji: '🔧', theme: 'STEAM Build Day',               sub: 'Engineering & Design',              bullets: ['Design', 'Build', 'Test', 'Improve'],                                           tagline: 'BUILD IDEAS. BUILD CONFIDENCE.' },
@@ -118,7 +110,7 @@ export default async function ParentPortalPage({
   const todaySchedule = todayDayIndex >= 1 && todayDayIndex <= 5 ? DAILY_SCHEDULE[todayDayIndex - 1] : null
   const initials = student.full_name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
 
-  const [todayAttendanceRes, attendanceRes, paymentsRes, announcementsRes, curriculumRes, mediaRes, notesRes] = await Promise.all([
+  const [todayAttendanceRes, attendanceRes, paymentsRes, announcementsRes, curriculumRes, mediaRes, notesRes, weeklyUpdateRes] = await Promise.all([
     admin.from('attendance').select('*').eq('student_id', student.id).eq('date', today).maybeSingle(),
     admin.from('attendance').select('date, status, sign_in_time, sign_out_time').eq('student_id', student.id).order('date', { ascending: false }).limit(10),
     admin.from('payments').select('*').eq('student_id', student.id).order('due_date', { ascending: false }),
@@ -130,6 +122,9 @@ export default async function ParentPortalPage({
       : Promise.resolve({ data: null }),
     supabase.from('media').select('*').or(`student_id.eq.${student.id},student_id.is.null`).order('created_at', { ascending: false }).limit(8),
     admin.from('teacher_notes').select('content, created_at').eq('student_id', student.id).order('created_at', { ascending: false }).limit(5),
+    student.school_id
+      ? admin.from('weekly_updates').select('message, author_name, updated_at').eq('school_id', student.school_id).eq('week_of', currentWeek).maybeSingle()
+      : Promise.resolve({ data: null }),
   ])
 
   const todayRec = todayAttendanceRes.data
@@ -139,6 +134,7 @@ export default async function ParentPortalPage({
   const curriculum = curriculumRes.data
   const media = mediaRes.data ?? []
   const notes = notesRes.data ?? []
+  const weeklyUpdate = (weeklyUpdateRes as any)?.data as { message: string; author_name: string | null; updated_at: string } | null
   const pendingPayments = payments.filter((p: any) => p.status !== 'paid')
 
   // Monthly payment schedule Sep 2026 – May 2027
@@ -178,8 +174,6 @@ export default async function ParentPortalPage({
     return false
   })
   const unpaidDueCount = visibleMonthRows.filter(m => !m.paid).length
-  const stripeLink = STRIPE_LINKS[student.enrollment_type]
-  const stripeLinkWithEmail = stripeLink ? `${stripeLink}?prefilled_email=${encodeURIComponent(user.email ?? '')}` : null
 
   // Material fee: reconcile from admin-set flag on student record
   const materialFeePaid = (student as any).material_fee_paid ?? false
@@ -467,12 +461,9 @@ export default async function ParentPortalPage({
                     <div className="flex items-center gap-2">
                       {m.paid ? (
                         <span className="text-[11px] px-2.5 py-1 rounded-full font-medium" style={{ background: '#EAF3DE', color: '#27500A' }}>✓ Paid</span>
-                      ) : stripeLinkWithEmail ? (
-                        <a href={stripeLinkWithEmail} target="_blank" rel="noopener noreferrer"
-                          className="btn btn-gold text-[11px] py-1 px-3" style={{ textDecoration: 'none' }}>
-                          Pay →
-                        </a>
-                      ) : null}
+                      ) : (
+                        <span className="text-[11px]" style={{ color: '#8A8580' }}>Contact us to pay</span>
+                      )}
                     </div>
                   </div>
                 )
@@ -487,12 +478,7 @@ export default async function ParentPortalPage({
                   {materialFeePaid ? (
                     <span className="text-[11px] px-2.5 py-1 rounded-full font-medium" style={{ background: '#EAF3DE', color: '#27500A' }}>✓ Paid</span>
                   ) : (
-                    <a href={`${MATERIAL_FEE_LINK}?prefilled_email=${encodeURIComponent(user.email ?? '')}`}
-                      target="_blank" rel="noopener noreferrer"
-                      className="btn text-[11px] py-1 px-3"
-                      style={{ textDecoration: 'none', background: '#F5F0E8', color: '#8A6E25', border: '1px solid rgba(184,151,58,0.35)' }}>
-                      Pay fee →
-                    </a>
+                    <span className="text-[11px]" style={{ color: '#8A8580' }}>Contact us to pay</span>
                   )}
                 </div>
               )}
@@ -503,6 +489,18 @@ export default async function ParentPortalPage({
       {/* ── SCHEDULE TAB ── */}
       {tab === 'schedule' && (
         <div className="space-y-4">
+          {/* Teacher's weekly class update */}
+          {weeklyUpdate && (
+            <Card>
+              <CardHeader title="📝 From your teacher" action={<span className="text-[11px]" style={{ color: '#8A8580' }}>This week</span>} />
+              <CardBody>
+                <p className="text-[13px] leading-relaxed whitespace-pre-wrap" style={{ color: '#1A1814' }}>{weeklyUpdate.message}</p>
+                {weeklyUpdate.author_name && (
+                  <p className="text-[11px] mt-2" style={{ color: '#8A8580' }}>— {weeklyUpdate.author_name}</p>
+                )}
+              </CardBody>
+            </Card>
+          )}
           {/* This week's curriculum if posted */}
           {curriculum && (
             <Card>

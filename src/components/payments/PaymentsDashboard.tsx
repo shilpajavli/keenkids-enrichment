@@ -86,8 +86,6 @@ export default function PaymentsDashboard({ payments: initial, students = [], ac
   const [page, setPage] = useState(0)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [updating, setUpdating] = useState<string | null>(null)
-  const [syncing, setSyncing] = useState(false)
-  const [syncResult, setSyncResult] = useState<{ synced: number; unmatched: number; created: number; refunds: number; total: number } | null>(null)
   const [cancelling, setCancelling] = useState<string | null>(null)
   const [unmatched, setUnmatched] = useState<UnmatchedPayment[]>([])
   const [linking, setLinking] = useState<string | null>(null)
@@ -125,12 +123,7 @@ export default function PaymentsDashboard({ payments: initial, students = [], ac
     URL.revokeObjectURL(url)
   }
 
-  async function syncStripe() {
-    setSyncing(true); setSyncResult(null)
-    const res = await fetch('/api/payments/sync-stripe', { method: 'POST' })
-    setSyncResult(await res.json())
-    loadUnmatched()
-    setSyncing(false)
+
   }
 
   async function cancelPayment(id: string, studentId: string | null) {
@@ -138,7 +131,6 @@ export default function PaymentsDashboard({ payments: initial, students = [], ac
     setCancelling(id)
     await fetch('/api/payments', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status: 'cancelled', cancellation_notes: note, cancelled_at: new Date().toISOString() }) })
     setPayments(prev => prev.map(p => p.id === id ? { ...p, status: 'cancelled' as PaymentStatus } : p))
-    if (studentId) await fetch(`/api/students?id=${studentId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'inactive' }) })
     setCancelling(null)
   }
 
@@ -240,18 +232,10 @@ export default function PaymentsDashboard({ payments: initial, students = [], ac
         <button onClick={exportPaymentsCSV} className="btn text-[11.5px] py-1.5 px-3 flex items-center gap-1.5" style={{ background: '#F5F0E8', color: '#8A6E25', border: '1px solid rgba(184,151,58,0.35)' }}>
           <Download size={12} /> Export CSV
         </button>
-        <button onClick={syncStripe} disabled={syncing} className="btn text-[11.5px] py-1.5 px-3 disabled:opacity-50" style={{ background: '#F5F0E8', color: '#8A6E25', border: '1px solid rgba(184,151,58,0.35)' }}>
-          {syncing ? 'Syncing…' : '↓ Sync Stripe'}
-        </button>
         {programId && (
           <button onClick={() => setGenOpen(v => !v)} className="btn text-[11.5px] py-1.5 px-3" style={{ background: '#1A1814', color: '#B8973A', border: '1px solid rgba(184,151,58,0.35)' }}>
             + Generate pending
           </button>
-        )}
-        {syncResult && (
-          <span className="text-[12px]" style={{ color: '#4A4640' }}>
-            ✓ {syncResult.synced} synced · {syncResult.created ?? 0} new · {syncResult.unmatched} unmatched
-          </span>
         )}
       </div>
 
