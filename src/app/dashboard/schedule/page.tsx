@@ -94,9 +94,20 @@ export default async function SchedulePage() {
   const schoolName = (program?.school as any)?.name ?? program?.name ?? ''
   const isSinnott = schoolName.toLowerCase().includes('sinnott')
   const isMattos  = schoolName.toLowerCase().includes('mattos')
-  const hasSchedule = isSinnott || isMattos
+  const isCurtner = schoolName.toLowerCase().includes('curtner')
+  const hasSchedule = isSinnott || isMattos || isCurtner
 
   const weekly = isSinnott ? WEEKLY_SINNOTT : WEEKLY_MATTOS
+
+  const CURTNER_DAILY = [
+    { time: '2:30 – 2:45', label: 'Early group arrival, welcome, attendance, STEAM Puzzles', emoji: '🧩' },
+    { time: '2:45 – 2:55', label: 'Remaining students arrive, attendance and settling in', emoji: '📋' },
+    { time: '2:55 – 3:10', label: 'Project introduction — concept, materials and design challenge', emoji: '💡' },
+    { time: '3:10 – 3:50', label: 'Hands-on building — students work on individual projects', emoji: '🔧' },
+    { time: '3:50 – 4:05', label: 'Testing and experimentation — test, troubleshoot and improve', emoji: '🧪' },
+    { time: '4:05 – 4:20', label: 'Project completion, sharing and show-and-tell', emoji: '🌟' },
+    { time: '4:20 – 4:30', label: 'Clean-up, pack projects and dismissal at front gate', emoji: '🧹' },
+  ]
 
   const now = new Date()
   const currentMonth = now.toLocaleString('en-US', { month: 'long' })
@@ -114,7 +125,40 @@ export default async function SchedulePage() {
         </p>
       </div>
 
-      {!hasSchedule ? (
+      {isCurtner ? (
+        <div className="space-y-6">
+          {currentTheme && (
+            <div className="rounded-xl px-6 py-4 flex items-center gap-4"
+              style={{ background: 'linear-gradient(135deg, #1A1814 0%, #2C2820 100%)', border: '2px solid #B8973A' }}>
+              <span className="text-3xl">{currentTheme.emoji}</span>
+              <div>
+                <div className="text-[10px] tracking-[0.15em] uppercase mb-0.5" style={{ color: 'rgba(184,151,58,0.8)' }}>This Month's Theme</div>
+                <div className="font-serif text-xl font-light text-white">{currentTheme.theme}</div>
+              </div>
+              <div className="ml-auto text-[11px]" style={{ color: 'rgba(255,255,255,0.4)' }}>{currentMonth} {currentYear}</div>
+            </div>
+          )}
+          <div>
+            <div className="text-[11px] tracking-[0.15em] uppercase text-center mb-4" style={{ color: '#B8973A' }}>
+              Daily Schedule · Curtner Elementary
+            </div>
+            <div className="card overflow-hidden">
+              {CURTNER_DAILY.map((row, i) => (
+                <div key={row.time} className="grid items-center px-5 py-3"
+                  style={{
+                    gridTemplateColumns: '110px 32px 1fr',
+                    borderBottom: i < CURTNER_DAILY.length - 1 ? '1px solid rgba(184,151,58,0.1)' : 'none',
+                    background: i % 2 === 0 ? '#FDFCF9' : '#FAF7F2',
+                  }}>
+                  <span className="text-[12px] tabular-nums font-medium" style={{ color: '#8A6E25' }}>{row.time}</span>
+                  <span className="text-base">{row.emoji}</span>
+                  <span className="text-[13px]" style={{ color: '#1A1814' }}>{row.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : !hasSchedule ? (
         <div className="py-20 text-center" style={{ color: '#8A8580' }}>
           <p className="text-[14px]">Schedule not set for this program yet.</p>
         </div>
