@@ -127,17 +127,6 @@ export default async function SchedulePage() {
 
       {isCurtner ? (
         <div className="space-y-6">
-          {currentTheme && (
-            <div className="rounded-xl px-6 py-4 flex items-center gap-4"
-              style={{ background: 'linear-gradient(135deg, #1A1814 0%, #2C2820 100%)', border: '2px solid #B8973A' }}>
-              <span className="text-3xl">{currentTheme.emoji}</span>
-              <div>
-                <div className="text-[10px] tracking-[0.15em] uppercase mb-0.5" style={{ color: 'rgba(184,151,58,0.8)' }}>This Month's Theme</div>
-                <div className="font-serif text-xl font-light text-white">{currentTheme.theme}</div>
-              </div>
-              <div className="ml-auto text-[11px]" style={{ color: 'rgba(255,255,255,0.4)' }}>{currentMonth} {currentYear}</div>
-            </div>
-          )}
           <div>
             <div className="text-[11px] tracking-[0.15em] uppercase text-center mb-4" style={{ color: '#B8973A' }}>
               Daily Schedule · Curtner Elementary
