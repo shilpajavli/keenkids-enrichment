@@ -20,7 +20,7 @@ export default async function AttendancePage() {
 
   const admin = createAdminClient()
 
-  const studentFields = 'id, full_name, last_name, grade, avatar_url, room_number, needs_escort, teacher_name, alerts, session_day, enrolled_days, school_id, pickup_person, pickup_notes'
+  const studentFields = 'id, full_name, last_name, grade, avatar_url, room_number, needs_escort, teacher_name, alerts, session_day, enrolled_days, school_id, pickup_person, pickup_notes, program:programs(school_id)'
   const [studentsRes, classesRes, todayRes, schoolsRes] = await Promise.all([
     isAllSchools
       ? admin.from('students').select(studentFields).eq('status', 'active').order('last_name')
@@ -30,7 +30,10 @@ export default async function AttendancePage() {
     isAllSchools ? admin.from('schools').select('id, name').order('name') : Promise.resolve({ data: null }),
   ])
 
-  const allStudents = studentsRes.data ?? []
+  const allStudents = (studentsRes.data ?? []).map((s: any) => ({
+    ...s,
+    school_id: s.school_id ?? s.program?.school_id ?? null,
+  }))
 
   // Resolve the program's school to compare against teacher's assigned school
   const { data: programData } = programId
