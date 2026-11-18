@@ -294,7 +294,7 @@ export default async function DashboardPage() {
             {absent.length === 0 ? (
               <div className="px-5 py-8 text-center text-[13px]" style={{ color: '#8A8580' }}>🎉 Everyone is checked in!</div>
             ) : (
-              absent.map((s, i) => (
+              absent.map((s: any, i: number) => (
                 <Link key={s.id} href={`/dashboard/students/${s.id}`}
                   className="flex items-center justify-between px-5 py-3 hover:bg-[#FAF7F2] transition-colors"
                   style={{ borderBottom: i < absent.length - 1 ? '1px solid rgba(184,151,58,0.14)' : 'none' }}>
