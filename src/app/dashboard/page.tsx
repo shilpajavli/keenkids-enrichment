@@ -172,8 +172,8 @@ export default async function DashboardPage() {
     !s.enrolled_days?.length || s.enrolled_days.map(Number).includes(todayDayNum)
   )
 
-  const present = todayStudents.filter(s => checkedInIds.has(s.id))
-  const absent  = todayStudents.filter(s => !checkedInIds.has(s.id))
+  const present = todayStudents.filter((s: any) => checkedInIds.has(s.id))
+  const absent  = todayStudents.filter((s: any) => !checkedInIds.has(s.id))
 
   // Group unpaid by student
   const unpaidByStudent = unpaidPayments.reduce((acc: Record<string, { student: any; totalCents: number; hasOverdue: boolean }>, p) => {
