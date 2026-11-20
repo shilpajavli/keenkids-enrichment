@@ -42,11 +42,12 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const admin = createAdminClient()
   const body = await req.json()
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' })
 
   // Check for existing entry today
-  const { data: existing } = await supabase
+  const { data: existing } = await admin
     .from('time_entries')
     .select('id, clock_out')
     .eq('teacher_id', user.id)
@@ -64,7 +65,7 @@ export async function POST(req: NextRequest) {
     .eq('teacher_id', user.id)
     .single()
 
-  const { data, error } = await supabase
+  const { data, error } = await admin
     .from('time_entries')
     .insert({
       teacher_id: user.id,
@@ -97,7 +98,7 @@ export async function PATCH(req: NextRequest) {
 
   // Clock out
   if (action === 'clock_out') {
-    const { data: entry } = await supabase
+    const { data: entry } = await admin
       .from('time_entries')
       .select('clock_in, teacher_id')
       .eq('id', id)
@@ -110,7 +111,7 @@ export async function PATCH(req: NextRequest) {
     const clockIn = new Date(entry.clock_in)
     const hours = Math.round(((clockOut.getTime() - clockIn.getTime()) / 3600000) * 100) / 100
 
-    const { data, error } = await supabase
+    const { data, error } = await admin
       .from('time_entries')
       .update({
         clock_out: clockOut.toISOString(),
