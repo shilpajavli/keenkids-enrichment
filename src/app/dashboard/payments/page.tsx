@@ -17,9 +17,10 @@ export default async function PaymentsPage() {
   const programId = await getCurrentProgramId()
   const admin = createAdminClient()
 
-  const [{ data: activeStudents }, { data: allStudents }] = await Promise.all([
-    admin.from('students').select('id, full_name, enrollment_type, session_day').eq('program_id', programId ?? '').eq('status', 'active').order('full_name'),
-    admin.from('students').select('id, full_name').eq('program_id', programId ?? '').in('status', ['active', 'inactive']),
+  const [{ data: activeStudents }, { data: allStudents }, { data: schools }] = await Promise.all([
+    admin.from('students').select('id, full_name, enrollment_type, session_day, school_id, program:programs(school_id, school:schools(id, name))').eq('program_id', programId ?? '').eq('status', 'active').order('full_name'),
+    admin.from('students').select('id, full_name, school_id, program:programs(school_id)').eq('program_id', programId ?? '').in('status', ['active', 'inactive']),
+    admin.from('schools').select('id, name').order('name'),
   ])
 
   const studentIds = (allStudents ?? []).map((s: any) => s.id)
@@ -46,9 +47,14 @@ export default async function PaymentsPage() {
         payments={payments ?? []}
         summary={{ collected, outstanding, overdue }}
         students={allStudents ?? []}
-        activeStudents={activeStudents ?? []}
+        activeStudents={(activeStudents ?? []).map((s: any) => ({
+          ...s,
+          school_id: s.school_id ?? s.program?.school_id ?? null,
+          school_name: s.program?.school?.name ?? null,
+        }))}
         enrolledCount={activeStudents?.length ?? 0}
         programId={programId ?? undefined}
+        schools={schools ?? []}
       />
     </div>
   )

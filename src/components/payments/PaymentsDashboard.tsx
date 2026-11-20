@@ -11,7 +11,11 @@ interface StudentOption {
   full_name: string
   enrollment_type?: string
   session_day?: number
+  school_id?: string | null
+  school_name?: string | null
 }
+
+interface SchoolOption { id: string; name: string }
 
 interface Props {
   payments: PaymentRecord[]
@@ -20,6 +24,13 @@ interface Props {
   activeStudents?: StudentOption[]
   enrolledCount?: number
   programId?: string
+  schools?: SchoolOption[]
+}
+
+function programLabel(s: StudentOption): string {
+  if (s.enrollment_type === 'steam_lab') return 'STEAM Lab'
+  if (s.session_day) return `${s.session_day}-day`
+  return '—'
 }
 
 const PERIODS = [
@@ -32,12 +43,13 @@ function getCurrentPeriod(): string {
   return new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' })
 }
 
-export default function PaymentsDashboard({ payments: initial, activeStudents = [], programId }: Props) {
+export default function PaymentsDashboard({ payments: initial, activeStudents = [], programId, schools = [] }: Props) {
   const [payments, setPayments] = useState(initial)
   const [view, setView] = useState<'roster' | 'history'>('roster')
   const [rosterPeriod, setRosterPeriod] = useState(getCurrentPeriod())
   const [updating, setUpdating] = useState<string | null>(null)
   const [filterPeriod, setFilterPeriod] = useState('')
+  const [schoolFilter, setSchoolFilter] = useState<string>('all')
   // Per-student amount override in roster
   const [amounts, setAmounts] = useState<Record<string, string>>({})
 
@@ -110,9 +122,27 @@ export default function PaymentsDashboard({ payments: initial, activeStudents = 
       if (!ex || p.status === 'paid') rosterPaymentsByStudent.set(p.student.id, p)
     }
   }
-  const rosterRows = activeStudents.map(s => ({ student: s, payment: rosterPaymentsByStudent.get(s.id) ?? null }))
+
+  const filteredStudents = schoolFilter === 'all'
+    ? activeStudents
+    : activeStudents.filter(s => s.school_id === schoolFilter)
+
+  const rosterRows = filteredStudents.map(s => ({ student: s, payment: rosterPaymentsByStudent.get(s.id) ?? null }))
   const paidCount = rosterRows.filter(r => r.payment?.status === 'paid').length
   const unpaidCount = rosterRows.length - paidCount
+
+  // Group by program label
+  const grouped = new Map<string, typeof rosterRows>()
+  for (const row of rosterRows) {
+    const key = programLabel(row.student)
+    if (!grouped.has(key)) grouped.set(key, [])
+    grouped.get(key)!.push(row)
+  }
+  const groupOrder = ['1-day', '2-day', '3-day', '4-day', '5-day', 'STEAM Lab', '—']
+  const sortedGroups = [...grouped.entries()].sort((a, b) => {
+    const ai = groupOrder.indexOf(a[0]); const bi = groupOrder.indexOf(b[0])
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi)
+  })
 
   // History
   const historyPayments = (filterPeriod ? payments.filter(p => (p as any).period === filterPeriod) : payments)
@@ -156,7 +186,15 @@ export default function PaymentsDashboard({ payments: initial, activeStudents = 
       {view === 'roster' && (
         <Card>
           <CardHeader title="" action={
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              {schools.length > 1 && (
+                <select className="text-[12px] rounded-lg px-2 py-1.5 outline-none"
+                  style={{ border: '1.5px solid rgba(184,151,58,0.3)', color: '#1A1814', background: '#FAF7F2' }}
+                  value={schoolFilter} onChange={e => setSchoolFilter(e.target.value)}>
+                  <option value="all">All schools</option>
+                  {schools.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              )}
               <span className="text-[12px]" style={{ color: '#27500A' }}>✓ {paidCount} paid</span>
               <span className="text-[12px]" style={{ color: '#633806' }}>{unpaidCount} unpaid</span>
               <select className="text-[12px] rounded-lg px-2 py-1.5 outline-none font-medium"
@@ -167,61 +205,73 @@ export default function PaymentsDashboard({ payments: initial, activeStudents = 
             </div>
           } />
           <div className="grid px-5 py-2 text-[10px] font-semibold tracking-widest uppercase"
-            style={{ color: '#8A8580', gridTemplateColumns: '1fr 100px 110px 90px', borderBottom: '1px solid rgba(184,151,58,0.14)' }}>
-            <span>Student</span><span>Amount</span><span>Status</span><span></span>
+            style={{ color: '#8A8580', gridTemplateColumns: '1fr 70px 100px 110px 90px', borderBottom: '1px solid rgba(184,151,58,0.14)' }}>
+            <span>Student</span><span>Program</span><span>Amount</span><span>Status</span><span></span>
           </div>
           {rosterRows.length === 0 && (
             <div className="py-12 text-center text-[13px]" style={{ color: '#8A8580' }}>No active students</div>
           )}
-          {rosterRows.map(({ student, payment }, i) => {
-            const isPaid = payment?.status === 'paid'
-            return (
-              <div key={student.id} className="grid items-center px-5 py-3 text-[13px]"
-                style={{
-                  gridTemplateColumns: '1fr 100px 110px 90px',
-                  borderBottom: i < rosterRows.length - 1 ? '1px solid rgba(184,151,58,0.1)' : 'none',
-                  background: isPaid ? 'rgba(39,80,10,0.03)' : undefined,
-                }}>
-                <span className="font-medium" style={{ color: '#1A1814' }}>{student.full_name}</span>
-                <span>
-                  {isPaid ? (
-                    <span className="text-[12px]" style={{ color: '#27500A' }}>{formatCurrency(payment!.amount_cents)}</span>
-                  ) : (
-                    <input
-                      type="number"
-                      placeholder="$0"
-                      value={amounts[student.id] ?? ''}
-                      onChange={e => setAmounts(a => ({ ...a, [student.id]: e.target.value }))}
-                      className="text-[11px] rounded px-2 py-1 w-20 outline-none"
-                      style={{ border: '1px solid rgba(184,151,58,0.3)', color: '#1A1814', background: '#FAF7F2' }}
-                    />
-                  )}
-                </span>
-                <span>
-                  {isPaid ? (
-                    <span className="text-[12px] font-medium" style={{ color: '#27500A' }}>✓ Paid</span>
-                  ) : (
-                    <span className="text-[12px]" style={{ color: '#8A8580' }}>Not paid</span>
-                  )}
-                </span>
-                <span className="flex justify-end">
-                  {isPaid ? (
-                    <button onClick={() => markUnpaid(payment!.id)} disabled={updating === payment!.id}
-                      className="text-[10px] px-2 py-0.5 rounded disabled:opacity-40"
-                      style={{ background: '#FDECEA', color: '#791F1F' }}>
-                      {updating === payment!.id ? '…' : 'Undo'}
-                    </button>
-                  ) : (
-                    <button onClick={() => markPaid(student.id)} disabled={updating === student.id || updating === (rosterPaymentsByStudent.get(student.id)?.id ?? '')}
-                      className="text-[11px] px-2.5 py-1 rounded-lg font-medium disabled:opacity-40"
-                      style={{ background: '#1A1814', color: '#B8973A' }}>
-                      {updating === student.id ? '…' : '✓ Mark paid'}
-                    </button>
-                  )}
-                </span>
+          {sortedGroups.map(([groupName, rows]) => (
+            <div key={groupName}>
+              <div className="px-5 py-1.5 text-[10px] font-semibold tracking-widest uppercase"
+                style={{ background: '#FAF7F2', color: '#8A6E25', borderBottom: '1px solid rgba(184,151,58,0.14)', borderTop: '1px solid rgba(184,151,58,0.14)' }}>
+                {groupName} · {rows.filter(r => r.payment?.status === 'paid').length}/{rows.length} paid
               </div>
-            )
-          })}
+              {rows.map(({ student, payment }, i) => {
+                const isPaid = payment?.status === 'paid'
+                return (
+                  <div key={student.id} className="grid items-center px-5 py-3 text-[13px]"
+                    style={{
+                      gridTemplateColumns: '1fr 70px 100px 110px 90px',
+                      borderBottom: i < rows.length - 1 ? '1px solid rgba(184,151,58,0.1)' : 'none',
+                      background: isPaid ? 'rgba(39,80,10,0.03)' : undefined,
+                    }}>
+                    <span className="font-medium" style={{ color: '#1A1814' }}>{student.full_name}</span>
+                    <span className="text-[11px] px-1.5 py-0.5 rounded-full w-fit"
+                      style={{ background: '#EFE6CC', color: '#8A6E25' }}>
+                      {programLabel(student)}
+                    </span>
+                    <span>
+                      {isPaid ? (
+                        <span className="text-[12px]" style={{ color: '#27500A' }}>{formatCurrency(payment!.amount_cents)}</span>
+                      ) : (
+                        <input
+                          type="number"
+                          placeholder="$0"
+                          value={amounts[student.id] ?? ''}
+                          onChange={e => setAmounts(a => ({ ...a, [student.id]: e.target.value }))}
+                          className="text-[11px] rounded px-2 py-1 w-20 outline-none"
+                          style={{ border: '1px solid rgba(184,151,58,0.3)', color: '#1A1814', background: '#FAF7F2' }}
+                        />
+                      )}
+                    </span>
+                    <span>
+                      {isPaid ? (
+                        <span className="text-[12px] font-medium" style={{ color: '#27500A' }}>✓ Paid</span>
+                      ) : (
+                        <span className="text-[12px]" style={{ color: '#8A8580' }}>Not paid</span>
+                      )}
+                    </span>
+                    <span className="flex justify-end">
+                      {isPaid ? (
+                        <button onClick={() => markUnpaid(payment!.id)} disabled={updating === payment!.id}
+                          className="text-[10px] px-2 py-0.5 rounded disabled:opacity-40"
+                          style={{ background: '#FDECEA', color: '#791F1F' }}>
+                          {updating === payment!.id ? '…' : 'Undo'}
+                        </button>
+                      ) : (
+                        <button onClick={() => markPaid(student.id)} disabled={updating === student.id || updating === (rosterPaymentsByStudent.get(student.id)?.id ?? '')}
+                          className="text-[11px] px-2.5 py-1 rounded-lg font-medium disabled:opacity-40"
+                          style={{ background: '#1A1814', color: '#B8973A' }}>
+                          {updating === student.id ? '…' : '✓ Mark paid'}
+                        </button>
+                      )}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          ))}
         </Card>
       )}
 
