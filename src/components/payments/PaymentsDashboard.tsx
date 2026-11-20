@@ -33,6 +33,19 @@ function programLabel(s: StudentOption): string {
   return '—'
 }
 
+const MONTHLY_FEES: Record<string, number> = {
+  '1-day':    22000,
+  '2-day':    35000,
+  '3-day':    45000,
+  '4-day':    58000,
+  '5-day':    69900,
+  'STEAM Lab': 20000,
+}
+
+function defaultAmount(s: StudentOption): number {
+  return MONTHLY_FEES[programLabel(s)] ?? 69900
+}
+
 const PERIODS = [
   'Enrollment Fee',
   'September 2026', 'October 2026', 'November 2026', 'December 2026',
@@ -61,28 +74,24 @@ export default function PaymentsDashboard({ payments: initial, activeStudents = 
   }
 
   async function markPaid(studentId: string) {
+    const student = activeStudents.find(s => s.id === studentId)
     const existing = payments.find(p =>
       p.student?.id === studentId &&
       (p as any).period === rosterPeriod &&
       p.status !== 'cancelled'
     )
     const amountStr = amounts[studentId]
-    const amount_cents = amountStr ? Math.round(parseFloat(amountStr) * 100) : null
+    const amount_cents = amountStr ? Math.round(parseFloat(amountStr) * 100) : (student ? defaultAmount(student) : 69900)
     const paid_at = new Date().toISOString()
 
     if (existing) {
-      await updatePayment(existing.id, {
-        status: 'paid',
-        paid_at,
-        ...(amount_cents ? { amount_cents } : {}),
-      })
+      await updatePayment(existing.id, { status: 'paid', paid_at, amount_cents })
     } else {
-      // Create new payment record
       setUpdating(studentId)
       const res = await fetch('/api/payments/manual', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ student_id: studentId, period: rosterPeriod, amount_cents: amount_cents ?? 69900, paid_at, program_id: programId }),
+        body: JSON.stringify({ student_id: studentId, period: rosterPeriod, amount_cents, paid_at, program_id: programId }),
       })
       const json = await res.json()
       if (json.data) setPayments(prev => [...prev, json.data])
@@ -237,7 +246,7 @@ export default function PaymentsDashboard({ payments: initial, activeStudents = 
                       ) : (
                         <input
                           type="number"
-                          placeholder="$0"
+                          placeholder={`$${(defaultAmount(student) / 100).toFixed(0)}`}
                           value={amounts[student.id] ?? ''}
                           onChange={e => setAmounts(a => ({ ...a, [student.id]: e.target.value }))}
                           className="text-[11px] rounded px-2 py-1 w-20 outline-none"
